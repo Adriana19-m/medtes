@@ -48,7 +48,7 @@
       </div>
     </div>
 
-    <!-- Contraseñas -->
+    <!-- ===== CONTRASEÑAS ===== -->
     <div class="row">
       <div class="col-md-6 mb-3">
         <label class="form-label">Contraseña</label>
@@ -69,14 +69,14 @@
         <label class="form-label">Confirmar contraseña</label>
         <div class="input-group">
           <input type="password" name="password2" id="password2"
-                 class="form-control" required>
+                 class="form-control" minlength="8" required>
           <button type="button" class="btn btn-outline-secondary"
                   onclick="togglePassword('password2', this)">
             <i class="bi bi-eye"></i>
           </button>
         </div>
         <div class="invalid-feedback">
-          Las contraseñas no coinciden.
+          Las contraseñas no coinciden o no cumplen el mínimo.
         </div>
       </div>
     </div>
@@ -143,31 +143,26 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("formRegistroPaciente");
+  const pass1 = document.getElementById("password1");
+  const pass2 = document.getElementById("password2");
+
+  function validarPasswords() {
+    if (pass1.value !== pass2.value) {
+      pass2.setCustomValidity("Las contraseñas no coinciden");
+    } else {
+      pass2.setCustomValidity("");
+    }
+  }
+
+  pass1.addEventListener("input", validarPasswords);
+  pass2.addEventListener("input", validarPasswords);
 
   form.addEventListener("submit", function (event) {
+    validarPasswords();
+
     if (!form.checkValidity()) {
       event.preventDefault();
       event.stopPropagation();
-    }
-
-    const pass1 = document.getElementById("password1").value.trim();
-    const pass2 = document.getElementById("password2").value.trim();
-
-    if (pass1 !== pass2) {
-      event.preventDefault();
-      document.getElementById("password2")
-        .setCustomValidity("Las contraseñas no coinciden");
-    } else {
-      document.getElementById("password2").setCustomValidity("");
-    }
-
-    const cedula = document.getElementById("cedula_usuario").value.trim();
-    if (!/^\d{10}$/.test(cedula)) {
-      event.preventDefault();
-      document.getElementById("cedula_usuario")
-        .setCustomValidity("Formato incorrecto");
-    } else {
-      document.getElementById("cedula_usuario").setCustomValidity("");
     }
 
     form.classList.add("was-validated");
