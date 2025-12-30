@@ -1,0 +1,84 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% block title %}Panel Administrador | Medessentia{% endblock %}
+{% block page_title %}Panel del Administrador{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <!-- Usuarios -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-people fs-2 me-3"></i>
+        <div>
+          <div class="fw-bold">Usuarios</div>
+          <div class="text-muted small">Gestión de cuentas</div>
+        </div>
+      </div>
+      <a class="btn btn-primary w-100" href="{% url 'lista_usuarios' %}">Ver usuarios</a>
+    </div>
+  </div>
+
+  <!-- Roles -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-shield-check fs-2 me-3"></i>
+        <div>
+          <div class="fw-bold">Roles</div>
+          <div class="text-muted small">Asignar/Modificar</div>
+        </div>
+      </div>
+      <a class="btn btn-outline-primary w-100" href="{% url 'asignar_roles' %}">Gestionar roles</a>
+    </div>
+  </div>
+
+  <!-- Nuevo usuario -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-person-plus fs-2 me-3"></i>
+        <div>
+          <div class="fw-bold">Nuevo usuario</div>
+          <div class="text-muted small">Alta manual</div>
+        </div>
+      </div>
+      <a class="btn btn-outline-primary w-100" href="{% url 'registro' %}">Crear</a>
+    </div>
+  </div>
+
+  <!-- Horario - VERSIÓN CORREGIDA -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="d-flex align-items-center mb-3">
+        <div class="bg-warning bg-opacity-10 p-2 rounded me-3">
+          <i class="bi bi-clock-history text-warning fs-4"></i>
+        </div>
+        <div>
+          <div class="fw-bold">Horario</div>
+          <div class="text-muted small">Horario de atención</div>
+        </div>
+      </div>
+      <p class="text-muted small mb-3">Configura tu horario de atención.</p>
+      <a href="{% url 'horario_index' %}" 
+         class="btn btn-warning w-100 d-flex align-items-center justify-content-center gap-2">
+        <i class="bi bi-plus-circle"></i>
+        Agregar horario
+      </a>
+    </div>
+  </div>
+
+  <!-- Reportes -->
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-speedometer2 fs-2 me-3"></i>
+        <div>
+          <div class="fw-bold">Reportes</div>
+          <div class="text-muted small">Próximamente</div>
+        </div>
+      </div>
+      <button class="btn btn-outline-secondary w-100" disabled>En construcción</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

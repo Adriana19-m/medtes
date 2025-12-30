@@ -1,0 +1,70 @@
+{% extends "public/base_paciente.html" %}
+{% load static %}
+{% block title %}Elegir Doctor{% endblock %}
+{% block paciente_content %}
+
+<style>
+  body {
+    background-color: #f5f9f7;
+  }
+  h2 {
+    color: #155d4d;
+    font-weight: 700;
+  }
+  .doctor-card {
+    border: none;
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .doctor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  }
+  .doctor-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+  }
+  .btn-ver-horarios {
+    background-color: #2aa574;
+    border: none;
+    color: white;
+    transition: all 0.2s ease;
+  }
+  .btn-ver-horarios:hover {
+    background-color: #238c62;
+  }
+</style>
+
+<div class="container py-4">
+  <h2 class="text-center mb-5">Selecciona un Doctor</h2>
+
+  <div class="row justify-content-center">
+    {% for doctor in doctors %}
+      <div class="col-md-4 mb-4">
+        <div class="card doctor-card text-center p-3">
+          <img src="{% static 'medilab/assets/img/doctora.jpg' %}"
+              alt="Doctor"
+              class="doctor-avatar mx-auto">
+          <h5 class="mt-2">{{ doctor.get_full_name|default:doctor.username }}</h5>
+          <p class="text-muted small mb-3">{{ doctor.email }}</p>
+          <a href="{% url 'cita_agenda_paciente' id_doctor=doctor.id %}" class="btn btn-ver-horarios w-100">
+            <i class="fas fa-calendar-alt me-1"></i> Ver horarios
+          </a>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12 text-center">
+        <div class="alert alert-info mt-4">
+          No hay doctores disponibles en este momento.
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

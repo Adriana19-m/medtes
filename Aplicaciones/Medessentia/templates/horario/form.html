@@ -1,0 +1,277 @@
+{% load static %}
+<form id="horario_form" method="POST" action="{% url 'guardar_disponibilidad' %}" autocomplete="off" novalidate>
+  {% csrf_token %}
+{% if horario %}
+<input type="hidden" id="id_horario" name="id_horario" value="{{ horario.id_horario }}">
+{% endif %}
+{% if is_admin %}
+<div class="mb-3">
+    <label for="id_doctor" class="form-label fw-bold">Doctor *</label>
+    <select name="id_doctor" id="id_doctor" class="form-select" required>
+        <option value="">Seleccione un doctor</option>
+        {% for d in doctores %}
+            <option value="{{ d.id }}"
+                {% if horario and horario.id_doctor_id == d.id %}selected{% endif %}>
+                {{ d.first_name }} {{ d.last_name }}
+            </option>
+        {% endfor %}
+    </select>
+    <div class="form-text">Seleccione el doctor para el horario</div>
+</div>
+{% else %}
+<input type="hidden" name="id_doctor" value="{{ request.user.id }}">
+{% endif %}
+
+
+  <!-- Día de la semana -->
+  <div class="mb-3">
+    <label for="dia_semana" class="form-label fw-bold">Día de la semana *</label>
+    <select id="dia_semana" name="dia_semana" class="form-select">
+      <option value="">Seleccione un día</option>
+      <option value="Lunes" {% if horario and horario.dia_semana == "Lunes" %}selected{% endif %}>Lunes</option>
+      <option value="Martes" {% if horario and horario.dia_semana == "Martes" %}selected{% endif %}>Martes</option>
+      <option value="Miercoles" {% if horario and horario.dia_semana == "Miercoles" %}selected{% endif %}>Miércoles</option>
+      <option value="Jueves" {% if horario and horario.dia_semana == "Jueves" %}selected{% endif %}>Jueves</option>
+      <option value="Viernes" {% if horario and horario.dia_semana == "Viernes" %}selected{% endif %}>Viernes</option>
+      <option value="Sabado" {% if horario and horario.dia_semana == "Sabado" %}selected{% endif %}>Sábado</option>
+      <option value="Domingo" {% if horario and horario.dia_semana == "Domingo" %}selected{% endif %}>Domingo</option>
+    </select>
+    <div class="form-text">Seleccione el día de la semana para el horario</div>
+  </div>
+
+  <!-- Horas -->
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label for="hora_inicio" class="form-label fw-bold">Hora de inicio *</label>
+      <input
+        type="time"
+        id="hora_inicio"
+        name="hora_inicio"
+        class="form-control"
+        value="{% if horario %}{{ horario.hora_inicio|time:'H:i' }}{% endif %}"
+      >
+      <div class="form-text">Hora de inicio de atención</div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label for="hora_fin" class="form-label fw-bold">Hora de fin *</label>
+      <input
+        type="time"
+        id="hora_fin"
+        name="hora_fin"
+        class="form-control"
+        value="{% if horario %}{{ horario.hora_fin|time:'H:i' }}{% endif %}"
+      >
+      <div class="form-text">Hora de fin de atención</div>
+    </div>
+  </div>
+
+  <!-- Fechas -->
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label for="fecha_inicio" class="form-label fw-bold">Fecha inicio *</label>
+      <input
+        type="date"
+        id="fecha_inicio"
+        name="fecha_inicio"
+        class="form-control"
+        value="{% if horario %}{{ horario.fecha_inicio }}{% else %}{{ today|default:'' }}{% endif %}"
+      >
+      <div class="form-text">Fecha de inicio del horario</div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label for="fecha_fin" class="form-label fw-bold">Fecha fin *</label>
+      <input
+        type="date"
+        id="fecha_fin"
+        name="fecha_fin"
+        class="form-control"
+        value="{% if horario %}{{ horario.fecha_fin }}{% else %}{{ today|default:'' }}{% endif %}"
+      >
+      <div class="form-text">Fecha de fin del horario</div>
+    </div>
+  </div>
+
+  <!-- Recurrente -->
+  <div class="mb-4">
+    <div class="form-check">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        id="es_recurrente"
+        name="es_recurrente"
+        {% if horario and horario.es_recurrente %}checked{% endif %}
+      >
+      <label class="form-check-label fw-bold" for="es_recurrente">
+        <i class="fas fa-sync-alt me-1"></i> Recurrente semanal
+      </label>
+    </div>
+    <div class="form-text ms-4">Marque si este horario se repite todas las semanas</div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="border-top pt-3">
+    <div class="d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        <i class="fas fa-times me-1"></i> Cancelar
+      </button>
+      <button type="submit" class="btn btn-primary btn-guardar">
+        <i class="fas fa-save me-1"></i> Guardar
+      </button>
+    </div>
+  </div>
+</form>
+
+<style>
+.is-invalid {
+    border-color: #dc3545 !important;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+.invalid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+    font-weight: 500;
+}
+
+.invalid-feedback i {
+    margin-right: 0.25rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('horario_form');
+    const formData = new FormData(form);
+
+
+    function mostrarError(input, mensaje) {
+        // Agregar clase is-invalid
+        input.classList.add('is-invalid');
+        
+        // Remover feedback existente si existe
+        const feedbackExistente = input.parentElement.querySelector('.invalid-feedback');
+        if (feedbackExistente) {
+            feedbackExistente.remove();
+        }
+        
+        // Agregar nuevo mensaje de error
+        const feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback';
+        feedback.innerHTML = `<i class="fas fa-exclamation-circle"></i>${mensaje}`;
+        input.parentElement.appendChild(feedback);
+        
+        // Hacer scroll al primer error
+        if (document.querySelector('.is-invalid') === input) {
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            input.focus();
+        }
+    }
+
+    function limpiarErrores() {
+        // Remover todas las clases is-invalid
+        form.querySelectorAll('.is-invalid').forEach(input => {
+            input.classList.remove('is-invalid');
+        });
+        
+        // Remover todos los mensajes de error
+        form.querySelectorAll('.invalid-feedback').forEach(feedback => {
+            feedback.remove();
+        });
+    }
+
+    // Limpiar errores cuando el usuario empiece a escribir
+    form.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.classList.contains('is-invalid')) {
+                this.classList.remove('is-invalid');
+                const feedback = this.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.remove();
+                }
+            }
+        });
+        
+        input.addEventListener('change', function() {
+            if (this.classList.contains('is-invalid')) {
+                this.classList.remove('is-invalid');
+                const feedback = this.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.remove();
+                }
+            }
+        });
+    });
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        limpiarErrores();
+
+        let isValid = true;
+
+        const dia = document.getElementById('dia_semana');
+        const horaInicio = document.getElementById('hora_inicio');
+        const horaFin = document.getElementById('hora_fin');
+        const fechaInicio = document.getElementById('fecha_inicio');
+        const fechaFin = document.getElementById('fecha_fin');
+// Validar doctor si es admin
+        const idDoctorSelect = document.getElementById('id_doctor');
+        if (idDoctorSelect && !idDoctorSelect.value) {
+            mostrarError(idDoctorSelect, 'Debe seleccionar un doctor');
+            isValid = false;
+        }
+        // Validaciones
+        if (!dia.value) { 
+            mostrarError(dia, 'Debe seleccionar un día de la semana'); 
+            isValid = false; 
+        }
+        
+        if (!horaInicio.value) { 
+            mostrarError(horaInicio, 'La hora de inicio es obligatoria'); 
+            isValid = false; 
+        }
+        
+        if (!horaFin.value) { 
+            mostrarError(horaFin, 'La hora de fin es obligatoria'); 
+            isValid = false; 
+        }
+        
+        if (horaInicio.value && horaFin.value && horaInicio.value >= horaFin.value) {
+            mostrarError(horaInicio, 'Debe ser menor que la hora de fin');
+            mostrarError(horaFin, 'Debe ser mayor que la hora de inicio');
+            isValid = false;
+        }
+        
+        if (!fechaInicio.value) { 
+            mostrarError(fechaInicio, 'La fecha de inicio es obligatoria'); 
+            isValid = false; 
+        }
+        
+        if (!fechaFin.value) { 
+            mostrarError(fechaFin, 'La fecha de fin es obligatoria'); 
+            isValid = false; 
+        }
+        
+        if (fechaInicio.value && fechaFin.value && fechaInicio.value > fechaFin.value) {
+            mostrarError(fechaInicio, 'Debe ser menor o igual a la fecha de fin');
+            mostrarError(fechaFin, 'Debe ser mayor o igual a la fecha de inicio');
+            isValid = false;
+        }
+
+        if (isValid) {
+            guardarFormulario(); 
+        }
+    });
+});
+</script>

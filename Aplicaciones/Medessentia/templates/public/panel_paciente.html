@@ -1,0 +1,144 @@
+{% extends "public/base_paciente.html" %}
+{% block title %}Panel del Paciente - Medessentia{% endblock %}
+{% block paciente_content %}
+<div class="container-fluid">
+  <div class="row">
+
+    <!-- Contenido Principal -->
+    <div class="col-md-9 col-lg-10 px-4 py-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 class="mb-1">
+            <i class="fas fa-tachometer-alt text-primary me-2"></i>
+            Panel de Paciente
+          </h2>
+          <p class="text-muted mb-0">Bienvenido, {{ user.first_name|default:user.username }}</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevaCitaModal"> 
+          <a href="{% url 'cita_elegir_doctor' %}" class="btn btn-primary">
+              <i class="fas fa-plus me-1"></i> Nueva Cita
+            </a>
+        </button>
+      </div>
+
+      <!-- Tarjetas resumen -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-4">
+          <div class="card border-start border-primary border-4">
+            <div class="card-body">
+              <h6 class="text-muted">Citas Pendientes</h6>
+              <h3>3</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card border-start border-success border-4">
+            <div class="card-body">
+              <h6 class="text-muted">Signos Vitales</h6>
+              <h3>{{ signos|length }}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card border-start border-info border-4">
+            <div class="card-body">
+              <h6 class="text-muted">Mi Doctor</h6>
+              <h5>Dr. López</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información Personal -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header bg-white">
+              <h5 class="mb-0">
+                <i class="fas fa-user-circle text-primary me-2"></i>
+                Mi Información Personal
+              </h5>
+            </div>
+            <div class="card-body">
+              <p><strong>Cédula:</strong> {{ perfil.cedula_usuario|default:"No registrada" }}</p>
+              <p><strong>Teléfono:</strong> {{ perfil.telefono_usuario|default:"No registrado" }}</p>
+              <p><strong>Dirección:</strong> {{ perfil.direccion_usuario|default:"No registrada" }}</p>
+              <a href="{% url 'mi_perfil' %}" class="btn btn-outline-primary">
+                <i class="fas fa-edit me-1"></i> Editar información
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Signos Vitales -->
+        <div class="col-lg-4">
+          <div class="card h-100">
+            <div class="card-header bg-white">
+              <h5 class="mb-0">
+                <i class="fas fa-heartbeat text-success me-2"></i>
+                Signos Vitales Recientes
+              </h5>
+            </div>
+            <div class="card-body">
+              {% if signos %}
+                <p><strong>Presión:</strong> {{ signos.0.presion_arterial }}</p>
+                <p><strong>Frecuencia cardíaca:</strong> {{ signos.0.frecuencia_cardiaca }} bpm</p>
+                <small class="text-muted">{{ signos.0.fecha_registro|date:"d/m/Y H:i" }}</small>
+              {% else %}
+                <p class="text-muted">No hay registros</p>
+                <a href="{% url 'signos_vitales' %}" class="btn btn-success btn-sm">
+                  Registrar ahora
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones Rápidas -->
+      <div class="card">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">
+            <i class="fas fa-bolt text-warning me-2"></i>
+            Acciones Rápidas
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <a href="{% url 'cita_elegir_doctor' %}" class="btn btn-outline-primary w-100">
+                Agendar Cita
+              </a>
+            </div>
+            <div class="col-md-4">
+              <a href="{% url 'mi_perfil' %}" class="btn btn-outline-info w-100">
+                Mi Perfil
+              </a>
+            </div>
+            <div class="col-md-4">
+              <a href="{% url 'logout' %}" class="btn btn-outline-danger w-100">
+                Cerrar Sesión
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.sidebar-paciente {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-paciente .nav-link {
+  border-radius: 8px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,311 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% block title %}Calendario de Horarios | Medessentia{% endblock %}
+{% block page_title %}Calendario de Horarios{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calendario de Horarios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        #calendar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        }
+        .fc-header-toolbar {
+            margin-bottom: 1.5em !important;
+        }
+        .fc-button {
+            text-transform: capitalize !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Calendario de Horarios</h4>
+                    <div>
+                        <a href="{% url 'horario_index' %}" class="btn btn-light btn-sm me-2">
+                            <i class="fas fa-list me-1"></i> Ver Lista
+                        </a>
+                        <button class="btn btn-light btn-sm" id="btn_nuevo_horario">
+                            <i class="fas fa-plus me-1"></i> Nuevo Horario
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="modalDisponibilidad" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-plus me-2"></i>Agregar Disponibilidad
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formDisponibilidad" autocomplete="off">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="dia_semana_select" class="form-label fw-bold">Día de la semana *</label>
+                            <select id="dia_semana_select" class="form-select" required>
+                                <option value="">Seleccione un día</option>
+                                <option value="Lunes">Lunes</option>
+                                <option value="Martes">Martes</option>
+                                <option value="Miercoles">Miércoles</option>
+                                <option value="Jueves">Jueves</option>
+                                <option value="Viernes">Viernes</option>
+                                <option value="Sabado">Sábado</option>
+                                <option value="Domingo">Domingo</option>
+                            </select>
+                            <div class="form-text">Seleccione el día de la semana para el horario</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="hora_inicio" class="form-label fw-bold">Hora inicio *</label>
+                                <input type="time" id="hora_inicio" class="form-control" required>
+                                <div class="form-text">Hora de inicio de atención</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="hora_fin" class="form-label fw-bold">Hora fin *</label>
+                                <input type="time" id="hora_fin" class="form-control" required>
+                                <div class="form-text">Hora de fin de atención</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_inicio" class="form-label fw-bold">Fecha inicio *</label>
+                                <input type="date" id="fecha_inicio" class="form-control" required>
+                                <div class="form-text">Fecha de inicio del horario</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_fin" class="form-label fw-bold">Fecha fin *</label>
+                                <input type="date" id="fecha_fin" class="form-control" required>
+                                <div class="form-text">Fecha de fin del horario</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="es_recurrente">
+                                <label class="form-check-label fw-bold" for="es_recurrente">
+                                    <i class="fas fa-sync-alt me-1"></i> Recurrente semanal
+                                </label>
+                            </div>
+                            <div class="form-text ms-4">Marque si este horario se repite todas las semanas</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="guardarDisponibilidad">
+                        <i class="fas fa-save me-1"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+    let calendar = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Iniciando módulo Calendario de Horarios...");
+
+        // Inicializar calendario
+        calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+            initialView: 'timeGridWeek',
+            locale: 'es',
+            allDaySlot: false,
+            buttonText: {
+                today: 'Hoy',
+                week: 'Semana',
+                day: 'Día',
+                list: 'Lista'
+            },
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'timeGridWeek,timeGridDay,listWeek'
+            },
+            slotMinTime: '06:00:00',
+            slotMaxTime: '22:00:00',
+            nowIndicator: true,
+            selectable: true,
+            selectMirror: true,
+            dayMaxEvents: true,
+            weekends: true,
+            editable: false,
+            eventColor: '#0d6efd',
+
+            events: function(info, success, failure) {
+                let url = "{% url 'horario_eventos' %}";
+                const doctor = $('#filtro_doctor_cal').val();
+                if (doctor) url += '?doctor_id=' + doctor;
+
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    data: {
+                        start: info.startStr,
+                        end: info.endStr
+                    },
+                    success: function(data) {
+                        success(data);
+                    },
+                    error: function(xhr) {
+                        console.error('Error al cargar eventos:', xhr);
+                        failure(xhr);
+                        Swal.fire({
+                            icon: 'error',
+                            title: '✗ Error',
+                            text: 'No se pudieron cargar los eventos del calendario',
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                });
+            },
+
+            dateClick: function(info) {
+                const fechaSeleccionada = new Date(info.dateStr);
+                const hoy = new Date();
+
+                // Normalizamos HOY a solo fecha (sin hora)
+                hoy.setHours(0, 0, 0, 0);
+                fechaSeleccionada.setHours(0, 0, 0, 0);
+
+                if (fechaSeleccionada < hoy) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⚠ Fecha no válida',
+                        text: 'Este día ya pasó y no se puede agendar.',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#0d6efd'
+                    });
+                    return;
+                }
+
+                // SI ES HOY O FUTURO, PERMITE AGENDAR
+                const date = info.dateStr.split('T')[0];
+                $('#fecha_inicio').val(date);
+                $('#fecha_fin').val(date);
+                
+                // Resetear formulario
+                $('#formDisponibilidad')[0].reset();
+                $('#fecha_inicio').val(date);
+                $('#fecha_fin').val(date);
+                
+                $('#modalDisponibilidad').modal('show');
+            }
+        });
+
+        calendar.render();
+
+        // Botón nuevo horario
+        $('#btn_nuevo_horario').on('click', function() {
+            $('#formDisponibilidad')[0].reset();
+            const hoy = new Date().toISOString().slice(0,10);
+            $('#fecha_inicio, #fecha_fin').val(hoy);
+            $('#modalDisponibilidad').modal('show');
+        });
+
+        // Guardar disponibilidad
+        $('#guardarDisponibilidad').on('click', function() {
+            const form = document.getElementById('formDisponibilidad');
+            
+            // Validar formulario
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const data = new FormData();
+            data.append('dia_semana', $('#dia_semana_select').val());
+            data.append('hora_inicio', $('#hora_inicio').val());
+            data.append('hora_fin', $('#hora_fin').val());
+            data.append('fecha_inicio', $('#fecha_inicio').val());
+            data.append('fecha_fin', $('#fecha_fin').val());
+            data.append('es_recurrente', $('#es_recurrente').is(':checked'));
+            data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            // Deshabilitar botón
+            const btnGuardar = $(this);
+            const originalHTML = btnGuardar.html();
+            btnGuardar.prop('disabled', true);
+            btnGuardar.html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
+
+            $.ajax({
+                url: "{% url 'guardar_disponibilidad' %}",
+                type: 'POST',
+                data: data,
+                processData: false,
+                contentType: false,
+                success: function(resp) {
+                    if (resp.success) {
+                        $('#modalDisponibilidad').modal('hide');
+                        calendar.refetchEvents();
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✓ Disponibilidad guardada',
+                            text: resp.message,
+                            confirmButtonColor: '#198754',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '✗ Error',
+                            text: resp.message,
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error:', xhr);
+                    Swal.fire({
+                        icon: 'error',
+                        title: '✗ Error',
+                        text: 'No se pudo guardar la disponibilidad',
+                        confirmButtonColor: '#dc3545'
+                    });
+                },
+                complete: function() {
+                    btnGuardar.prop('disabled', false);
+                    btnGuardar.html(originalHTML);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>
+{% endblock %}

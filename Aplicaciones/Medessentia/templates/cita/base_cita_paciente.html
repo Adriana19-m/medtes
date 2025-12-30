@@ -1,0 +1,26 @@
+{% extends "public/base_paciente.html" %}
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'panel_paciente' %}">Mi Panel</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'cita_elegir_doctor' %}">Citas</a></li>
+            {% block breadcrumb %}{% endblock %}
+        </ol>
+    </nav>
+    
+    <!-- Contenido específico de citas -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-calendar-alt me-2"></i>
+                {% block cita_title %}Gestión de Citas{% endblock %}
+            </h4>
+        </div>
+        <div class="card-body">
+            {% block cita_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

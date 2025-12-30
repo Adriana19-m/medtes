@@ -1,0 +1,436 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Añadir signos · {{ perfil.user.get_full_name|default:perfil.user.username }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<style>
+    .was-validated .form-control:valid {
+        border-color: #198754;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    }
+    .was-validated .form-control:invalid {
+        border-color: #dc3545;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    }
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+        display: none;
+    }
+    .is-invalid {
+        border-color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 960px;">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
+      Añadir signos · {{ perfil.user.first_name }} {{ perfil.user.last_name }}
+      <small class="text-muted d-block fs-6">@{{ perfil.user.username }}</small>
+    </h4>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'perfil_paciente' perfil.id %}">Ver ficha</a>
+      <a class="btn btn-outline-primary" href="{% url 'historia_paciente' perfil.id %}">Ver historia</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    <div class="mb-2">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form id="signosForm" method="post" class="card shadow-sm" novalidate>
+    {% csrf_token %}
+
+    <div class="card-header">
+      <strong>Nuevo registro</strong>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Fecha y hora</label>
+          <input type="text" name="fecha_registro" class="form-control"
+                 value="{{ prefill.fecha_registro|default:'' }}" placeholder="YYYY-MM-DD HH:MM">
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <h5 class="mb-2">1) Signos vitales</h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">PAS (mmHg)</label>
+          <input type="number" name="pa_sistolica" class="form-control" id="pa_sistolica"
+                 value="{{ prefill.pa_sistolica|default:'' }}" placeholder="p. ej. 120" min="70" max="250">
+          <div class="error-message" id="error_pa_sistolica">Valor debe estar entre 70 y 250 mmHg</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">PAD (mmHg)</label>
+          <input type="number" name="pa_diastolica" class="form-control" id="pa_diastolica"
+                 value="{{ prefill.pa_diastolica|default:'' }}" placeholder="p. ej. 80" min="40" max="150">
+          <div class="error-message" id="error_pa_diastolica">Valor debe estar entre 40 y 150 mmHg</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">PAM (mmHg)</label>
+          <input type="number" step="0.01" name="pa_media" class="form-control" id="pa_media"
+                 value="{{ prefill.pa_media|default:'' }}" placeholder="Se calcula si se deja vacío" min="50" max="180">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Temperatura (°C)</label>
+          <input type="number" step="0.1" name="temperatura" class="form-control" id="temperatura"
+                 value="{{ prefill.temperatura|default:'' }}" required min="30" max="45">
+          <div class="error-message" id="error_temperatura">Temperatura debe estar entre 30 y 45 °C</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">FR (rpm)</label>
+          <input type="number" name="frecuencia_respiratoria" class="form-control" id="frecuencia_respiratoria"
+                 value="{{ prefill.frecuencia_respiratoria|default:'' }}" required min="8" max="60">
+          <div class="error-message" id="error_frecuencia_respiratoria">FR debe estar entre 8 y 60 rpm</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">FC (lpm)</label>
+          <input type="number" name="frecuencia_cardiaca" class="form-control" id="frecuencia_cardiaca"
+                 value="{{ prefill.frecuencia_cardiaca|default:'' }}" required min="40" max="200">
+          <div class="error-message" id="error_frecuencia_cardiaca">FC debe estar entre 40 y 200 lpm</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">SpO₂ (%)</label>
+          <input type="number" name="saturacion_oxigeno" class="form-control" id="saturacion_oxigeno"
+                 value="{{ prefill.saturacion_oxigeno|default:'' }}" required min="50" max="100">
+          <div class="error-message" id="error_saturacion_oxigeno">SpO₂ debe estar entre 50 y 100%</div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <h5 class="mb-2">2) Datos antropométricos</h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Peso (kg)</label>
+          <input id="peso" type="number" step="0.01" name="peso" class="form-control"
+                 value="{{ prefill.peso|default:'' }}" required min="1" max="300">
+          <div class="error-message" id="error_peso">Peso debe ser entre 1 y 300 kg</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Talla/Estatura (m)</label>
+          <input id="talla" type="number" step="0.01" name="talla" class="form-control"
+                 value="{{ prefill.talla|default:'' }}" required min="0.5" max="2.5" placeholder="p. ej. 1.70">
+          <div class="error-message" id="error_talla">Talla debe ser entre 0.5 y 2.5 metros</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">IMC</label>
+          <input id="imc" type="number" step="0.01" name="imc" class="form-control"
+                 value="{{ prefill.imc|default:'' }}" placeholder="Se calcula si se deja vacío" readonly>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <h5 class="mb-2">3) Mediciones capilares</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Glucosa capilar (mg/dL)</label>
+          <input type="number" step="0.1" name="glucosa_capilar" class="form-control" id="glucosa_capilar"
+                 value="{{ prefill.glucosa_capilar|default:'' }}" min="20" max="600">
+          <div class="error-message" id="error_glucosa_capilar">Glucosa debe estar entre 20 y 600 mg/dL</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Hemoglobina (g/dL)</label>
+          <input type="number" step="0.1" name="hemoglobina" class="form-control" id="hemoglobina"
+                 value="{{ prefill.hemoglobina|default:'' }}" min="5" max="25">
+          <div class="error-message" id="error_hemoglobina">Hemoglobina debe estar entre 5 y 25 g/dL</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer d-flex gap-2">
+      <button type="submit" class="btn btn-primary" id="submitBtn">Guardar signos</button>
+      <a class="btn btn-outline-secondary" href="{% url 'historia_paciente' perfil.id %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// Función para mostrar errores
+function mostrarError(campoId, mensaje, mostrar = true) {
+    const campo = document.getElementById(campoId);
+    const errorDiv = document.getElementById('error_' + campoId);
+    
+    if (mostrar) {
+        campo.classList.add('is-invalid');
+        errorDiv.textContent = mensaje;
+        errorDiv.style.display = 'block';
+    } else {
+        campo.classList.remove('is-invalid');
+        errorDiv.style.display = 'none';
+    }
+}
+
+// Validaciones en tiempo real
+function validarCampo(campoId, min, max, mensaje) {
+    const campo = document.getElementById(campoId);
+    const valor = campo.value.trim();
+    
+    if (valor === '') {
+        mostrarError(campoId, 'Este campo es obligatorio', campo.required);
+        return false;
+    }
+    
+    const numValor = parseFloat(valor);
+    if (isNaN(numValor) || numValor < min || numValor > max) {
+        mostrarError(campoId, mensaje);
+        return false;
+    }
+    
+    mostrarError(campoId, '', false);
+    return true;
+}
+
+// Validación especial para presión arterial
+function validarPresionArterial() {
+    const pas = document.getElementById('pa_sistolica').value.trim();
+    const pad = document.getElementById('pa_diastolica').value.trim();
+    let valido = true;
+    
+    if (pas && pad) {
+        const pasNum = parseInt(pas);
+        const padNum = parseInt(pad);
+        
+        if (pasNum <= padNum) {
+            mostrarError('pa_sistolica', 'PAS debe ser mayor que PAD');
+            mostrarError('pa_diastolica', 'PAD debe ser menor que PAS');
+            valido = false;
+        } else {
+            mostrarError('pa_sistolica', '', false);
+            mostrarError('pa_diastolica', '', false);
+        }
+    }
+    
+    return valido;
+}
+
+// Calcula IMC en cliente si el campo está vacío
+function calcularIMC() {
+    const peso = parseFloat(document.getElementById('peso').value);
+    const talla = parseFloat(document.getElementById('talla').value);
+    const imcField = document.getElementById('imc');
+    
+    if (peso > 0 && talla > 0) {
+        const imc = peso / (talla * talla);
+        imcField.value = imc.toFixed(2);
+        
+        // Validar IMC
+        if (imc < 10 || imc > 70) {
+            mostrarError('peso', 'Valores generan IMC no realista. Verifica peso/talla');
+            return false;
+        }
+    }
+    return true;
+}
+
+// Calcular PAM automáticamente
+function calcularPAM() {
+    const pasField = document.getElementById('pa_sistolica');
+    const padField = document.getElementById('pa_diastolica');
+    const pamField = document.getElementById('pa_media');
+    
+    const pas = parseInt(pasField.value);
+    const pad = parseInt(padField.value);
+    
+    if (pas && pad && !pamField.value && pas > pad) {
+        const pam = ((2 * pad) + pas) / 3;
+        pamField.value = pam.toFixed(2);
+    }
+}
+
+// Validar todo el formulario
+function validarFormulario() {
+    let valido = true;
+    
+    // Validar campos obligatorios
+    const camposObligatorios = [
+        {id: 'temperatura', min: 30, max: 45, msg: 'Temperatura debe estar entre 30 y 45 °C'},
+        {id: 'frecuencia_respiratoria', min: 8, max: 60, msg: 'FR debe estar entre 8 y 60 rpm'},
+        {id: 'frecuencia_cardiaca', min: 40, max: 200, msg: 'FC debe estar entre 40 y 200 lpm'},
+        {id: 'saturacion_oxigeno', min: 50, max: 100, msg: 'SpO₂ debe estar entre 50 y 100%'},
+        {id: 'peso', min: 1, max: 300, msg: 'Peso debe ser entre 1 y 300 kg'},
+        {id: 'talla', min: 0.5, max: 2.5, msg: 'Talla debe ser entre 0.5 y 2.5 metros'}
+    ];
+    
+    camposObligatorios.forEach(campo => {
+        if (!validarCampo(campo.id, campo.min, campo.max, campo.msg)) {
+            valido = false;
+        }
+    });
+    
+    // Validar campos opcionales
+    const camposOpcionales = [
+        {id: 'pa_sistolica', min: 70, max: 250, msg: 'PAS debe estar entre 70 y 250 mmHg'},
+        {id: 'pa_diastolica', min: 40, max: 150, msg: 'PAD debe estar entre 40 y 150 mmHg'},
+        {id: 'glucosa_capilar', min: 20, max: 600, msg: 'Glucosa debe estar entre 20 y 600 mg/dL'},
+        {id: 'hemoglobina', min: 5, max: 25, msg: 'Hemoglobina debe estar entre 5 y 25 g/dL'}
+    ];
+    
+    camposOpcionales.forEach(campo => {
+        const valor = document.getElementById(campo.id).value.trim();
+        if (valor !== '') {
+            if (!validarCampo(campo.id, campo.min, campo.max, campo.msg)) {
+                valido = false;
+            }
+        }
+    });
+    
+    // Validaciones especiales
+    if (!validarPresionArterial()) valido = false;
+    if (!calcularIMC()) valido = false;
+    
+    return valido;
+}
+
+// Event Listeners para validación en tiempo real
+document.addEventListener('DOMContentLoaded', function() {
+    // Validar al salir de cada campo
+    const campos = document.querySelectorAll('input[type="number"]');
+    campos.forEach(campo => {
+        campo.addEventListener('blur', function() {
+            const id = this.id;
+            
+            // Mapeo de validaciones por campo
+            const validaciones = {
+                'temperatura': () => validarCampo(id, 30, 45, 'Temperatura debe estar entre 30 y 45 °C'),
+                'frecuencia_respiratoria': () => validarCampo(id, 8, 60, 'FR debe estar entre 8 y 60 rpm'),
+                'frecuencia_cardiaca': () => validarCampo(id, 40, 200, 'FC debe estar entre 40 y 200 lpm'),
+                'saturacion_oxigeno': () => validarCampo(id, 50, 100, 'SpO₂ debe estar entre 50 y 100%'),
+                'peso': () => { 
+                    const valido = validarCampo(id, 1, 300, 'Peso debe ser entre 1 y 300 kg');
+                    calcularIMC();
+                    return valido;
+                },
+                'talla': () => { 
+                    const valido = validarCampo(id, 0.5, 2.5, 'Talla debe ser entre 0.5 y 2.5 metros');
+                    calcularIMC();
+                    return valido;
+                },
+                'pa_sistolica': () => {
+                    validarCampo(id, 70, 250, 'PAS debe estar entre 70 y 250 mmHg');
+                    validarPresionArterial();
+                    calcularPAM();
+                },
+                'pa_diastolica': () => {
+                    validarCampo(id, 40, 150, 'PAD debe estar entre 40 y 150 mmHg');
+                    validarPresionArterial();
+                    calcularPAM();
+                },
+                'glucosa_capilar': () => validarCampo(id, 20, 600, 'Glucosa debe estar entre 20 y 600 mg/dL'),
+                'hemoglobina': () => validarCampo(id, 5, 25, 'Hemoglobina debe estar entre 5 y 25 g/dL')
+            };
+            
+            if (validaciones[id]) validaciones[id]();
+        });
+    });
+    
+    // Cálculo automático de IMC cuando cambian peso o talla
+    document.getElementById('peso')?.addEventListener('input', calcularIMC);
+    document.getElementById('talla')?.addEventListener('input', calcularIMC);
+    
+    // Cálculo automático de PAM
+    document.getElementById('pa_sistolica')?.addEventListener('input', calcularPAM);
+    document.getElementById('pa_diastolica')?.addEventListener('input', calcularPAM);
+    
+    // Interceptar el envío del formulario
+    document.getElementById('signosForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (validarFormulario()) {
+            // Mostrar SweetAlert de confirmación
+            Swal.fire({
+                title: '¿Guardar signos vitales?',
+                text: '¿Estás seguro de que deseas guardar estos signos vitales?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, guardar',
+                cancelButtonText: 'Cancelar',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    // Enviar formulario después de confirmar
+                    return fetch(this.action || window.location.href, {
+                        method: 'POST',
+                        body: new FormData(this),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
+                        }
+                        return response.text();
+                    })
+                    .then(data => {
+                        // Verificar si hay errores del servidor
+                        if (data.includes('error') || data.includes('alert-danger')) {
+                            throw new Error('Error al guardar los datos');
+                        }
+                        return data;
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(
+                            `Error: ${error.message || 'No se pudo guardar'}`
+                        );
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar mensaje de éxito
+                    Swal.fire({
+                        title: '¡Guardado!',
+                        text: 'Los signos vitales se han guardado correctamente.',
+                        icon: 'success',
+                        confirmButtonColor: '#3085d6',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        // Redirigir a la historia del paciente
+                        window.location.href = "{% url 'historia_paciente' perfil.id %}";
+                    });
+                }
+            });
+        } else {
+            // Mostrar SweetAlert con errores
+            Swal.fire({
+                title: 'Errores en el formulario',
+                text: 'Por favor, corrige los errores marcados en rojo antes de enviar.',
+                icon: 'error',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Entendido'
+            });
+            
+            // Desplazarse al primer error
+            const firstError = document.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

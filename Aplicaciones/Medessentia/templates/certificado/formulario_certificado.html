@@ -1,0 +1,572 @@
+<form id="formCertificado" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="id_certificado" value="{{ item.id_certificado|default:'' }}">
+    <input type="hidden" id="id_atencion" name="id_atencion" value="{{ item.id_atencion_id|default:'' }}">
+    <input type="hidden" id="id_paciente" name="id_paciente" value="{{ item.id_paciente_id|default:'' }}">
+    <input type="hidden" id="id_doctor" name="id_doctor" value="{{ item.id_doctor_id|default:'' }}">
+    
+    <div class="row">
+        <!-- Columna Izquierda -->
+        <div class="col-md-6">
+            <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-1"></i> Información General</h6>
+            
+            <!-- Búsqueda de Atención -->
+            <div class="mb-3">
+                <label for="buscar_atencion" class="form-label fw-bold">Buscar Atención <span class="text-muted">(Opcional)</span></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="buscar_atencion" class="form-control" 
+                           placeholder="Buscar por ID o fecha de atención..."
+                           value="{% if item.id_atencion %}Atención #{{ item.id_atencion.id_atencion }} - {{ item.id_atencion.fecha_atencion|date:'d/m/Y' }}{% endif %}">
+                    <button class="btn btn-outline-secondary" type="button" onclick="limpiarAtencion()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="resultados_atencion" class="list-group mt-2" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+                <div class="form-text">La atención médica es opcional</div>
+            </div>
+
+            <!-- Búsqueda de Paciente -->
+            <div class="mb-3">
+                <label for="buscar_paciente" class="form-label fw-bold">Buscar Paciente *</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" id="buscar_paciente" class="form-control" 
+                           placeholder="Buscar por nombre o apellido..."
+                           value="{% if item.id_paciente %}{{ item.id_paciente.first_name }} {{ item.id_paciente.last_name }}{% endif %}"
+                           required>
+                </div>
+                <div id="resultados_paciente" class="list-group mt-2" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+                <small class="text-danger" id="error_paciente" style="display: none;">Debe seleccionar un paciente</small>
+            </div>
+
+            <!-- Búsqueda de Doctor -->
+            <div class="mb-3">
+                <label for="buscar_doctor" class="form-label fw-bold">Buscar Doctor *</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user-md"></i></span>
+                    <input type="text" id="buscar_doctor" class="form-control" 
+                           placeholder="Buscar por nombre..."
+                           value="{% if item.id_doctor %}Dr(a). {{ item.id_doctor.first_name }} {{ item.id_doctor.last_name }}{% endif %}"
+                           required>
+                </div>
+                <div id="resultados_doctor" class="list-group mt-2" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+                <small class="text-danger" id="error_doctor" style="display: none;">Debe seleccionar un doctor</small>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="fecha_emision" class="form-label fw-bold">Fecha de Emisión *</label>
+                    <input type="date" id="fecha_emision" name="fecha_emision"
+                        class="form-control"
+                        value="{{ item.fecha_emision|date:'Y-m-d'|default:'' }}"
+                        required>
+
+                    <small class="text-danger d-none">
+                        La fecha de emisión es obligatoria
+                    </small>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="hora_emision" class="form-label fw-bold">Hora de Emisión *</label>
+                    <input type="time" id="hora_emision" name="hora_emision" 
+                           class="form-control" 
+                           value="{{ item.hora_emision|time:'H:i'|default:'' }}" 
+                           required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="tipo_certificado" class="form-label fw-bold">Tipo de Certificado *</label>
+                <select id="tipo_certificado" name="tipo_certificado" class="form-select" required>
+                    <option value="REPOSO" {% if item.tipo_certificado == 'REPOSO' %}selected{% endif %}>Certificado de Reposo</option>
+                    <option value="APTITUD" {% if item.tipo_certificado == 'APTITUD' %}selected{% endif %}>Certificado de Aptitud</option>
+                    <option value="ENFERMEDAD" {% if item.tipo_certificado == 'ENFERMEDAD' %}selected{% endif %}>Certificado de Enfermedad</option>
+                    <option value="DISCAPACIDAD" {% if item.tipo_certificado == 'DISCAPACIDAD' %}selected{% endif %}>Certificado de Discapacidad</option>
+                    <option value="OTRO" {% if item.tipo_certificado == 'OTRO' %}selected{% endif %}>Otro Tipo</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Columna Derecha -->
+        <div class="col-md-6">
+            <h6 class="text-primary mb-3"><i class="fas fa-notes-medical me-1"></i> Detalles Médicos</h6>
+            
+            <div class="mb-3">
+                <label for="motivo" class="form-label fw-bold">Motivo del Certificado *</label>
+                <textarea id="motivo" name="motivo" class="form-control" 
+                          rows="3" required maxlength="500"
+                          placeholder="Describa el motivo del certificado...">{{ item.motivo|default:'' }}</textarea>
+                <div class="form-text">Máximo 500 caracteres</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="diagnostico" class="form-label fw-bold">Diagnóstico</label>
+                <textarea id="diagnostico" name="diagnostico" class="form-control" 
+                          rows="3" maxlength="500"
+                          placeholder="Diagnóstico médico...">{{ item.diagnostico|default:'' }}</textarea>
+            </div>
+
+            <!-- SECCIÓN DE REPOSO -->
+            <div id="seccionReposo">
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title text-success mb-3">
+                            <i class="fas fa-bed me-1"></i> Información de Reposo
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_inicio_reposo" class="form-label fw-bold">Fecha Inicio</label>
+                                <input type="date" id="fecha_inicio_reposo" name="fecha_inicio_reposo" 
+                                       class="form-control"
+                                       value="{{ item.fecha_inicio_reposo|date:'Y-m-d'|default:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="dias_reposo" class="form-label fw-bold">Días de Reposo</label>
+                                <input type="number" id="dias_reposo" name="dias_reposo" 
+                                       class="form-control" min="1" max="365"
+                                       value="{{ item.dias_reposo|default:'' }}"
+                                       placeholder="Ej: 7">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="fecha_fin_reposo" class="form-label fw-bold">Fecha Fin</label>
+                            <input type="date" id="fecha_fin_reposo" name="fecha_fin_reposo" 
+                                   class="form-control bg-light"
+                                   value="{{ item.fecha_fin_reposo|date:'Y-m-d'|default:'' }}">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Se calcula automáticamente
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fila completa para indicaciones y observaciones -->
+    <div class="row">
+        <div class="col-12">
+            <hr class="my-3">
+            <h6 class="text-primary mb-3"><i class="fas fa-clipboard-list me-1"></i> Información Adicional</h6>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label for="indicaciones" class="form-label fw-bold">Indicaciones Médicas</label>
+            <textarea id="indicaciones" name="indicaciones" class="form-control" 
+                      rows="3" maxlength="1000"
+                      placeholder="Indicaciones y recomendaciones...">{{ item.indicaciones|default:'' }}</textarea>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="observaciones" class="form-label fw-bold">Observaciones</label>
+            <textarea id="observaciones" name="observaciones" class="form-control" 
+                      rows="3" maxlength="1000"
+                      placeholder="Observaciones adicionales...">{{ item.observaciones|default:'' }}</textarea>
+        </div>
+    </div>
+    
+    <div class="border-top pt-3">
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times me-1"></i> Cancelar
+            </button>
+            <button type="button" class="btn btn-primary btn-guardar" onclick="guardarFormulario()">
+                <i class="fas fa-save me-1"></i> Guardar Certificado
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Datos para búsqueda -->
+<script id="data-atenciones" type="application/json">
+{{ atenciones|safe }}
+</script>
+<script id="data-pacientes" type="application/json">
+{{ pacientes|safe }}
+</script>
+<script id="data-doctores" type="application/json">
+{{ doctores|safe }}
+</script>
+
+<script>
+// ============================================
+// DATOS GLOBALES
+// ============================================
+let atenciones = {{ atenciones|safe }};
+let pacientes = {{ pacientes|safe }};
+let doctores = {{ doctores|safe }};
+
+// ============================================
+// FUNCIÓN PARA CALCULAR FECHA FIN DE REPOSO
+// ============================================
+function calcularFechaFinReposo() {
+    const fechaInicioInput = document.getElementById('fecha_inicio_reposo');
+    const diasReposoInput = document.getElementById('dias_reposo');
+    const fechaFinInput = document.getElementById('fecha_fin_reposo');
+    
+    if (!fechaInicioInput || !diasReposoInput || !fechaFinInput) {
+        console.log('⚠️ Elementos no encontrados');
+        return;
+    }
+    
+    const fechaInicio = fechaInicioInput.value;
+    const diasReposo = parseInt(diasReposoInput.value);
+    
+    console.log('🔄 Calculando fecha fin - Inicio:', fechaInicio, 'Días:', diasReposo);
+    
+    if (fechaInicio && !isNaN(diasReposo) && diasReposo > 0) {
+        const partes = fechaInicio.split('-');
+        const fecha = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+        
+        // Sumar los días
+        fecha.setDate(fecha.getDate() + diasReposo);
+        
+        const año = fecha.getFullYear();
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        
+        const fechaFin = `${año}-${mes}-${dia}`;
+        console.log('✅ Fecha fin calculada:', fechaFin);
+        
+        fechaFinInput.value = fechaFin;
+    } else {
+        console.log('❌ No se puede calcular - datos insuficientes');
+        fechaFinInput.value = '';
+    }
+}
+
+// ============================================
+// FUNCIÓN PARA MOSTRAR RESULTADOS DE ATENCIONES
+// ============================================
+function mostrarResultadosAtenciones(filtradas, resultados) {
+    if (filtradas.length > 0) {
+        resultados.innerHTML = filtradas.map(a => `
+            <button type="button" class="list-group-item list-group-item-action" 
+                    onclick="seleccionarAtencion(${a.id_atencion}, 'Atención #${a.id_atencion} - ${a.fecha_atencion}')">
+                <i class="fas fa-file-medical me-2"></i>
+                Atención #${a.id_atencion} - ${a.fecha_atencion}
+                <br><small class="text-muted">${a.paciente_nombre || ''}</small>
+            </button>
+        `).join('');
+        resultados.style.display = 'block';
+    } else {
+        resultados.innerHTML = '<div class="list-group-item text-muted">No se encontraron atenciones</div>';
+        resultados.style.display = 'block';
+    }
+}
+
+function seleccionarAtencion(id, texto) {
+    document.getElementById('id_atencion').value = id;
+    document.getElementById('buscar_atencion').value = texto;
+    document.getElementById('resultados_atencion').style.display = 'none';
+}
+
+function limpiarAtencion() {
+    document.getElementById('id_atencion').value = '';
+    document.getElementById('buscar_atencion').value = '';
+    document.getElementById('resultados_atencion').style.display = 'none';
+}
+
+// ============================================
+// BÚSQUEDA DE PACIENTES
+// ============================================
+function seleccionarPaciente(id, nombre) {
+    document.getElementById('id_paciente').value = id;
+    document.getElementById('buscar_paciente').value = nombre;
+    document.getElementById('resultados_paciente').style.display = 'none';
+    document.getElementById('error_paciente').style.display = 'none';
+}
+
+// ============================================
+// BÚSQUEDA DE DOCTORES
+// ============================================
+function seleccionarDoctor(id, nombre) {
+    document.getElementById('id_doctor').value = id;
+    document.getElementById('buscar_doctor').value = nombre;
+    document.getElementById('resultados_doctor').style.display = 'none';
+    document.getElementById('error_doctor').style.display = 'none';
+}
+
+// ============================================
+// VALIDACIÓN DEL FORMULARIO
+// ============================================
+function validarFormulario() {
+    let valido = true;
+
+    const validarCampo = (inputId, errorMsg) => {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        const errorElement = input.closest('.mb-3')?.querySelector('.text-danger');
+
+        if (!input.value.trim()) {
+            input.classList.add('is-invalid');
+            if (errorElement) {
+                errorElement.textContent = errorMsg;
+                errorElement.classList.remove('d-none');
+            }
+            valido = false;
+        } else {
+            input.classList.remove('is-invalid');
+            if (errorElement) errorElement.classList.add('d-none');
+        }
+    };
+
+    const validarBusqueda = (hiddenId, inputId, errorId) => {
+        const hidden = document.getElementById(hiddenId);
+        const input = document.getElementById(inputId);
+        const error = document.getElementById(errorId);
+
+        if (!hidden || !input || !error) return;
+
+        if (!hidden.value) {
+            input.classList.add('is-invalid');
+            error.style.display = 'block';
+            valido = false;
+        } else {
+            input.classList.remove('is-invalid');
+            error.style.display = 'none';
+        }
+    };
+
+    // Validaciones obligatorias
+    validarBusqueda('id_paciente', 'buscar_paciente', 'error_paciente');
+    validarBusqueda('id_doctor', 'buscar_doctor', 'error_doctor');
+    validarCampo('fecha_emision', 'La fecha de emisión es obligatoria');
+    validarCampo('hora_emision', 'La hora de emisión es obligatoria');
+    validarCampo('motivo', 'El motivo del certificado es obligatorio');
+    validarCampo('tipo_certificado', 'Debe seleccionar un tipo de certificado');
+
+    
+    const tipoCertificado = document.getElementById('tipo_certificado');
+    if (tipoCertificado && tipoCertificado.value === 'REPOSO') {
+        validarCampo('fecha_inicio_reposo', 'La fecha de inicio es obligatoria');
+        validarCampo('dias_reposo', 'Los días de reposo son obligatorios');
+        validarCampo('fecha_fin_reposo', 'La fecha de fin es obligatoria');
+    }
+    
+
+    return valido;
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM cargado - Esperando formulario...');
+    
+
+    inicializarFormularioCertificado();
+});
+
+
+function inicializarFormularioCertificado() {
+    console.log('🔧 Iniciando inicialización del formulario...');
+    
+    const tipoSelect = document.getElementById('tipo_certificado');
+    const seccionReposo = document.getElementById('seccionReposo');
+    const fechaInicioReposo = document.getElementById('fecha_inicio_reposo');
+    const diasReposo = document.getElementById('dias_reposo');
+    const fechaFinReposo = document.getElementById('fecha_fin_reposo');
+    const fechaEmision = document.getElementById('fecha_emision');
+    const horaEmision = document.getElementById('hora_emision');
+
+    if (!tipoSelect || !fechaInicioReposo || !diasReposo) {
+        console.warn('⚠️ Formulario aún no disponible');
+        return;
+    }
+
+    console.log('✅ Elementos encontrados, configurando eventos...');
+
+
+    function toggleSeccionReposo() {
+       
+        seccionReposo.style.display = 'block';
+        console.log('📋 Sección de reposo siempre visible');
+    }
+
+    tipoSelect.addEventListener('change', toggleSeccionReposo);
+    
+  
+    fechaInicioReposo.addEventListener('change', function() {
+        console.log('📅 Cambio en fecha inicio:', this.value);
+        calcularFechaFinReposo();
+    });
+    
+    diasReposo.addEventListener('input', function() {
+        console.log('🔢 Input en días:', this.value);
+        calcularFechaFinReposo();
+    });
+    
+    diasReposo.addEventListener('change', function() {
+        console.log('🔢 Change en días:', this.value);
+        calcularFechaFinReposo();
+    });
+
+  
+    let timeoutAtencion = null;
+    const buscarAtencion = document.getElementById('buscar_atencion');
+    if (buscarAtencion) {
+        buscarAtencion.addEventListener('input', function(e) {
+            clearTimeout(timeoutAtencion);
+            const query = e.target.value.toLowerCase().trim();
+            const resultados = document.getElementById('resultados_atencion');
+            
+            resultados.style.display = 'none';
+            
+            if (query === '') return;
+            
+            timeoutAtencion = setTimeout(() => {
+                let filtradas = [];
+                
+                if (/^\d+$/.test(query)) {
+                    filtradas = atenciones.filter(a => a.id_atencion.toString() === query);
+                } else if (query.includes('/')) {
+                    filtradas = atenciones.filter(a => a.fecha_atencion.includes(query));
+                } else {
+                    filtradas = atenciones.filter(a => {
+                        const searchText = `${a.id_atencion} ${a.paciente_nombre || ''} ${a.motivo_consulta || ''}`.toLowerCase();
+                        return searchText.includes(query);
+                    });
+                }
+                
+                mostrarResultadosAtenciones(filtradas, resultados);
+            }, 300);
+        });
+    }
+
+    
+    let timeoutPaciente = null;
+    const buscarPaciente = document.getElementById('buscar_paciente');
+    if (buscarPaciente) {
+        buscarPaciente.addEventListener('input', function(e) {
+            clearTimeout(timeoutPaciente);
+            const query = e.target.value.toLowerCase().trim();
+            const resultados = document.getElementById('resultados_paciente');
+            
+            document.getElementById('id_paciente').value = '';
+            document.getElementById('error_paciente').style.display = 'none';
+            
+            if (query.length < 2) {
+                resultados.style.display = 'none';
+                return;
+            }
+            
+            timeoutPaciente = setTimeout(() => {
+                const filtrados = pacientes.filter(p => {
+                    const nombre = `${p.first_name} ${p.last_name} ${p.username}`.toLowerCase();
+                    return nombre.includes(query);
+                });
+                
+                if (filtrados.length > 0) {
+                    resultados.innerHTML = filtrados.map(p => `
+                        <button type="button" class="list-group-item list-group-item-action" 
+                                onclick="seleccionarPaciente(${p.id}, '${p.first_name} ${p.last_name}')">
+                            <i class="fas fa-user me-2"></i>
+                            ${p.first_name} ${p.last_name}
+                            ${p.username ? `<small class="text-muted">(${p.username})</small>` : ''}
+                        </button>
+                    `).join('');
+                    resultados.style.display = 'block';
+                } else {
+                    resultados.innerHTML = '<div class="list-group-item text-muted">No se encontraron pacientes</div>';
+                    resultados.style.display = 'block';
+                }
+            }, 300);
+        });
+    }
+
+  
+    let timeoutDoctor = null;
+    const buscarDoctor = document.getElementById('buscar_doctor');
+    if (buscarDoctor) {
+        buscarDoctor.addEventListener('input', function(e) {
+            clearTimeout(timeoutDoctor);
+            const query = e.target.value.toLowerCase().trim();
+            const resultados = document.getElementById('resultados_doctor');
+            
+            document.getElementById('id_doctor').value = '';
+            document.getElementById('error_doctor').style.display = 'none';
+            
+            if (query.length < 2) {
+                resultados.style.display = 'none';
+                return;
+            }
+            
+            timeoutDoctor = setTimeout(() => {
+                const filtrados = doctores.filter(d => {
+                    const nombre = `${d.first_name} ${d.last_name}`.toLowerCase();
+                    return nombre.includes(query);
+                });
+                
+                if (filtrados.length > 0) {
+                    resultados.innerHTML = filtrados.map(d => `
+                        <button type="button" class="list-group-item list-group-item-action" 
+                                onclick="seleccionarDoctor(${d.id}, 'Dr(a). ${d.first_name} ${d.last_name}')">
+                            <i class="fas fa-user-md me-2"></i>
+                            Dr(a). ${d.first_name} ${d.last_name}
+                        </button>
+                    `).join('');
+                    resultados.style.display = 'block';
+                } else {
+                    resultados.innerHTML = '<div class="list-group-item text-muted">No se encontraron doctores</div>';
+                    resultados.style.display = 'block';
+                }
+            }, 300);
+        });
+    }
+
+    // ============================================
+    // CERRAR RESULTADOS AL HACER CLICK FUERA
+    // ============================================
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#buscar_atencion') && !e.target.closest('#resultados_atencion')) {
+            const resultados = document.getElementById('resultados_atencion');
+            if (resultados) resultados.style.display = 'none';
+        }
+        if (!e.target.closest('#buscar_paciente') && !e.target.closest('#resultados_paciente')) {
+            const resultados = document.getElementById('resultados_paciente');
+            if (resultados) resultados.style.display = 'none';
+        }
+        if (!e.target.closest('#buscar_doctor') && !e.target.closest('#resultados_doctor')) {
+            const resultados = document.getElementById('resultados_doctor');
+            if (resultados) resultados.style.display = 'none';
+        }
+    });
+
+    // ============================================
+    // ESTABLECER FECHA Y HORA ACTUAL
+    // ============================================
+    if (fechaEmision && !fechaEmision.value) {
+        const hoy = new Date();
+        const año = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        fechaEmision.value = `${año}-${mes}-${dia}`;
+    }
+    
+    if (horaEmision && !horaEmision.value) {
+        const ahora = new Date();
+        const horas = String(ahora.getHours()).padStart(2, '0');
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        horaEmision.value = `${horas}:${minutos}`;
+    }
+
+    // ============================================
+    // INICIALIZACIÓN FINAL
+    // ============================================
+    toggleSeccionReposo();
+
+    // Si hay datos existentes, calcular fecha fin
+    setTimeout(function() {
+        if (fechaInicioReposo.value && diasReposo.value) {
+            console.log('🔄 Calculando fecha fin con datos existentes...');
+            calcularFechaFinReposo();
+        }
+    }, 100);
+
+    console.log('✅ Formulario completamente inicializado');
+}
+</script>

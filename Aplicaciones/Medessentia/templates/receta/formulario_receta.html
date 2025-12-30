@@ -1,0 +1,163 @@
+<form id="formReceta" novalidate autocomplete="off">
+    {% csrf_token %}
+
+    <input type="hidden" name="id_receta" value="{{ receta.id_receta|default:'' }}">
+    <input type="hidden" name="id_historia" value="{{ historia.id_historia }}">
+
+    <!-- Información de la Receta -->
+    <div class="mb-4">
+        <h6 class="border-bottom pb-2 fw-bold">
+            <i class="fas fa-info-circle me-2"></i>Información de la Receta
+        </h6>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Paciente</label>
+                <input type="text" class="form-control" value="{{ paciente_nombre }}" readonly>
+                <div class="form-text">Paciente asignado a esta receta</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Expediente</label>
+                <input type="text" class="form-control" value="{{ expediente_no }}" readonly>
+                <div class="form-text">Número de expediente clínico</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Motivo *</label>
+                <input type="text" name="motivo" class="form-control"
+                       value="{{ receta.motivo|default:'' }}" 
+                       placeholder="Motivo de la receta"
+                       required>
+                <div class="form-text">Motivo o diagnóstico de la receta</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medicamentos -->
+    <div class="border-top pt-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 fw-bold">
+                <i class="fas fa-pills me-2"></i>Medicamentos Recetados
+            </h6>
+            <button type="button" class="btn btn-primary btn-sm" id="btnAgregarMedicamento">
+                <i class="fas fa-plus me-1"></i>Agregar Medicamento
+            </button>
+        </div>
+
+        <div id="seccionMedicamentos">
+            {% if receta %}
+                {% for detalle in receta.detalles.all %}
+                <div class="card mb-2 medicamento-item">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                        <strong><i class="fas fa-pills me-1"></i>Medicamento {{ forloop.counter }}</strong>
+                        <button type="button" class="btn btn-sm btn-danger eliminar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label fw-bold">Medicamento *</label>
+                                <input class="form-control" name="detalles[{{ forloop.counter0 }}][medicamento]" 
+                                       value="{{ detalle.medicamento }}" placeholder="Nombre del medicamento" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label fw-bold">Concentración</label>
+                                <input class="form-control" name="detalles[{{ forloop.counter0 }}][concentracion]" 
+                                       value="{{ detalle.concentracion|default:'' }}" placeholder="Ej: 500mg">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label fw-bold">Presentación</label>
+                                <input class="form-control" name="detalles[{{ forloop.counter0 }}][presentacion]" 
+                                       value="{{ detalle.presentacion|default:'' }}" placeholder="Ej: Tabletas">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold">Dosis *</label>
+                                <input class="form-control" name="detalles[{{ forloop.counter0 }}][dosis]" 
+                                       value="{{ detalle.dosis }}" placeholder="Ej: 1 tableta" required>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold">Frecuencia *</label>
+                                <input class="form-control" name="detalles[{{ forloop.counter0 }}][frecuencia]" 
+                                       value="{{ detalle.frecuencia }}" placeholder="Ej: Cada 8 horas" required>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <label class="form-label fw-bold">Días *</label>
+                                <input class="form-control" type="number" min="1" 
+                                       name="detalles[{{ forloop.counter0 }}][duracion_dias]" 
+                                       value="{{ detalle.duracion_dias }}" placeholder="7" required>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <label class="form-label fw-bold">Cantidad *</label>
+                                <input class="form-control" type="number" min="1" 
+                                       name="detalles[{{ forloop.counter0 }}][cantidad_total]" 
+                                       value="{{ detalle.cantidad_total }}" placeholder="21" required>
+                            </div>
+                            <div class="col-md-12 mb-2">
+                                <label class="form-label fw-bold">Vía de Administración *</label>
+                                <select class="form-select" name="detalles[{{ forloop.counter0 }}][via_administracion]" required>
+                                    <option value="">Seleccione una vía...</option>
+                                    <option value="ORAL" {% if detalle.via_administracion == 'ORAL' %}selected{% endif %}>ORAL</option>
+                                    <option value="INYECTABLE" {% if detalle.via_administracion == 'INYECTABLE' %}selected{% endif %}>INYECTABLE</option>
+                                    <option value="TOPICA" {% if detalle.via_administracion == 'TOPICA' %}selected{% endif %}>TÓPICA</option>
+                                    <option value="INHALATORIA" {% if detalle.via_administracion == 'INHALATORIA' %}selected{% endif %}>INHALATORIA</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label fw-bold">Indicaciones</label>
+                                <textarea class="form-control" name="detalles[{{ forloop.counter0 }}][indicaciones]" 
+                                          placeholder="Instrucciones de uso" rows="2">{{ detalle.indicaciones|default:'' }}</textarea>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label fw-bold">Advertencias</label>
+                                <textarea class="form-control" name="detalles[{{ forloop.counter0 }}][advertencias]" 
+                                          placeholder="Advertencias o precauciones" rows="2">{{ detalle.advertencias|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="mb-4">
+        <label class="form-label fw-bold">
+            <i class="fas fa-comment-medical me-2"></i>Observaciones Generales
+        </label>
+        <textarea name="observaciones" class="form-control" rows="3" 
+                  placeholder="Observaciones adicionales sobre la receta...">{{ receta.observaciones|default:'' }}</textarea>
+        <div class="form-text">Comentarios adicionales o instrucciones generales</div>
+    </div>
+
+    <!-- Botones -->
+    <div class="border-top pt-3">
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" id="btnCancelarReceta">
+                <i class="fas fa-times me-1"></i> Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary btn-guardar">
+                <i class="fas fa-save me-1"></i> Guardar Receta
+            </button>
+        </div>
+    </div>
+</form>
+<style>
+    .is-invalid {
+        border-color: #dc3545;
+    }
+</style>
+
+<script>
+// Este script se ejecuta cuando el formulario es cargado dinámicamente
+document.addEventListener('DOMContentLoaded', function() {
+    const formReceta = document.getElementById('formReceta');
+    if (formReceta) {
+        // Enfocar el primer campo editable
+        const motivo = formReceta.querySelector('[name="motivo"]');
+        if (motivo) {
+            motivo.focus();
+            motivo.select();
+        }
+    }
+});
+</script>

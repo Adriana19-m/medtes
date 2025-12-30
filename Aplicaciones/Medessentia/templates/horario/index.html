@@ -1,0 +1,432 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% block title %}Horarios Doctor | Medessentia{% endblock %}
+{% block page_title %}Horarios Doctor{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Horarios Doctor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .table-actions {
+            white-space: nowrap;
+        }
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-clock me-2"></i>Gestión de Horarios</h4>
+                    <div>
+                        <a href="{% url 'horario_calendario' %}" class="btn btn-light btn-sm me-2">
+                            <i class="fas fa-calendar me-1"></i> Calendario
+                        </a>
+                        <button class="btn btn-light btn-sm" onclick="abrirFormulario()">
+                            <i class="fas fa-plus me-1"></i> Nuevo
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Barra de búsqueda -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="inputBuscar" placeholder="Buscar por el día...">
+                            <button class="btn btn-outline-primary" type="button" onclick="buscar()">
+                                <i class="fas fa-search me-1"></i> Buscar
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
+                                <i class="fas fa-times me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla -->
+                <div class="table-responsive">
+                    <table id="tablaHorarios" class="table table-striped table-bordered" style="width:100%">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="60">ID</th>
+                                <th>Doctor</th>
+                                <th width="120">Día</th>
+                                <th width="100">Inicio</th>
+                                <th width="100">Fin</th>
+                                <th width="120">Fecha inicio</th>
+                                <th width="120">Fecha fin</th>
+                                <th width="150" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Los datos se cargan via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="modalFormulario" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalTitulo">
+                        <i class="fas fa-edit me-2"></i>Horario - Nuevo Registro
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalContenido">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary"></div>
+                        <p class="mt-2">Cargando formulario...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+    let tabla = null;
+    let modal = null;
+
+    // Función para obtener el CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Inicializar cuando el documento esté listo
+    $(document).ready(function() {
+        console.log("Iniciando módulo Horarios Doctor...");
+        
+        // Inicializar modal
+        modal = new bootstrap.Modal(document.getElementById('modalFormulario'));
+        
+        // Inicializar tabla
+        inicializarTabla();
+        
+        // Cargar datos iniciales
+        cargarHorarios();
+
+        // Buscar con Enter
+        $('#inputBuscar').on('keypress', function(e) {
+            if (e.which === 13) {
+                buscar();
+            }
+        });
+    });
+
+    function inicializarTabla() {
+        tabla = $('#tablaHorarios').DataTable({
+            data: [],
+            columns: [
+                { data: 'id_horario' },
+                { data: 'doctor_nombre' },
+                { 
+                    data: 'dia_semana',
+                    render: function(data) {
+                        return '<span class="badge bg-primary">' + data + '</span>';
+                    }
+                },
+                { data: 'hora_inicio' },
+                { data: 'hora_fin' },
+                { data: 'fecha_inicio' },
+                { data: 'fecha_fin' },
+                {
+                    data: null,
+                    className: 'table-actions text-center',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary btn-action" 
+                                        onclick="editarHorario(${row.id_horario})" 
+                                        title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-action" 
+                                        onclick="eliminarHorario(${row.id_horario})" 
+                                        title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            ],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            },
+            pageLength: 10,
+            order: [[2, 'asc']]
+        });
+    }
+
+    function cargarHorarios() {
+        $.ajax({
+            url: '{% url "horario_listar" %}',
+            type: 'GET',
+            success: function(response) {
+                if (response.data) {
+                    tabla.clear().rows.add(response.data).draw();
+                }
+            },
+            error: function(xhr) {
+                console.error('Error al cargar datos:', xhr);
+                alert('Error al cargar los horarios');
+            }
+        });
+    }
+
+    function buscar() {
+        Swal.fire({
+            title: 'Buscar Horarios',
+            input: 'text',
+            inputLabel: 'Ingrese el día, hora...',
+            inputPlaceholder: 'Ej: Lunes',
+            showCancelButton: true,
+            confirmButtonText: 'Buscar',
+            cancelButtonText: 'Cancelar',
+            inputValue: $('#inputBuscar').val()  // Mantener valor actual
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const valor = result.value;
+                $('#inputBuscar').val(valor);  // Actualiza el input normal
+                tabla.search(valor).draw();    // Filtra la tabla
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Resultados filtrados',
+                    text: `Se filtraron los horarios con: "${valor}"`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }
+
+
+    function limpiarBusqueda() {
+        Swal.fire({
+            title: '¿Limpiar búsqueda?',
+            text: "Se eliminará el filtro actual de la tabla.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, limpiar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('#inputBuscar').val('');
+                tabla.search('').draw();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Filtro eliminado',
+                    timer: 1200,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }
+
+    function abrirFormulario(id = null) {
+        let url = "{% url 'horario_formulario' %}";
+        if (id) url += '?id=' + id;
+
+        const titulo = id ? 'Editar Registro' : 'Nuevo Registro';
+        $('#modalTitulo').html('<i class="fas fa-edit me-2"></i>Horario - ' + titulo);
+
+        // Vaciar contenido anterior
+        $('#modalContenido').html(`
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary"></div>
+                <p class="mt-2">Cargando formulario...</p>
+            </div>
+        `);
+
+        modal.show();
+
+        // Cargar formulario
+        $('#modalContenido').load(url, function(response, status) {
+            if (status === 'error') {
+                $('#modalContenido').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error: No se pudo cargar el formulario
+                    </div>
+                `);
+                return;
+            }
+
+            // Asegurarnos de quitar handlers previos
+            $('#horario_form').off('submit');
+            $('#horario_form').on('submit', function(e) {
+                e.preventDefault();
+                guardarFormulario(id); // Pasamos id para saber si es edición
+            });
+        });
+    }
+
+   function guardarFormulario() {
+        const form = document.getElementById('horario_form');
+
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        // Crear FormData en lugar de objeto
+        const formData = new FormData(form);
+        
+        // Para debug: mostrar datos del FormData
+        console.log('Datos del FormData:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
+
+        $.ajax({
+            url: "{% url 'guardar_disponibilidad' %}",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {'X-CSRFToken': csrftoken},
+            success: function(resp) {
+                if (resp.success) {
+                    modal.hide();
+                    cargarHorarios(); // Recargar toda la tabla
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Guardado exitoso',
+                        text: resp.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: resp.message
+                    });
+                }
+            },
+            error: function(xhr) {
+                console.error('Error completo:', xhr);
+                console.error('Response:', xhr.responseText);
+                
+                let errorMsg = 'No se pudo guardar el horario';
+                try {
+                    const resp = JSON.parse(xhr.responseText);
+                    if (resp.message) {
+                        errorMsg = resp.message;
+                    }
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                }
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMsg
+                });
+            }
+        });
+    }
+
+
+    
+
+    function editarHorario(id) {
+        Swal.fire({
+            title: 'Editar horario',
+            text: "¿Desea editar este horario?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, editar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                abrirFormulario(id);
+            }
+        });
+    }
+
+    
+    function eliminarHorario(id) {
+        Swal.fire({
+            title: 'Eliminar horario',
+            text: "¿Está seguro de que desea eliminar este horario? Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "{% url 'horario_eliminar' %}",
+                    type: "POST",
+                    data: { id: id },
+                    headers: {'X-CSRFToken': csrftoken},
+                    success: function(resp) {
+                        if (resp.success) {
+                            cargarHorarios();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Horario eliminado',
+                                text: resp.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: resp.message
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error:', xhr);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo eliminar el horario'
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    </script>
+</body>
+</html>
+{% endblock %}

@@ -1,0 +1,677 @@
+<form id="formAtencion" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="id_atencion" value="{{ atencion.id_atencion|default:'' }}">
+    
+    <!-- Acordeón Principal -->
+    <div class="accordion" id="accordionAtencion">
+        
+        <!-- 1. IDENTIFICACIÓN -->
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#seccion1">
+                    <i class="fas fa-user me-2"></i>1. IDENTIFICACIÓN DEL PACIENTE
+                </button>
+            </h2>
+            <div id="seccion1" class="accordion-collapse collapse show" data-bs-parent="#accordionAtencion">
+                <div class="accordion-body">
+                    <!-- Búsqueda de historia clínica -->
+                    <div class="card border-primary mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-search me-2"></i>Buscar Historia Clínica
+                        </div>
+                        <div class="card-body">
+                            <input type="hidden" name="historia_id" id="historia_id" value="{{ atencion.id_historia.id_historia|default:'' }}">
+                            
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Buscar Paciente/Historia <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.6em; padding: 2px 6px;">Campo obligatorio</span></label>
+                                    <input type="text" class="form-control" id="buscarHistoriaInput" 
+                                           placeholder="Escriba expediente, nombre o cédula del paciente..." 
+                                           value="{% if atencion %}{{ atencion.id_historia.expediente_no }} - {{ atencion.id_historia.nombres_completos }}{% endif %}">
+                                    <div id="resultadosBusquedaHistoria" class="list-group mt-2" style="display:none; max-height:200px; overflow-y:auto; position:absolute; z-index:1000; width:calc(66.666% - 1rem);"></div>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="button" class="btn btn-success w-100" onclick="abrirNuevaHistoria()">
+                                        <i class="fas fa-file-medical me-2"></i>Nueva Historia
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="historiaSeleccionada" class="alert alert-success mt-3" style="display:{% if atencion %}block{% else %}none{% endif %}">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Paciente seleccionado:</strong> 
+                                <span id="nombrePacienteSeleccionado">
+                                    {% if atencion %}{{ atencion.id_historia.expediente_no }} - {{ atencion.id_historia.nombres_completos }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Doctor Responsable</label>
+                            <input type="text" class="form-control" value="{{ usuario_actual.first_name }} {{ usuario_actual.last_name }}" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Fecha y Hora <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.6em; padding: 2px 6px;">Obligatorio</span></label>
+                            <input type="datetime-local" name="fecha_atencion" id="fecha_atencion" class="form-control" 
+                                   value="{% if atencion %}{{ atencion.fecha_atencion|date:'Y-m-d\\TH:i' }}{% else %}{{ now|date:'Y-m-d\\TH:i' }}{% endif %}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Tipo de Atención <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.6em; padding: 2px 6px;">Obligatorio</span></label>
+                            <select name="tipo_atencion" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="PRIMERA_VEZ" {% if atencion.tipo_atencion == 'PRIMERA_VEZ' %}selected{% endif %}>Primera Vez</option>
+                                <option value="CONTROL" {% if atencion.tipo_atencion == 'CONTROL' %}selected{% endif %}>Control</option>
+                                <option value="EMERGENCIA" {% if atencion.tipo_atencion == 'EMERGENCIA' %}selected{% endif %}>Emergencia</option>
+                                <option value="TELECONSULTA" {% if atencion.tipo_atencion == 'TELECONSULTA' %}selected{% endif %}>Teleconsulta</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MOTIVO -->
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#seccion2">
+                    <i class="fas fa-comment-medical me-2"></i>2. MOTIVO DE CONSULTA
+                </button>
+            </h2>
+            <div id="seccion2" class="accordion-collapse collapse" data-bs-parent="#accordionAtencion">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo de Consulta <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.6em; padding: 2px 6px;">Obligatorio</span></label>
+                        <textarea name="motivo_consulta" class="form-control" rows="4" required>{{ atencion.motivo_consulta|default:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Enfermedad Actual</label>
+                        <textarea name="enfermedad_actual" class="form-control" rows="4">{{ atencion.enfermedad_actual|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. SIGNOS VITALES -->
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#seccion3">
+                    <i class="fas fa-heartbeat me-2"></i>3. SIGNOS VITALES
+                </button>
+            </h2>
+            <div id="seccion3" class="accordion-collapse collapse" data-bs-parent="#accordionAtencion">
+                <div class="accordion-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Presión Arterial</label>
+                            <div class="input-group">
+                                <input type="text" name="presion_sistolica" class="form-control" placeholder="Sistólica" 
+                                       value="{{ atencion.presion_sistolica|default:'' }}">
+                                <span class="input-group-text">/</span>
+                                <input type="text" name="presion_diastolica" class="form-control" placeholder="Diastólica" 
+                                       value="{{ atencion.presion_diastolica|default:'' }}">
+                                <span class="input-group-text">mmHg</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Temperatura</label>
+                            <div class="input-group">
+                                <input type="number" name="temperatura" class="form-control" step="0.1" 
+                                       value="{{ atencion.temperatura|default:'' }}">
+                                <span class="input-group-text">°C</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">F. Respiratoria</label>
+                            <div class="input-group">
+                                <input type="number" name="frecuencia_respiratoria" class="form-control" 
+                                       value="{{ atencion.frecuencia_respiratoria|default:'' }}">
+                                <span class="input-group-text">rpm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">F. Cardíaca</label>
+                            <div class="input-group">
+                                <input type="number" name="frecuencia_cardiaca" class="form-control" 
+                                       value="{{ atencion.frecuencia_cardiaca|default:'' }}">
+                                <span class="input-group-text">lpm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sat. Oxígeno</label>
+                            <div class="input-group">
+                                <input type="number" name="saturacion_oxigeno" class="form-control" 
+                                       value="{{ atencion.saturacion_oxigeno|default:'' }}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Peso</label>
+                            <div class="input-group">
+                                <input type="number" name="peso" id="peso" class="form-control" step="0.01" 
+                                       value="{{ atencion.peso|default:'' }}" onchange="calcularIMC()">
+                                <span class="input-group-text">kg</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Talla</label>
+                            <div class="input-group">
+                                <input type="number" name="talla" id="talla" class="form-control" step="0.01" 
+                                       value="{{ atencion.talla|default:'' }}" onchange="calcularIMC()">
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">IMC</label>
+                            <input type="text" name="imc" id="imc" class="form-control" 
+                                   value="{{ atencion.imc|default:'' }}" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. EXAMEN FÍSICO -->
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#seccion4">
+                    <i class="fas fa-stethoscope me-2"></i>4. EXAMEN FÍSICO POR SISTEMAS
+                </button>
+            </h2>
+            <div id="seccion4" class="accordion-collapse collapse" data-bs-parent="#accordionAtencion">
+                <div class="accordion-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Órganos Sentidos</label>
+                            <textarea name="organos_sentidos" class="form-control" rows="2">{{ atencion.organos_sentidos|default:'' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sistema Respiratorio</label>
+                            <textarea name="respiratorio" class="form-control" rows="2">{{ atencion.respiratorio|default:'' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sistema Cardiovascular</label>
+                            <textarea name="cardiovascular" class="form-control" rows="2">{{ atencion.cardiovascular|default:'' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sistema Digestivo</label>
+                            <textarea name="digestivo" class="form-control" rows="2">{{ atencion.digestivo|default:'' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. DIAGNÓSTICO -->
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#seccion5">
+                    <i class="fas fa-diagnoses me-2"></i>5. DIAGNÓSTICO
+                </button>
+            </h2>
+            <div id="seccion5" class="accordion-collapse collapse" data-bs-parent="#accordionAtencion">
+                <div class="accordion-body">
+                    <!-- Búsqueda CIE-10 -->
+                    <div class="card border-warning mb-3">
+                        <div class="card-header bg-warning">
+                            <i class="fas fa-search me-2"></i>Buscar Diagnóstico CIE-10
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label">Código o Descripción CIE-10</label>
+                                    <input type="text" class="form-control" id="buscarCie10Input" 
+                                           placeholder="Escriba código o descripción...">
+                                    <div id="resultadosBusquedaCie10" class="list-group mt-2" style="display:none; max-height:200px; overflow-y:auto; position:absolute; z-index:1000; width:calc(66.666% - 1rem);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Código CIE-10</label>
+                            <input type="text" name="cie10_codigo" id="cie10_codigo" class="form-control" 
+                                   value="{{ atencion.cie10_codigo|default:'' }}">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Descripción CIE-10</label>
+                            <input type="text" name="cie10_descripcion" id="cie10_descripcion" class="form-control" 
+                                   value="{{ atencion.cie10_descripcion|default:'' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Observaciones del Diagnóstico</label>
+                            <textarea name="diagnostico_observaciones" class="form-control" rows="3">{{ atencion.diagnostico_observaciones|default:'' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. PLAN DE TRATAMIENTO -->
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#seccion6">
+                    <i class="fas fa-prescription me-2"></i>6. PLAN DE TRATAMIENTO
+                </button>
+            </h2>
+            <div id="seccion6" class="accordion-collapse collapse" data-bs-parent="#accordionAtencion">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Plan de Tratamiento</label>
+                        <textarea name="plan_tratamiento" class="form-control" rows="4">{{ atencion.plan_tratamiento|default:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tratamiento No Farmacológico</label>
+                        <textarea name="tratamiento_no_farmacologico" class="form-control" rows="3">{{ atencion.tratamiento_no_farmacologico|default:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Evolución</label>
+                        <textarea name="evolucion" class="form-control" rows="3">{{ atencion.evolucion|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="border-top pt-3 mt-3">
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times me-1"></i> Cancelar
+            </button>
+            <button type="button" class="btn btn-primary btn-guardar" onclick="guardarFormulario()">
+                <i class="fas fa-save me-1"></i> Guardar
+            </button>
+        </div>
+    </div>
+</form>
+<style>
+    .campo-obligatorio {
+        display: inline-block;
+        background-color: #dc3545;
+        color: white;
+        font-size: 0.7em;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 5px;
+        font-weight: normal;
+        vertical-align: middle;
+    }
+
+    .campo-obligatorio:hover {
+        background-color: #c82333;
+    }
+    .campo-error {
+        border: 2px solid #dc3545 !important;
+        background-color: #fff5f5;
+    }
+
+    .mensaje-error {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+    .is-invalid {
+        border-color: #dc3545 !important;
+        background-color: #fff5f5;
+    }
+
+    .invalid-feedback {
+        display: block;
+        font-size: 0.85rem;
+    }
+
+</style>
+<script>
+let timeoutBusquedaHistoria = null;
+let timeoutBusquedaCie10 = null;
+
+// Enfocar el primer campo
+document.addEventListener('DOMContentLoaded', function() {
+    const buscarInput = document.getElementById('buscarHistoriaInput');
+    if (buscarInput && !buscarInput.value) {
+        buscarInput.focus();
+    }
+    
+    // Establecer fecha actual si está vacía
+    const fechaInput = document.getElementById('fecha_atencion');
+    if (fechaInput && !fechaInput.value) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        fechaInput.value = now.toISOString().slice(0, 16);
+    }
+});
+
+// Búsqueda de historias
+$('#buscarHistoriaInput').on('input', function() {
+    clearTimeout(timeoutBusquedaHistoria);
+    const query = $(this).val().trim();
+    
+    if (query.length < 2) {
+        $('#resultadosBusquedaHistoria').hide();
+        return;
+    }
+    
+    timeoutBusquedaHistoria = setTimeout(() => buscarHistorias(query), 300);
+});
+
+// Búsqueda de CIE-10
+$('#buscarCie10Input').on('input', function() {
+    clearTimeout(timeoutBusquedaCie10);
+    const query = $(this).val().trim();
+    
+    if (query.length < 2) {
+        $('#resultadosBusquedaCie10').hide();
+        return;
+    }
+    
+    timeoutBusquedaCie10 = setTimeout(() => buscarCIE10(query), 300);
+});
+
+function buscarHistorias(query) {
+    $.ajax({
+        url: '{% url "buscar_historias_atencion" %}',
+        type: 'GET',
+        data: { q: query },
+        success: function(response) {
+            const div = $('#resultadosBusquedaHistoria');
+            div.empty();
+            
+            if (response.data && response.data.length > 0) {
+                response.data.forEach(historia => {
+                    const item = $(`
+                        <a href="#" class="list-group-item list-group-item-action" 
+                           data-id="${historia.id_historia}" 
+                           data-expediente="${historia.expediente}"
+                           data-paciente="${historia.paciente}">
+                            <div><strong>${historia.expediente} - ${historia.paciente}</strong></div>
+                            <small class="text-muted">${historia.cedula} | ${historia.sexo}</small>
+                        </a>
+                    `);
+                    
+                    item.on('click', function(e) {
+                        e.preventDefault();
+                        const id = $(this).data('id');
+                        const expediente = $(this).data('expediente');
+                        const paciente = $(this).data('paciente');
+                        seleccionarHistoria(id, expediente, paciente);
+                    });
+                    
+                    div.append(item);
+                });
+                div.show();
+            } else {
+                div.html('<div class="list-group-item text-muted">No se encontraron resultados</div>').show();
+            }
+        }
+    });
+}
+
+function buscarCIE10(query) {
+    $.ajax({
+        url: '{% url "buscar_cie10_atencion" %}',
+        type: 'GET',
+        data: { q: query },
+        success: function(response) {
+            const div = $('#resultadosBusquedaCie10');
+            div.empty();
+            
+            if (response.data && response.data.length > 0) {
+                response.data.forEach(cie => {
+                    const item = $(`
+                        <a href="#" class="list-group-item list-group-item-action" 
+                           data-codigo="${cie.codigo}"
+                           data-descripcion="${cie.descripcion}">
+                            <div><strong>${cie.codigo}</strong></div>
+                            <small class="text-muted">${cie.descripcion}</small>
+                        </a>
+                    `);
+                    
+                    item.on('click', function(e) {
+                        e.preventDefault();
+                        $('#cie10_codigo').val($(this).data('codigo'));
+                        $('#cie10_descripcion').val($(this).data('descripcion'));
+                        $('#buscarCie10Input').val('');
+                        div.hide();
+                    });
+                    
+                    div.append(item);
+                });
+                div.show();
+            } else {
+                div.html('<div class="list-group-item text-muted">No se encontraron resultados</div>').show();
+            }
+        }
+    });
+}
+
+function seleccionarHistoria(id, expediente, paciente) {
+    $('#historia_id').val(id);
+    $('#buscarHistoriaInput').val(`${expediente} - ${paciente}`);
+    $('#nombrePacienteSeleccionado').text(`${expediente} - ${paciente}`);
+    $('#historiaSeleccionada').show();
+    $('#resultadosBusquedaHistoria').hide();
+}
+
+function abrirNuevaHistoria() {
+    Swal.fire({
+        icon: 'question',
+        title: 'Nueva historia clínica',
+        text: '¿Desea crear una nueva historia clínica?',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, crear',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#198754',
+        cancelButtonColor: '#6c757d'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '{% url "inicio_historiaclinica" %}';
+        }
+    });
+}
+
+
+function calcularIMC() {
+    const peso = parseFloat($('#peso').val());
+    const talla = parseFloat($('#talla').val());
+    
+    if (peso && talla && talla > 0) {
+        const imc = peso / Math.pow(talla / 100, 2);
+        $('#imc').val(imc.toFixed(2));
+    } else {
+        $('#imc').val('');
+    }
+}
+function marcarInvalido(idCampo, mensaje) {
+    const campo = document.getElementById(idCampo);
+    if (!campo) return;
+
+    campo.classList.add('is-invalid');
+
+    let feedback = campo.parentNode.querySelector('.invalid-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback';
+        campo.parentNode.appendChild(feedback);
+    }
+
+    feedback.textContent = mensaje;
+    campo.focus();
+}
+
+function limpiarInvalido(idCampo) {
+    const campo = document.getElementById(idCampo);
+    if (!campo) return;
+
+    campo.classList.remove('is-invalid');
+    const feedback = campo.parentNode.querySelector('.invalid-feedback');
+    if (feedback) feedback.remove();
+}
+function guardarFormulario() {
+    const form = document.getElementById('formAtencion');
+    const formData = new FormData(form);
+    
+    // Validar campos obligatorios
+    const historiaId = formData.get('historia_id');
+    const fechaAtencion = formData.get('fecha_atencion');
+    const tipoAtencion = formData.get('tipo_atencion');
+    const motivoConsulta = formData.get('motivo_consulta');
+    const cie10Codigo = formData.get('cie10_codigo');
+    const cie10Descripcion = formData.get('cie10_descripcion');
+    
+    // Validar historia clínica seleccionada
+    if (!historiaId) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Paciente no seleccionado',
+            text: 'Debe seleccionar una historia clínica del paciente',
+            confirmButtonText: 'Aceptar'
+        }).then(() => {
+            document.getElementById('buscarHistoriaInput').focus();
+        });
+        return;
+    }
+    
+    // Validar fecha de atención
+    if (!fechaAtencion) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campo obligatorio',
+            text: 'La fecha y hora de atención son obligatorias',
+            confirmButtonText: 'Aceptar'
+        }).then(() => {
+            document.getElementById('fecha_atencion').focus();
+        });
+        return;
+    }
+    
+    // Validar tipo de atención
+    if (!tipoAtencion) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campo obligatorio',
+            text: 'Debe seleccionar el tipo de atención',
+            confirmButtonText: 'Aceptar'
+        }).then(() => {
+            document.querySelector('select[name="tipo_atencion"]').focus();
+        });
+        return;
+    }
+    
+    // Validar motivo de consulta
+    if (!motivoConsulta || motivoConsulta.trim() === '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campo obligatorio',
+            text: 'El motivo de consulta es obligatorio',
+            confirmButtonText: 'Aceptar'
+        }).then(() => {
+            document.querySelector('textarea[name="motivo_consulta"]').focus();
+        });
+        return;
+    }
+    
+    // Validar diagnóstico CIE-10
+    if ((!cie10Codigo || cie10Codigo.trim() === '') && (!cie10Descripcion || cie10Descripcion.trim() === '')) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Diagnóstico incompleto',
+            text: 'Debe ingresar el código y la descripción CIE-10 del diagnóstico',
+            confirmButtonText: 'Aceptar'
+        }).then(() => {
+            document.getElementById('buscarCie10Input').focus();
+        });
+        return;
+    }
+    
+    // Deshabilitar botón y mostrar loading
+    const btnGuardar = document.querySelector('.btn-guardar');
+    const originalText = btnGuardar.innerHTML;
+    btnGuardar.disabled = true;
+    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+    
+    // Mostrar SweetAlert de carga
+    Swal.fire({
+        title: 'Guardando atención médica...',
+        text: 'Por favor espere un momento',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Enviar datos
+    fetch('{% url "guardar_atencion" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => {
+        // Primero, verificar si la respuesta es JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new TypeError('La respuesta no es JSON');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Cerrar SweetAlert de carga
+        Swal.close();
+        
+        if (data.success) {
+            // Éxito
+            Swal.fire({
+                icon: 'success',
+                title: 'Guardado correctamente',
+                text: data.message,
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormulario'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Recargar datos en la tabla principal
+                if (typeof cargarDatos === 'function') {
+                    cargarDatos();
+                }
+            });
+        } else {
+            // Error del servidor
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al guardar',
+                text: data.error || 'Ocurrió un error desconocido',
+                confirmButtonText: 'Aceptar'
+            });
+        }
+    })
+    .catch(error => {
+        // Cerrar SweetAlert de carga
+        Swal.close();
+        
+        // Error de conexión o parseo
+        console.error('Error en guardarFormulario:', error);
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'No se pudo conectar con el servidor. Verifique su conexión a internet.',
+            confirmButtonText: 'Aceptar'
+        });
+    })
+    .finally(() => {
+        // Restaurar botón
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = originalText;
+    });
+}
+</script>

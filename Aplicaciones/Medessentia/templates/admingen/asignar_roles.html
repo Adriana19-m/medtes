@@ -1,0 +1,220 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% load static %}
+{% block title %}Asignar roles · Medessentia{% endblock %}
+
+{% block extra_css %}
+<style>
+  .brand-lila    { background:#6c5ce7; }
+  .brand-celeste { background:#0984e3; }
+  .brand-teal    { background:#00b894; }
+
+  .role-pill .btn { border-radius:999px; }
+
+  .badge-admin    { background:#6c5ce7; }
+  .badge-doctor   { background:#00b894; }
+  .badge-paciente { background:#0984e3; }
+
+  .user-item {
+    padding:.75rem 1rem;
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+    border-bottom:1px solid rgba(0,0,0,.05);
+  }
+  .user-item:last-child { border-bottom:none; }
+
+  .avatar {
+    width:36px; height:36px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-weight:600;
+    background:linear-gradient(135deg,#6c5ce7,#0984e3);
+  }
+
+  .user-name { font-weight:600; }
+  .user-meta { font-size:.9rem; color:#6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row g-3">
+
+    <!-- FORMULARIO -->
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Asignar roles</h5>
+          <span class="text-muted small">Política: <strong>1 rol</strong> por usuario</span>
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted">
+            El nuevo rol reemplaza al actual. Puedes dejar al usuario <em>Sin rol</em>.
+          </p>
+
+          <form id="rolForm" method="post" action="{% url 'asignar_roles' %}">
+            {% csrf_token %}
+
+            <!-- Usuario -->
+            <div class="mb-3">
+              <label class="form-label">Usuario</label>
+              <select id="usuarioSelect" name="usuario_id" class="form-select" required>
+                <option value="">— Selecciona usuario —</option>
+                {% for u in usuarios %}
+                <option value="{{ u.id }}"
+                        data-roles="{% for g in u.groups.all %}{{ g.name }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                  {{ u.username }} — {{ u.first_name }} {{ u.last_name }} ({{ u.email }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Rol actual -->
+            <div class="mb-3">
+              <label class="form-label">Rol actual</label>
+              <div id="rolActual"><span class="text-muted">—</span></div>
+            </div>
+
+            <!-- Nuevo rol -->
+            <div class="mb-2">
+              <label class="form-label d-block">Nuevo rol</label>
+              <div class="btn-group role-pill">
+                <input class="btn-check" type="radio" name="rol" id="rol-none" value="" checked>
+                <label class="btn btn-outline-secondary" for="rol-none">Sin rol</label>
+
+                <input class="btn-check" type="radio" name="rol" id="rol-admin" value="Administrador">
+                <label class="btn btn-outline-secondary" for="rol-admin">Administrador</label>
+
+                <input class="btn-check" type="radio" name="rol" id="rol-doctor" value="Doctor">
+                <label class="btn btn-outline-secondary" for="rol-doctor">Doctor</label>
+
+                <input class="btn-check" type="radio" name="rol" id="rol-paciente" value="Paciente">
+                <label class="btn btn-outline-secondary" for="rol-paciente">Paciente</label>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button type="button" id="btnConfirmar" class="btn btn-primary">
+                Guardar cambios
+              </button>
+              <a href="{% url 'lista_usuarios' %}" class="btn btn-outline-secondary">
+                Ir a usuarios
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTA DE USUARIOS -->
+    <div class="col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h6 class="mb-0">Usuarios</h6>
+        </div>
+        <div class="card-body p-0">
+          {% for u in usuarios %}
+          <div class="user-item">
+            <div class="avatar">{{ u.username|slice:":1"|upper }}</div>
+            <div class="flex-grow-1">
+              <div class="user-name">
+                {{ u.first_name }} {{ u.last_name }}
+                <span class="text-muted">@{{ u.username }}</span>
+              </div>
+              <div class="user-meta">
+                {% if u.groups.all %}
+                  {% for g in u.groups.all %}
+                    <span class="badge badge-{{ g.name|lower }} me-1">{{ g.name }}</span>
+                  {% endfor %}
+                {% else %}
+                  <span class="text-muted">Sin rol</span>
+                {% endif %}
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-primary seleccionarUsuarioBtn"
+                    data-user-id="{{ u.id }}">
+              Elegir
+            </button>
+          </div>
+          {% empty %}
+          <div class="p-4 text-center text-muted">No hay usuarios.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+const selectUsuarios = document.getElementById('usuarioSelect');
+const rolActualBox = document.getElementById('rolActual');
+const form = document.getElementById('rolForm');
+
+/* Mostrar rol actual */
+function renderRolActual() {
+  const opt = selectUsuarios.options[selectUsuarios.selectedIndex];
+  if (!opt || !opt.value) {
+    rolActualBox.innerHTML = '<span class="text-muted">—</span>';
+    return;
+  }
+
+  const roles = (opt.dataset.roles || '').split(',').filter(Boolean);
+  rolActualBox.innerHTML = roles.length
+    ? roles.map(r => `<span class="badge bg-secondary me-1">${r}</span>`).join('')
+    : '<span class="text-muted">Sin rol</span>';
+}
+
+/* Elegir usuario desde la lista */
+document.querySelectorAll('.seleccionarUsuarioBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectUsuarios.value = btn.dataset.userId;
+    renderRolActual();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+
+/* Confirmación SweetAlert */
+document.getElementById('btnConfirmar').addEventListener('click', () => {
+  const opt = selectUsuarios.options[selectUsuarios.selectedIndex];
+  if (!opt || !opt.value) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Usuario no seleccionado',
+      text: 'Seleccione un usuario para continuar.'
+    });
+    return;
+  }
+
+  const rol = document.querySelector('input[name="rol"]:checked')?.value || 'Sin rol';
+
+  Swal.fire({
+    icon: 'question',
+    title: 'Confirmar asignación',
+    html: `
+      <p>¿Desea asignar el rol:</p>
+      <strong>${rol}</strong>
+      <p>al usuario:</p>
+      <strong>${opt.textContent}</strong>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Sí, confirmar',
+    cancelButtonText: 'Cancelar'
+  }).then(result => {
+    if (result.isConfirmed) {
+      form.submit();
+    }
+  });
+});
+
+selectUsuarios.addEventListener('change', renderRolActual);
+</script>
+{% endblock %}

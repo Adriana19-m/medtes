@@ -1,0 +1,737 @@
+<form id="formHistoria" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="id_historia" value="{{ historia.id_historia|default:'' }}">
+    
+    <!-- Acordeón Principal -->
+    <div class="accordion" id="accordionHistoria">
+        
+        <!-- 1. IDENTIFICACIÓN -->
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#seccion1">
+                    <i class="fas fa-user me-2"></i>1. IDENTIFICACIÓN DEL PACIENTE
+                </button>
+            </h2>
+            <div id="seccion1" class="accordion-collapse collapse show" data-bs-parent="#accordionHistoria">
+                <div class="accordion-body">
+                    <!-- Búsqueda de paciente -->
+                    <div class="card border-primary mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-search me-2"></i>Buscar o Crear Paciente
+                        </div>
+                        <div class="card-body">
+                            <input type="hidden" name="paciente_id" id="paciente_id" value="{{ historia.id_paciente.id|default:'' }}">
+                            
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Buscar Paciente <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="buscarPacienteInput" 
+                                           placeholder="Escriba nombre, apellido o cédula del paciente..." 
+                                           value="{% if historia %}{{ historia.id_paciente.first_name }} {{ historia.id_paciente.last_name }}{% endif %}">
+                                    <div id="resultadosBusquedaPaciente" class="list-group mt-2" style="display:none; max-height:200px; overflow-y:auto; position:absolute; z-index:1000; width:calc(66.666% - 1rem);"></div>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="button" class="btn btn-success w-100" id="btnNuevoPaciente" onclick="abrirRegistroRapido()">
+                                        <i class="fas fa-user-plus me-2"></i>Nuevo Paciente
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="pacienteSeleccionado" class="alert alert-success mt-3" style="display:{% if historia %}block{% else %}none{% endif %}">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Paciente seleccionado:</strong> 
+                                <span id="nombrePacienteSeleccionado">
+                                    {% if historia %}{{ historia.id_paciente.first_name }} {{ historia.id_paciente.last_name }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Doctor Responsable</label>
+                            <input type="text" class="form-control" value="{{ usuario_actual.first_name }} {{ usuario_actual.last_name }}" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">N° Expediente <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="text" name="expediente_no" id="expediente_no" class="form-control" 
+                                       value="{{ historia.expediente_no|default:'' }}" required maxlength="50">
+                                <button type="button" class="btn btn-outline-primary" onclick="generarExpediente()" title="Generar">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Nombres Completos</label>
+                            <input type="text" name="nombres_completos" id="nombres_completos" class="form-control" 
+                                   value="{{ historia.nombres_completos|default:'' }}" maxlength="150">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cédula</label>
+                            <input type="text" name="cedula" id="cedula" class="form-control" 
+                                   value="{{ historia.cedula|default:'' }}" maxlength="20">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" class="form-control" 
+                                   value="{% if historia.fecha_nacimiento %}{{ historia.fecha_nacimiento|date:'Y-m-d' }}{% endif %}" onchange="calcularEdad()">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Edad</label>
+                            <input type="number" name="edad" id="edad" class="form-control" 
+                                   value="{% if historia %}{{ historia.get_edad_actual|default:'' }}{% endif %}" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Sexo <span class="text-danger">*</span></label>
+                            <select name="sexo_biologico" id="sexo_biologico" class="form-select" onchange="actualizarCamposPorSexo()" required>
+                                <option value="">Seleccione...</option>
+                                <option value="MASCULINO" {% if historia.sexo_biologico == 'MASCULINO' %}selected{% endif %}>Masculino</option>
+                                <option value="FEMENINO" {% if historia.sexo_biologico == 'FEMENINO' %}selected{% endif %}>Femenino</option>
+                                <option value="INTERSEXUAL" {% if historia.sexo_biologico == 'INTERSEXUAL' %}selected{% endif %}>Intersexual</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Estado Civil</label>
+                            <select name="estado_civil" class="form-select">
+                                <option value="">Seleccione...</option>
+                                <option value="SOLTERO" {% if historia.estado_civil == 'SOLTERO' %}selected{% endif %}>Soltero/a</option>
+                                <option value="CASADO" {% if historia.estado_civil == 'CASADO' %}selected{% endif %}>Casado/a</option>
+                                <option value="DIVORCIADO" {% if historia.estado_civil == 'DIVORCIADO' %}selected{% endif %}>Divorciado/a</option>
+                                <option value="VIUDO" {% if historia.estado_civil == 'VIUDO' %}selected{% endif %}>Viudo/a</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" name="direccion" class="form-control" value="{{ historia.direccion|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" name="telefono" class="form-control" value="{{ historia.telefono|default:'' }}" maxlength="20">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" value="{{ historia.email|default:'' }}" maxlength="100">
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label">Contacto de Emergencia</label>
+                            <input type="text" name="contacto_emergencia" class="form-control" value="{{ historia.contacto_emergencia|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Nivel de Instrucción</label>
+                            <select name="nivel_instruccion" class="form-select">
+                                <option value="">Seleccione...</option>
+                                <option value="NINGUNO" {% if historia.nivel_instruccion == 'NINGUNO' %}selected{% endif %}>Ninguno</option>
+                                <option value="PRIMARIA" {% if historia.nivel_instruccion == 'PRIMARIA' %}selected{% endif %}>Primaria</option>
+                                <option value="SECUNDARIA" {% if historia.nivel_instruccion == 'SECUNDARIA' %}selected{% endif %}>Secundaria</option>
+                                <option value="SUPERIOR" {% if historia.nivel_instruccion == 'SUPERIOR' %}selected{% endif %}>Superior</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ocupación</label>
+                            <input type="text" name="ocupacion" class="form-control" value="{{ historia.ocupacion|default:'' }}" maxlength="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo de Seguro</label>
+                            <select name="tipo_seguro" class="form-select">
+                                <option value="NINGUNO" {% if not historia or historia.tipo_seguro == 'NINGUNO' %}selected{% endif %}>Ninguno</option>
+                                <option value="MSP" {% if historia.tipo_seguro == 'MSP' %}selected{% endif %}>MSP</option>
+                                <option value="IESS" {% if historia.tipo_seguro == 'IESS' %}selected{% endif %}>IESS</option>
+                                <option value="PRIVADO" {% if historia.tipo_seguro == 'PRIVADO' %}selected{% endif %}>Privado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. ANTECEDENTES -->
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#seccion2">
+                    <i class="fas fa-history me-2"></i>2. ANTECEDENTES
+                </button>
+            </h2>
+            <div id="seccion2" class="accordion-collapse collapse" data-bs-parent="#accordionHistoria">
+                <div class="accordion-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Antecedentes Personales</label>
+                            <textarea name="antecedentes_personales" class="form-control" rows="5">{{ historia.antecedentes_personales|default:'' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Antecedentes Familiares</label>
+                            <textarea name="antecedentes_familiares" class="form-control" rows="5">{{ historia.antecedentes_familiares|default:'' }}</textarea>
+                        </div>
+                        
+                        <!-- Campos femeninos -->
+                        <div class="col-md-6 campo-femenino" style="display:{% if historia.sexo_biologico == 'FEMENINO' %}block{% else %}none{% endif %};">
+                            <label class="form-label fw-bold">Antecedentes Obstétricos</label>
+                            <textarea name="antecedentes_obstetricos" class="form-control" rows="4">{{ historia.antecedentes_obstetricos|default:'' }}</textarea>
+                        </div>
+                        <div class="col-md-6 campo-femenino" style="display:{% if historia.sexo_biologico == 'FEMENINO' %}block{% else %}none{% endif %};">
+                            <label class="form-label fw-bold">Antecedentes Ginecológicos</label>
+                            <textarea name="antecedentes_ginecologicos" class="form-control" rows="4">{{ historia.antecedentes_ginecologicos|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Vacunación</label>
+                            <textarea name="vacunacion" class="form-control" rows="3">{{ historia.vacunacion|default:'' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="border-top pt-3 mt-3">
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times me-1"></i> Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary btn-guardar">
+                <i class="fas fa-save me-1"></i> Guardar
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Modal Registro Rápido -->
+<div class="modal fade" id="modalRegistroRapido" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Registro Rápido de Paciente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formRegistroRapido">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombres <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="rapidoNombres" name="rapidoNombres">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Apellidos <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="rapidoApellidos" name="rapidoApellidos">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cédula</label>
+                        <input type="text" class="form-control" id="rapidoCedula" name="rapidoCedula">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="tel" class="form-control" id="rapidoTelefono" name="rapidoTelefono">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="crearPacienteRapido()">
+                    <i class="fas fa-save me-1"></i> Crear
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-item {
+    cursor: pointer;
+}
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+.error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+label.error {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+    font-weight: normal;
+}
+.campo-valido {
+    border-color: #198754 !important;
+}
+
+</style>
+
+<script>
+let modalRegistroRapido = null;
+let timeoutBusquedaPaciente = null;
+let validatorForm = null;
+
+$(document).ready(function() {
+    console.log('Formulario de Historia Clínica cargado');
+    
+    modalRegistroRapido = new bootstrap.Modal(document.getElementById('modalRegistroRapido'));
+    
+    if (!$('#expediente_no').val()) {
+        generarExpediente();
+    }
+    
+    if ($('#fecha_nacimiento').val()) {
+        calcularEdad();
+    }
+    
+    inicializarValidacion();
+
+    $(document).on('input', '#buscarPacienteInput', function () {
+        clearTimeout(timeoutBusquedaPaciente);
+
+        const query = $(this).val().trim();
+
+        if (query.length < 2) {
+            $('#resultadosBusquedaPaciente').hide().empty();
+            $('#btnNuevoPaciente').show();
+            return;
+        }
+
+        $('#btnNuevoPaciente').hide();
+
+        timeoutBusquedaPaciente = setTimeout(() => {
+            buscarPacientesAuto(query);
+        }, 300);
+    });
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#buscarPacienteInput, #resultadosBusquedaPaciente').length) {
+            $('#resultadosBusquedaPaciente').hide();
+        }
+    });
+
+        
+        actualizarCamposPorSexo();
+    });
+$('#formRegistroRapido').validate({
+    rules: {
+        rapidoNombres: {
+            required: true,
+            minlength: 2
+        },
+        rapidoApellidos: {
+            required: true,
+            minlength: 2
+        },
+        rapidoCedula: {
+            required: true,
+            minlength: 5
+        },
+        rapidoTelefono: {
+            required: true,
+            minlength: 7
+        }
+    },
+    messages: {
+        rapidoNombres: {
+            required: 'Los nombres son obligatorios',
+            minlength: 'Debe ingresar al menos 2 caracteres'
+        },
+        rapidoApellidos: {
+            required: 'Los apellidos son obligatorios',
+            minlength: 'Debe ingresar al menos 2 caracteres'
+        },
+        rapidoCedula: {
+            required: 'La cédula es obligatoria',
+            minlength: 'Debe ingresar al menos 5 caracteres'
+        },
+        rapidoTelefono: {
+            required: 'El teléfono es obligatorio',
+            minlength: 'Debe ingresar al menos 7 caracteres'
+        }
+    },
+    errorClass: 'error',
+    validClass: 'campo-valido',
+    errorPlacement: function (error, element) {
+        error.insertAfter(element);
+    }
+});
+
+function inicializarValidacion() {
+    validatorForm = $('#formHistoria').validate({
+        ignore: [],
+        rules: {
+            paciente_id: { required: true },
+            expediente_no: { required: true, maxlength: 50 },
+            nombre_completo: { required: true, maxlength: 150 },
+            cedula: { required: true, maxlength: 20 },
+            fecha_nacimiento: { required: true, date: true },
+            direccion: { required: true },
+            telefono: { required: true },
+            email: { required: true, email: true },
+            contacto_emergencia: { required: true },
+            nivel_instruccion: { required: true },
+            ocupacion: { required: true },
+            tipo_seguro: { required: true },
+            sexo_biologico: { required: true }
+        },
+        messages: {
+            paciente_id: 'Debe seleccionar un paciente',
+            expediente_no: 'El expediente es obligatorio',
+            nombre_completo: 'El nombre completo es obligatorio',
+            cedula: 'La cédula es obligatoria',
+            fecha_nacimiento: 'La fecha de nacimiento es obligatoria',
+            direccion: 'La dirección es obligatoria',
+            telefono: 'El teléfono es obligatorio',
+            email: 'El email es obligatorio',
+            contacto_emergencia: 'El contacto de emergencia es obligatorio',
+            nivel_instruccion: 'El nivel de instrucción es obligatorio',
+            ocupacion: 'La ocupación es obligatoria',
+            tipo_seguro: 'El tipo de seguro es obligatorio',
+            sexo_biologico: 'El sexo biológico es obligatorio'
+        },
+        submitHandler: function(form) {
+            guardarHistoria();
+            return false;
+        }
+    });
+}
+
+function actualizarCamposPorSexo() {
+    const sexo = $('#sexo_biologico').val();
+    
+    if (sexo === 'FEMENINO') {
+        $('.campo-femenino').show();
+    } else {
+        $('.campo-femenino').hide();
+        $('textarea[name="antecedentes_obstetricos"]').val('');
+        $('textarea[name="antecedentes_ginecologicos"]').val('');
+    }
+}
+
+function buscarPacientesAuto(query) {
+    console.log('🔎 Buscando:', query);
+    
+    $.ajax({
+        url: '{% url "buscar_pacientes" %}',
+        type: 'GET',
+        data: { q: query },
+        success: function(response) {
+            console.log('📦 Respuesta recibida:', response);
+            
+            const div = $('#resultadosBusquedaPaciente');
+            div.empty();
+            
+            if (response.data && response.data.length > 0) {
+                console.log(`✅ Mostrando ${response.data.length} resultados`);
+                
+                response.data.forEach(paciente => {
+                    const badge = paciente.tiene_historia 
+                        ? '<span class="badge bg-success ms-2">Con HC</span>' 
+                        : '';
+                    
+                    const item = $(`
+                        <a href="#" class="list-group-item list-group-item-action" 
+                           data-id="${paciente.id}" 
+                           data-nombre="${paciente.nombre_completo}" 
+                           data-cedula="${paciente.cedula}">
+                            <div>
+                                <strong>${paciente.nombre_completo}</strong>
+                                ${badge}
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-id-card me-1"></i>${paciente.cedula} | 
+                                <i class="fas fa-phone me-1"></i>${paciente.telefono}
+                            </small>
+                        </a>
+                    `);
+                    
+                    item.on('click', function(e) {
+                        e.preventDefault();
+                        seleccionarPaciente(
+                            $(this).data('id'), 
+                            $(this).data('nombre'), 
+                            $(this).data('cedula')
+                        );
+                    });
+                    
+                    div.append(item);
+                });
+                
+                div.show();
+            } else {
+                console.log('⚠️ No se encontraron pacientes');
+                $('#btnNuevoPaciente').show();
+                div.html(`
+                    <div class="list-group-item text-center text-muted">
+                        <i class="fas fa-search me-2"></i>
+                        No se encontraron pacientes con "${query}"
+                    </div>
+                `).show();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ Error en búsqueda:', error);
+            $('#btnNuevoPaciente').show();
+            $('#resultadosBusquedaPaciente').html(`
+                <div class="list-group-item text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error al buscar pacientes
+                </div>
+            `).show();
+        }
+    });
+}
+
+function seleccionarPaciente(id, nombre, cedula) {
+    $('#paciente_id').val(id);
+    $('#buscarPacienteInput').val(nombre);
+    $('#nombrePacienteSeleccionado').text(nombre);
+    $('#pacienteSeleccionado').show();
+    $('#resultadosBusquedaPaciente').hide();
+    $('#btnNuevoPaciente').show();
+    
+    llenarCampoSiVacio('#nombres_completos', nombre);
+    llenarCampoSiVacio('#cedula', cedula);
+}
+
+function llenarCampoSiVacio(selector, valor) {
+    if (valor && !$(selector).val()) {
+        $(selector).val(valor);
+    }
+}
+
+function abrirRegistroRapido() {
+    $('#buscarPacienteInput').val('');
+    $('#resultadosBusquedaPaciente').hide();
+    $('#formRegistroRapido')[0].reset();
+    
+    // Limpiar errores previos
+    $('#formRegistroRapido .error').removeClass('error campo-valido');
+    $('#formRegistroRapido label.error').remove();
+    
+    modalRegistroRapido.show();
+}
+
+function crearPacienteRapido() {
+    // ✅ Validar formulario
+    if (!$('#formRegistroRapido').valid()) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'Por favor complete los campos requeridos',
+            confirmButtonText: 'Entendido'
+        });
+        return;
+    }
+
+    const nombres = $('#rapidoNombres').val().trim();
+    const apellidos = $('#rapidoApellidos').val().trim();
+    const cedula = $('#rapidoCedula').val().trim();
+    const telefono = $('#rapidoTelefono').val().trim();
+
+    // ✅ Botón loading
+    const btnCrear = $('.btn-success[onclick="crearPacienteRapido()"]');
+    const originalHTML = btnCrear.html();
+    btnCrear.prop('disabled', true)
+        .html('<i class="fas fa-spinner fa-spin me-1"></i> Creando...');
+
+    fetch('{% url "crear_paciente_rapido" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            nombres,
+            apellidos,
+            cedula,
+            telefono
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+
+            // ✅ ASIGNAR PACIENTE A LA HISTORIA
+            seleccionarPaciente(
+                result.paciente.id,
+                result.paciente.nombre_completo,
+                result.paciente.cedula
+            );
+
+            // ✅ LIMPIAR FORMULARIO (CLAVE)
+            $('#formRegistroRapido')[0].reset();
+
+            // ✅ LIMPIAR VALIDACIONES
+            $('#formRegistroRapido .error').removeClass('error campo-valido');
+            $('#formRegistroRapido label.error').remove();
+
+            // ✅ CERRAR MODAL
+            const modal = bootstrap.Modal.getInstance(
+                document.getElementById('modalRegistroRapido')
+            );
+            modal.hide();
+
+            // ✅ MENSAJE UX
+            Swal.fire({
+                icon: 'success',
+                title: result.message || 'Paciente registrado',
+                timer: 1200,
+                showConfirmButton: false
+            });
+
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al crear paciente',
+                text: result.error
+            });
+        }
+    })
+    .catch(() => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'No se pudo conectar con el servidor'
+        });
+    })
+    .finally(() => {
+        btnCrear.prop('disabled', false).html(originalHTML);
+    });
+}
+
+
+function generarExpediente() {
+    fetch('{% url "generar_expediente" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.expediente) {
+                $('#expediente_no').val(data.expediente);
+            }
+        });
+}
+
+function calcularEdad() {
+    const fechaNac = new Date($('#fecha_nacimiento').val());
+    const hoy = new Date();
+    
+    if (!fechaNac || isNaN(fechaNac)) {
+        $('#edad').val('');
+        return;
+    }
+    
+    let edad = hoy.getFullYear() - fechaNac.getFullYear();
+    const mes = hoy.getMonth() - fechaNac.getMonth();
+    
+    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+        edad--;
+    }
+    
+    if (edad >= 0) {
+        $('#edad').val(edad);
+    }
+}
+
+function guardarHistoria() {
+
+    if (!validatorForm.form()) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos obligatorios',
+            text: 'Por favor complete los campos requeridos'
+        });
+        return;
+    }
+
+    if (!$('#paciente_id').val()) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Paciente no seleccionado',
+            text: 'Debe buscar y seleccionar un paciente'
+        });
+        return;
+    }
+
+    const btnGuardar = $('.btn-guardar');
+    const originalHTML = btnGuardar.html();
+
+    btnGuardar.prop('disabled', true)
+        .html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
+
+    Swal.fire({
+        title: 'Guardando historia clínica',
+        text: 'Por favor espere...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    const formData = {
+        id_historia: $('input[name="id_historia"]').val() || null,
+        paciente_id: $('#paciente_id').val(),
+        expediente_no: $('#expediente_no').val(),
+        nombres_completos: $('#nombres_completos').val() || null,
+        cedula: $('#cedula').val() || null,
+        fecha_nacimiento: $('#fecha_nacimiento').val() || null,
+        sexo_biologico: $('#sexo_biologico').val(),
+        estado_civil: $('select[name="estado_civil"]').val() || null,
+        direccion: $('input[name="direccion"]').val() || null,
+        telefono: $('input[name="telefono"]').val() || null,
+        email: $('input[name="email"]').val() || null,
+        contacto_emergencia: $('input[name="contacto_emergencia"]').val() || null,
+        nivel_instruccion: $('select[name="nivel_instruccion"]').val() || null,
+        ocupacion: $('input[name="ocupacion"]').val() || null,
+        tipo_seguro: $('select[name="tipo_seguro"]').val() || 'NINGUNO',
+        antecedentes_personales: $('textarea[name="antecedentes_personales"]').val() || null,
+        antecedentes_familiares: $('textarea[name="antecedentes_familiares"]').val() || null,
+        antecedentes_obstetricos: $('textarea[name="antecedentes_obstetricos"]').val() || null,
+        antecedentes_ginecologicos: $('textarea[name="antecedentes_ginecologicos"]').val() || null,
+        vacunacion: $('textarea[name="vacunacion"]').val() || null,
+        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+    };
+
+    fetch('{% url "guardar_historia" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': formData.csrfmiddlewaretoken
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(result => {
+        Swal.close();
+
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Historia clínica guardada',
+                text: result.message,
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormulario'));
+            if (modal) modal.hide();
+
+            if (typeof cargarDatos === 'function') cargarDatos();
+
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al guardar',
+                text: result.error
+            });
+        }
+    })
+    .catch(() => {
+        Swal.close();
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'No se pudo conectar con el servidor'
+        });
+    })
+    .finally(() => {
+        btnGuardar.prop('disabled', false).html(originalHTML);
+    });
+}
+
+</script>

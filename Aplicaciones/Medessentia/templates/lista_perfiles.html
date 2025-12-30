@@ -1,0 +1,183 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% load static %}
+{% block title %}Perfiles | Medessentia{% endblock %}
+{% block page_title %}Perfiles{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Perfiles</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .table-actions {
+            white-space: nowrap;
+        }
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-users me-2"></i>Perfiles</h4>
+                    {% if solo_pacientes %}
+                    <span class="badge bg-light text-dark px-3 py-2">
+                        <i class="fas fa-filter me-1"></i> Solo pacientes
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Barra de búsqueda -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="inputBuscar" placeholder="Buscar por nombre, usuario, cédula...">
+                            <button class="btn btn-outline-primary" type="button" onclick="buscar()">
+                                <i class="fas fa-search me-1"></i> Buscar
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
+                                <i class="fas fa-times me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla -->
+                <div class="table-responsive">
+                    <table id="tablaPerfiles" class="table table-striped table-bordered" style="width:100%">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="180">Nombre</th>
+                                <th width="120">Usuario</th>
+                                <th width="80">Género</th>
+                                <th width="120">Cédula</th>
+                                <th width="120">Teléfono</th>
+                                <th>Dirección</th>
+                                <th width="140">Registro</th>
+                                <th width="180" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in perfiles %}
+                            <tr>
+                                <td class="fw-semibold">{{ p.user.first_name }} {{ p.user.last_name }}</td>
+                                <td class="text-muted">{{ p.user.username }}</td>
+                                <td>{{ p.genero_usuario|default:"—" }}</td>
+                                <td>{{ p.cedula_usuario|default:"—" }}</td>
+                                <td>{{ p.telefono_usuario|default:"—" }}</td>
+                                <td>{{ p.direccion_usuario|default:"—" }}</td>
+                                <td>{{ p.fecha_registro_usuario|date:"d/m/Y H:i" }}</td>
+                                <td class="table-actions text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a class="btn btn-outline-primary btn-action"
+                                           href="{% url 'perfil_paciente' p.id %}"
+                                           title="Ver perfil">
+                                            <i class="fas fa-user"></i>
+                                        </a>
+                                        <a class="btn btn-outline-info btn-action"
+                                           href="{% url 'historia_paciente' p.id %}"
+                                           title="Signos vitales">
+                                            <i class="fas fa-heartbeat"></i>
+                                        </a>
+                                        <a class="btn btn-outline-success btn-action"
+                                           href="https://wa.me/593{{ p.telefono_usuario }}?text=Te saludamos desde Medessentia."
+                                           target="_blank"
+                                           title="WhatsApp">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-info-circle me-2"></i>No hay perfiles para mostrar.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+    <script>
+    let tabla = null;
+
+    // Inicializar cuando el documento esté listo
+    $(document).ready(function() {
+        console.log("Iniciando módulo Perfiles...");
+        
+        // Inicializar DataTable
+        tabla = $('#tablaPerfiles').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            },
+            pageLength: 10,
+            order: [[0, 'asc']]
+        });
+
+        // Buscar con Enter
+        $('#inputBuscar').on('keypress', function(e) {
+            if (e.which === 13) {
+                buscar();
+            }
+        });
+    });
+
+    function buscar() {
+        const valor = $('#inputBuscar').val();
+
+        if (valor.trim() === '') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Campo vacío',
+                text: 'Ingresa un criterio de búsqueda'
+            });
+            return;
+        }
+
+        tabla.search(valor).draw();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Búsqueda realizada',
+            timer: 1000,
+            showConfirmButton: false
+        });
+    }
+
+    function limpiarBusqueda() {
+        $('#inputBuscar').val('');
+        tabla.search('').draw();
+
+        Swal.fire({
+            icon: 'info',
+            title: 'Filtro limpiado',
+            timer: 900,
+            showConfirmButton: false
+        });
+    }
+
+    </script>
+</body>
+</html>
+{% endblock %}

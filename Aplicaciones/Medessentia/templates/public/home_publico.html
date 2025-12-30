@@ -1,0 +1,1023 @@
+{% extends "public/base_public.html" %}
+{% load static %}
+{% block title %}Inicio · Medessentia{% endblock %}
+
+{% block extra_css %}
+<style>
+  .contact-info-card {
+    border-left: 4px solid #0d6efd;
+  }
+
+  .icon-circle {
+    width: 44px;
+    height: 44px;
+    background: rgba(13,110,253,0.1);
+    color: #0d6efd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .contact input,
+  .contact textarea {
+    border-radius: 10px;
+  }
+
+  .contact button {
+    border-radius: 30px;
+  }
+
+  @media (max-width: 768px) {
+    .contact-info-card {
+      margin-bottom: 20px;
+    }
+  }
+
+  .chatbot-modal {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 340px;
+    max-width: calc(100vw - 40px);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    border: 1px solid #e1e5e9;
+  }
+  
+  .message {
+    margin-bottom: 8px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    max-width: 78%;
+    word-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.3;
+    font-size: 13px;
+    position: relative;
+  }
+  
+  .user-message {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    margin-left: auto;
+    margin-right: 0;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  }
+  
+  .bot-message {
+    background: #ffffff;
+    color: #2d3748;
+    margin-right: auto;
+    margin-left: 0;
+    border-bottom-left-radius: 6px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  
+  .message p {
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  
+  .chatbot-typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 12px;
+  }
+  
+  .chatbot-typing span {
+    height: 6px;
+    width: 6px;
+    background: #718096;
+    border-radius: 50%;
+    display: inline-block;
+    animation: typing 1.4s infinite ease-in-out;
+  }
+  
+  .chatbot-typing span:nth-child(1) { animation-delay: -0.32s; }
+  .chatbot-typing span:nth-child(2) { animation-delay: -0.16s; }
+  .chatbot-typing span:nth-child(3) { animation-delay: 0s; }
+  
+  @keyframes typing {
+    0%, 80%, 100% { 
+      transform: scale(0.7);
+      opacity: 0.5;
+    }
+    40% { 
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  #chatbot-toggle {
+    width: 56px;
+    height: 56px;
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1000;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+  }
+  
+  #chatbot-toggle:hover {
+    transform: scale(1.08);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.6);
+  }
+  
+  .chatbot-body {
+    height: 320px;
+    overflow-y: auto;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    padding: 12px;
+  }
+  
+  .chatbot-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    border-radius: 16px 16px 0 0;
+    padding: 12px 16px;
+  }
+  
+  .chatbot-header h5 {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  
+  .chatbot-footer {
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    padding: 12px;
+  }
+  
+  .chatbot-footer .input-group {
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background: white;
+  }
+  
+  .chatbot-footer input {
+    border: none;
+    padding: 10px 16px;
+    font-size: 13px;
+    background: transparent;
+  }
+  
+  .chatbot-footer input:focus {
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+  }
+  
+  .chatbot-footer input::placeholder {
+    color: #a0aec0;
+    font-size: 13px;
+  }
+  
+  .chatbot-footer button {
+    border: none;
+    background: #007bff;
+    color: white;
+    padding: 0 16px;
+    transition: all 0.2s ease;
+    border-radius: 0 20px 20px 0;
+  }
+  
+  .chatbot-footer button:hover {
+    background: #0056b3;
+    transform: none;
+  }
+  
+  .chatbot-footer small {
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  
+  .chatbot-body::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .chatbot-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  .chatbot-body::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 10px;
+  }
+  
+  .chatbot-body::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+  
+  .message-long-text {
+    max-width: 85%;
+    font-size: 12.5px;
+    line-height: 1.25;
+  }
+
+  .chatbot-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .chatbot-buttons .btn {
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    border: none;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .chatbot-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(250, 247, 247, 0.2);
+  }
+
+  .chatbot-buttons .btn-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+  }
+
+  .chatbot-buttons .btn-success {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+  }
+
+  .chatbot-buttons .btn-info {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+  }
+
+  .chatbot-buttons .btn-warning {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+  }
+
+  .chatbot-buttons .btn-danger {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+  }
+
+  .chatbot-info-container {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
+    border: 1px solid #e1e5e9;
+  }
+
+  .chatbot-info-container h5 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #2d3748;
+  }
+
+  .chatbot-data-card {
+    background: white;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 5px 0;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    font-size: 12px;
+  }
+
+  .chatbot-data-card.doctor {
+    border-left-color: #28a745;
+  }
+
+  .chatbot-data-card.horario {
+    border-left-color: #ffc107;
+  }
+
+  .chatbot-data-card.cita {
+    border-left-color: #dc3545;
+  }
+
+  @media (max-width: 576px) {
+    .chatbot-modal {
+      width: 300px;
+      right: 10px;
+      bottom: 70px;
+      max-width: calc(100vw - 20px);
+    }
+    
+    #chatbot-toggle {
+      width: 50px;
+      height: 50px;
+      bottom: 20px;
+      right: 20px;
+      font-size: 20px;
+    }
+    
+    .message {
+      max-width: 82%;
+      padding: 8px 12px;
+      font-size: 12.5px;
+    }
+    
+    .chatbot-body {
+      height: 280px;
+      padding: 10px;
+    }
+    
+    .chatbot-header {
+      padding: 10px 14px;
+    }
+    
+    .chatbot-footer {
+      padding: 10px;
+    }
+
+    .chatbot-buttons {
+      gap: 4px;
+    }
+
+    .chatbot-buttons .btn {
+      font-size: 10px;
+      padding: 5px 8px;
+    }
+  }
+  
+  @media (max-width: 380px) {
+    .chatbot-modal {
+      width: 280px;
+      right: 10px;
+    }
+    
+    .message {
+      max-width: 85%;
+      font-size: 12px;
+    }
+  }
+
+  #chatbot-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section id="hero" class="hero d-flex align-items-center section-bg">
+  <div class="container">
+    <div class="row justify-content-between gy-5">
+      <div class="col-lg-6 d-flex flex-column justify-content-center">
+        <h2 data-aos="fade-up">Tu salud en buenas manos</h2>
+        <p data-aos="fade-up" data-aos-delay="100">
+          En <strong>Medessentia</strong> te ofrecemos atención médica personalizada
+          con profesionales altamente calificados. Agenda tu cita o conoce nuestros servicios.
+        </p>
+        <div class="d-flex" data-aos="fade-up" data-aos-delay="200">
+          <a href="{% url 'login' %}" class="btn btn-primary me-2">Agendar Cita</a>
+          <a href="#about" class="btn btn-outline-primary">Conócenos</a>
+        </div>
+      </div>
+      <div class="col-lg-5 text-center" data-aos="zoom-out">
+        <div class="position-relative d-inline-block">
+          <!-- Círculo de fondo -->
+          <div class="rounded-circle shadow overflow-hidden" 
+               style="width: 280px; height: 280px; border: 8px solid #e3f2fd;">
+            <!-- Imagen real -->
+            <img 
+              src="{% static 'medilab/assets/img/doctora.jpg' %}" 
+              class="img-fluid h-100 w-100" 
+              alt="Doctora profesional"
+              style="object-fit: cover; object-position: center;"
+            >
+          </div>
+        </div>
+        <p class="mt-3 fw-bold">Dra. Alexandra Toapanta</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about" class="about pt-5">
+  <div class="container" data-aos="fade-up">
+    <div class="section-header text-center mb-5">
+      <h2>Sobre Nosotros</h2>
+      <p>Tu bienestar, nuestra prioridad</p>
+    </div>
+    <div class="row gy-4 align-items-center">
+      <div class="col-lg-4" data-aos="fade-right">
+        <img src="{% static 'medilab/assets/img/consultorio.jpg' %}" class="img-fluid rounded-4 shadow" alt="Consultorio">
+      </div>
+      <div class="col-lg-6" data-aos="fade-left">
+        <p>En Medessentia trabajamos con un equipo médico interdisciplinario que brinda atención integral.</p>
+        <ul>
+          <li><i class="bi bi-check-circle text-success"></i> Consultas presenciales y en línea.</li>
+          <li><i class="bi bi-check-circle text-success"></i> Diagnóstico personalizado.</li>
+          <li><i class="bi bi-check-circle text-success"></i> Tecnología de última generación.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="services" class="services section-bg py-5">
+  <div class="container" data-aos="fade-up">
+    <div class="section-header text-center mb-5">
+      <h2>Servicios Médicos</h2>
+      <p>Atención integral con calidad y calidez</p>
+    </div>
+    <div class="row gy-4">
+      <div class="col-lg-4 col-md-4" data-aos="zoom-in">
+        <div class="service-item text-center p-4 bg-white shadow-sm rounded">
+          <img src="{% static 'medilab/assets/img/neonato.jpg' %}" class="img-fluid rounded mb-3" alt="Neonatología">
+          <h5 class="mt-3">Atención Neonatal</h5>
+          <p>Brindamos cuidados especializados para recién nacidos con personal experto.</p>
+        </div>
+      </div>
+
+      <div class="col-lg-4 col-md-4" data-aos="zoom-in" data-aos-delay="150">
+        <div class="service-item text-center p-4 bg-white shadow-sm rounded">
+          <i class="bi bi-heart-pulse fs-1 text-success"></i>
+          <h5 class="mt-3">Consulta General</h5>
+          <p>Evaluaciones médicas completas para todas las edades y condiciones.</p>
+        </div>
+      </div>
+
+      <div class="col-lg-4 col-md-6" data-aos="zoom-in" data-aos-delay="300">
+        <div class="service-item text-center p-4 bg-white shadow-sm rounded">
+          <i class="bi bi-eyedropper fs-1 text-success"></i>
+          <h5 class="mt-3">Análisis Clínicos</h5>
+          <p>Laboratorio con resultados rápidos y confiables para diagnóstico oportuno.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="contact py-5 bg-light">
+  <div class="container" data-aos="fade-up">
+
+    <!-- Header -->
+    <div class="section-header text-center mb-5">
+      <h2 class="fw-bold">Contáctanos</h2>
+      <p class="text-muted">Estamos para ayudarte</p>
+    </div>
+
+    <div class="row gy-4 align-items-stretch">
+
+      <!-- Información -->
+      <div class="col-lg-5">
+        <div class="contact-info-card p-4 h-100 shadow-sm rounded bg-white">
+
+          <div class="d-flex align-items-start mb-4">
+            <div class="icon-circle me-3">
+              <i class="bi bi-geo-alt"></i>
+            </div>
+            <div>
+              <h6 class="fw-semibold mb-1">Dirección</h6>
+              <p class="mb-0 text-muted">
+                Abdón Calderón y Mariscal Sucre<br>
+                Cantón Saquisilí
+              </p>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-start mb-4">
+            <div class="icon-circle me-3">
+              <i class="bi bi-telephone"></i>
+            </div>
+            <div>
+              <h6 class="fw-semibold mb-1">Teléfono</h6>
+              <p class="mb-0 text-muted">099 104 3977</p>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-start">
+            <div class="icon-circle me-3">
+              <i class="bi bi-envelope"></i>
+            </div>
+            <div>
+              <h6 class="fw-semibold mb-1">Email</h6>
+              <p class="mb-0 text-muted">
+                medessentiaconsultoriomedico@gmail.com
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Formulario -->
+      <div class="col-lg-7">
+        <form action="#" method="post"
+              class="p-4 p-md-5 bg-white shadow-sm rounded h-100">
+          {% csrf_token %}
+
+          <h5 class="fw-semibold mb-4 text-center">
+            Envíanos un mensaje
+          </h5>
+
+          <div class="row gy-3">
+            <div class="col-md-6">
+              <input type="text" name="name"
+                     class="form-control form-control-lg"
+                     placeholder="Tu nombre" required>
+            </div>
+
+            <div class="col-md-6">
+              <input type="email" name="email"
+                     class="form-control form-control-lg"
+                     placeholder="Tu correo" required>
+            </div>
+
+            <div class="col-12">
+              <input type="text" name="subject"
+                     class="form-control form-control-lg"
+                     placeholder="Asunto" required>
+            </div>
+
+            <div class="col-12">
+              <textarea name="message"
+                        class="form-control form-control-lg"
+                        rows="5"
+                        placeholder="Escribe tu mensaje aquí..."
+                        required></textarea>
+            </div>
+
+            <div class="col-12 text-center mt-3">
+              <button type="submit"
+                      class="btn btn-primary btn-lg px-5">
+                <i class="bi bi-send me-2"></i> Enviar mensaje
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<div class="chatbot-container">
+  <button id="chatbot-toggle" class="btn btn-primary rounded-circle shadow-lg">
+    <i class="bi bi-chat-dots"></i>
+  </button>
+  
+  <div id="chatbot-modal" class="chatbot-modal">
+    <div class="chatbot-header bg-primary text-white p-3 rounded-top d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 text-white">JOAD MEDIC</h5>
+      <button id="chatbot-close" class="btn-close btn-close-white"></button>
+    </div>
+    <div class="chatbot-body" id="chatbot-messages">
+      <div class="message bot-message">
+        <p>¡Hola! Soy JOAD MEDIC, tu asistente virtual de Medessentia 😊</p>
+        <p>Como puedo ayudarte con:</p>
+        <ul style="font-size: 12px; margin: 5px 0; padding-left: 15px;">
+          <li>📅 Agendamiento de citas</li>
+          <li>👩‍⚕️ Información de la doctora</li>
+          <li>🕒 Horarios disponibles</li>
+        </ul>
+        <p><small>¿En qué puedo ayudarte hoy?</small></p>
+      </div>
+    </div>
+    <div class="chatbot-footer p-3 border-top">
+      <div class="input-group">
+        <input type="text" id="chatbot-input" class="form-control" 
+               placeholder="Escribe tu pregunta aquí..." autocomplete="off">
+        <button id="chatbot-send" class="btn btn-primary">
+          <i class="bi bi-send"></i>
+        </button>
+      </div>
+      <small class="text-muted mt-2 d-block text-center">
+        <i class="bi bi-info-circle"></i> Respuestas en tiempo real con información actualizada de la clínica.
+      </small>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Chatbot script loaded - Con acceso a base de datos');
+    
+    const chatbotToggle = document.getElementById('chatbot-toggle');
+    const chatbotModal = document.getElementById('chatbot-modal');
+    const chatbotClose = document.getElementById('chatbot-close');
+    const chatbotSend = document.getElementById('chatbot-send');
+    const chatbotInput = document.getElementById('chatbot-input');
+    const chatbotMessages = document.getElementById('chatbot-messages');
+
+    if (!chatbotToggle || !chatbotModal || !chatbotClose || !chatbotSend || !chatbotInput || !chatbotMessages) {
+        console.error('❌ Missing chatbot elements');
+        return;
+    }
+    
+    console.log('✅ All chatbot elements found');
+    
+    // Toggle modal visibility
+    chatbotToggle.addEventListener('click', function() {
+        console.log('🔄 Toggle clicked');
+        const isVisible = chatbotModal.style.display === 'block';
+        chatbotModal.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+            chatbotInput.focus();
+        }
+    });
+
+    chatbotClose.addEventListener('click', function() {
+        console.log('❌ Close clicked');
+        chatbotModal.style.display = 'none';
+    });
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+        if (chatbotModal.style.display === 'block' && 
+            !chatbotModal.contains(event.target) && 
+            !chatbotToggle.contains(event.target)) {
+            console.log('📱 Closing modal - clicked outside');
+            chatbotModal.style.display = 'none';
+        }
+    });
+
+    function detectarAgendamiento(mensaje) {
+        const palabrasClave = [
+            'agendar', 'cita', 'reservar', 'consulta', 'doctor', 
+            'horario', 'disponibilidad', 'neonatal', 'análisis', 'analisis',
+            'quiero ver', 'necesito', 'programar', 'médico', 'medico','general'
+        ];
+        
+        return palabrasClave.some(palabra => 
+            mensaje.toLowerCase().includes(palabra.toLowerCase())
+        );
+    }
+
+    function manejarRespuestaAgendamiento(respuesta, mensajeUsuario) {
+        const respuestasRedireccion = [
+            'te llevo allí', 'redirijo', 'sistema de agendamiento',
+            'acceder al sistema', 'seleccionar fecha', 'ir a agendar',
+            'puedes agendar', 'reserva tu cita'
+        ];
+ 
+        if (respuestasRedireccion.some(texto => respuesta.toLowerCase().includes(texto))) {
+            return true;
+        }
+        
+        if (mensajeUsuario.toLowerCase().includes('sí') || 
+            mensajeUsuario.toLowerCase().includes('si') ||
+            mensajeUsuario.toLowerCase().includes('quiero') ||
+            mensajeUsuario.toLowerCase().includes('vamos') ||
+            mensajeUsuario.toLowerCase().includes('confirmo') ||
+            mensajeUsuario.toLowerCase().includes('adelante')) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    function tieneInformacionDB(respuesta) {
+        const indicadoresDB = [
+            'ACTUALMENTE', 'DISPONIBLES', 'PRÓXIMOS', 'HORARIOS', 
+            'DOCTORES', 'CITAS', 'PROGRAMADAS', 'CONSULTAS',
+            'SERVICIOS', 'INFORMACIÓN ACTUAL', 'DATOS', 'CONTAR',
+            'DR.', 'DRA.', 'ESPECIALIDAD', 'HORA', 'FECHA'
+        ];
+        
+        return indicadoresDB.some(indicador => 
+            respuesta.toUpperCase().includes(indicador)
+        );
+    }
+
+    
+    function determinarBotonesAgendamiento(mensajeUsuario, respuestaBot) {
+        const mensaje = mensajeUsuario.toLowerCase();
+        const respuesta = respuestaBot.toLowerCase();
+        
+
+        if (respuesta.includes('doctor') || respuesta.includes('médico') || 
+            respuesta.includes('especialista') || respuesta.includes('dra.')) {
+            return [
+                { texto: 'Agendar con la Dra. Alexandra Toapanta', accion: 'ir_agendar', clase: 'btn-primary' }
+            ];
+        }
+
+        if (respuesta.includes('horario') || respuesta.includes('disponible') || 
+            respuesta.includes('lunes') || respuesta.includes('viernes') ||
+            respuesta.includes('sábado') || respuesta.includes('sabado') ||
+            respuesta.includes('8:00') || respuesta.includes('18:00')) {
+            return [
+              { texto: 'Agendar cita con la Dra.', accion: 'ir_agendar', clase: 'btn-primary' }
+          ];
+        }
+        
+        // Si la respuesta tiene datos de citas del usuario
+        if (respuesta.includes('tus citas') || respuesta.includes('próximas citas') ||
+            respuesta.includes('programadas') || respuesta.includes('agendadas') ||
+            respuesta.includes('tienes cita')) {
+            {% if user.is_authenticated %}
+            return [
+                { texto: '📋 Ver Todas Mis Citas', accion: 'ver_mis_citas', clase: 'btn-primary' },
+                { texto: '🔄 Reprogramar', accion: 'ir_reprogramar', clase: 'btn-warning' }
+            ];
+            {% else %}
+            return [
+                { texto: '🔑 Iniciar Sesión', accion: 'ir_login', clase: 'btn-primary' },
+                { texto: '📅 Agendar Nueva', accion: 'ir_agendar', clase: 'btn-success' }
+            ];
+            {% endif %}
+        }
+
+        // Si el usuario pregunta por servicios
+        if (mensaje.includes('servicio') || respuesta.includes('servicio') ||
+            mensaje.includes('qué ofrecen') || respuesta.includes('consulta general')) {
+            return [
+                { texto: 'Agendar Cita', accion: 'ir_agendar', classe: 'btn-primary' },
+                { texto: 'Medicina General', accion: 'ver_medicina', classe: 'btn-info' }
+            
+               
+            ];
+        }
+        
+        return [
+            { texto: 'Agendar Cita', accion: 'ir_agendar', clase: 'btn-primary' },
+            { texto: 'Doctores', accion: 'ver_doctores', clase: 'btn-info' },
+            { texto: 'Horarios', accion: 'ver_horarios', clase: 'btn-success' }
+        ];
+    }
+    
+    function mostrarServicios() {
+        const serviciosHTML = `
+            <div class="chatbot-info-container">
+                <h5>🩺 Nuestros Servicios Médicos</h5>
+                <ul style="margin: 0; padding-left: 15px; font-size: 12px;">
+                    <li><strong>Consulta General:</strong> Atención médica integral para todas las edades</li>
+                    <li><strong>Atención Neonatal:</strong> Cuidado especializado para recién nacidos</li>
+                    <li><strong>Análisis Clínicos:</strong> Estudios de laboratorio para diagnóstico</li>
+                </ul>
+                <div class="chatbot-buttons mt-2">
+                    <button class="btn btn-sm btn-primary me-1" onclick="handleChatbotAction('ir_agendar')">
+                        Agendar Cita
+                    </button>
+                    
+                    
+                </div>
+            </div>
+        `;
+        addMessage(serviciosHTML, 'bot');
+    }
+
+    
+
+    
+    function sendMessage() {
+        const userMessage = chatbotInput.value.trim();
+        console.log('📤 Sending message:', userMessage);
+        
+        if (userMessage === '') return;
+    
+        addMessage(userMessage, 'user');
+        chatbotInput.value = '';
+        
+        showTypingIndicator();
+        
+        // Enviar también información de sesión si está disponible
+        const payload = {
+            message: userMessage,
+            user_id: {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %}
+        };
+        
+        fetch('{% url "chatbot_api" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            console.log('📨 Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(' Response data:', data);
+            removeTypingIndicator();
+           
+            const tieneAgendamiento = detectarAgendamiento(userMessage);
+            const necesitaRedireccion = manejarRespuestaAgendamiento(data.response, userMessage);
+            const tieneDatosDB = tieneInformacionDB(data.response);
+            
+            let mostrarBotonesEspeciales = tieneAgendamiento || necesitaRedireccion || tieneDatosDB;
+            let botonesPersonalizados = [];
+            
+            if (mostrarBotonesEspeciales) {
+                botonesPersonalizados = determinarBotonesAgendamiento(userMessage, data.response);
+            }
+            
+            addMessage(data.response, 'bot', mostrarBotonesEspeciales, botonesPersonalizados);
+        })
+        .catch(error => {
+            console.error('💥 Fetch error:', error);
+            removeTypingIndicator();
+            addMessage('Error de conexión. Por favor, verifica tu conexión a internet e intenta nuevamente.', 'bot');
+        });
+    }
+    
+
+    chatbotSend.addEventListener('click', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+    
+    chatbotInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    
+    function addMessage(text, sender, mostrarBotones = false, botonesPersonalizados = []) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        
+        let messageContent = text;
+        
+        if (mostrarBotones && sender === 'bot' && botonesPersonalizados.length > 0) {
+            let botonesHTML = '<div class="chatbot-buttons mt-2">';
+            
+            botonesPersonalizados.forEach(boton => {
+                botonesHTML += `
+                    <button class="btn btn-sm ${boton.clase} me-1" onclick="handleChatbotAction('${boton.accion}')">
+                        ${boton.texto}
+                    </button>
+                `;
+            });
+            
+            botonesHTML += '</div>';
+            messageContent += botonesHTML;
+        }
+        
+        const formattedText = messageContent
+            .replace(/\n/g, '<br>')
+            .replace(/\s+/g, ' ')
+            .trim();
+        
+        messageDiv.innerHTML = `<p>${formattedText}</p>`;
+        chatbotMessages.appendChild(messageDiv);
+        
+        // Scroll suave al final
+        chatbotMessages.scrollTo({
+            top: chatbotMessages.scrollHeight,
+            behavior: 'smooth'
+        });
+        
+        // Animación de entrada
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translateY(8px) scale(0.95)';
+        
+        setTimeout(() => {
+            messageDiv.style.transition = 'all 0.25s ease';
+            messageDiv.style.opacity = '1';
+            messageDiv.style.transform = 'translateY(0) scale(1)';
+        }, 10);
+    }
+    
+    function showTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typing-indicator';
+        typingDiv.className = 'message bot-message';
+        typingDiv.innerHTML = `
+            <div class="chatbot-typing">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        `;
+        chatbotMessages.appendChild(typingDiv);
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    }
+    
+    function removeTypingIndicator() {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    }
+
+
+    window.handleChatbotAction = function(action) {
+        console.log('🔄 Chatbot action:', action);
+        
+        switch(action) {
+            case 'ir_agendar':
+            case 'agendar':
+                {% if user.is_authenticated %}
+                    window.location.href = "{% url 'cita_elegir_doctor' %}";
+                {% else %}
+                    addMessage('Para agendar una cita necesitas iniciar sesión. ¿Quieres ir al login?', 'bot', true, [
+                        { texto: 'Iniciar Sesión', accion: 'ir_login', clase: 'btn-primary' },
+                        { texto: 'Registrarse', accion: 'ir_registro', clase: 'btn-success' },
+                    ]);
+                {% endif %}
+                break;
+                
+            case 'ver_servicios':
+                mostrarServicios();
+                break;
+                
+            case 'ver_horarios':
+                mostrarHorarios();
+                break;
+            case 'ver_contacto':
+                sendMessage('¿Cuál es su información de contacto?');
+                break;
+
+            case 'ver_mas_info':
+                sendMessage('Cuéntame más sobre los servicios y especialidades disponibles');
+                break;
+
+            case 'ver_neonatal':
+                sendMessage('Cuéntame sobre la atención neonatal');
+                break;
+
+            case 'ver_analisis':
+                sendMessage('¿Qué tipos de análisis clínicos ofrecen?');
+                break;
+                
+            case 'ver_info':
+                sendMessage('Cuéntame más sobre la clínica');
+                break;
+
+            case 'ver_mis_citas':
+                {% if user.is_authenticated %}
+                    sendMessage('Muéstrame mis citas programadas');
+                {% else %}
+                    addMessage('Para ver tus citas necesitas iniciar sesión.', 'bot', true, [
+                        { texto: 'Iniciar Sesión', accion: 'ir_login', clase: 'btn-primary' }
+                    ]);
+                {% endif %}
+                break;
+
+            case 'ir_reprogramar':
+                {% if user.is_authenticated %}
+                    addMessage('Para reprogramar una cita, necesito saber cuál quieres cambiar. ¿Puedes decirme el número de cita o la fecha?', 'bot');
+                {% else %}
+                    addMessage('Para reprogramar citas necesitas iniciar sesión.', 'bot', true, [
+                        { texto: ' Iniciar Sesión', accion: 'ir_login', clase: 'btn-primary' }
+                    ]);
+                {% endif %}
+                break;
+                
+            case 'ir_login':
+                window.location.href = "{% url 'login' %}";
+                break;
+                
+            case 'ir_registro':
+                window.location.href = "{% url 'registro_paciente' %}";
+                break;
+        }
+    };
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    console.log(' Chatbot initialized successfully with DB integration');
+});
+</script>
+{% endblock %}

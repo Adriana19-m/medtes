@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Panel Paciente · Medessentia{% endblock %}</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS -->
+  <link href="{% static 'medilab/assets/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'medilab/assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+
+  <!-- Main CSS -->
+  <link href="{% static 'medilab/assets/css/main.css' %}" rel="stylesheet">
+
+  {% block extra_css %}{% endblock %}
+
+  <style>
+    body {
+      background-color: #f5f9f7;
+    }
+    .sidebar-paciente {
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      background: #ffffff;
+      border-right: 1px solid #e5e7eb;
+    }
+    .sidebar-paciente .nav-link {
+      border-radius: 8px;
+      margin-bottom: 4px;
+      color: #333;
+    }
+    .sidebar-paciente .nav-link.active,
+    .sidebar-paciente .nav-link:hover {
+      background-color: #0d6efd;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ===== Topbar ===== -->
+<header class="header sticky-top">
+  <div class="topbar d-flex align-items-center">
+    <div class="container d-flex justify-content-between">
+      <div class="contact-info d-flex align-items-center">
+        <i class="bi bi-envelope me-2"></i>
+        medessentiaconsultoriomedico@gmail.com
+        <i class="bi bi-phone ms-4 me-2"></i>
+        0991043977
+      </div>
+
+      <div>
+        <span class="me-3">Hola, {{ user.first_name|default:user.username }}</span>
+        <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-secondary">Cerrar sesión</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== Layout ===== -->
+<div class="container-fluid">
+  <div class="row">
+
+    <!-- ===== Sidebar Paciente ===== -->
+    <aside class="col-md-3 col-lg-2 px-0 sidebar-paciente">
+      <div class="p-3 border-bottom">
+        <div class="d-flex align-items-center">
+          <div class="rounded-circle bg-primary text-white p-2 me-2">
+            <i class="bi bi-person"></i>
+          </div>
+          <div>
+            <strong>{{ user.first_name|default:user.username }}</strong><br>
+            <small class="text-muted">Paciente</small>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav flex-column p-3">
+        <a class="nav-link {% if request.resolver_match.url_name == 'panel_paciente' %}active{% endif %}"
+           href="{% url 'panel_paciente' %}">
+          <i class="bi bi-speedometer2 me-2"></i> Panel
+        </a>
+
+        <h6 class="text-muted mt-4 mb-2">Citas Médicas</h6>
+
+        <a class="nav-link {% if request.resolver_match.url_name == 'cita_elegir_doctor' %}active{% endif %}"
+           href="{% url 'cita_elegir_doctor' %}">
+          <i class="bi bi-calendar-plus me-2"></i> Nueva cita
+        </a>
+
+        <h6 class="text-muted mt-4 mb-2">Mi Cuenta</h6>
+
+        <a class="nav-link {% if request.resolver_match.url_name == 'mi_perfil' %}active{% endif %}"
+           href="{% url 'mi_perfil' %}">
+          <i class="bi bi-person-lines-fill me-2"></i> Mi perfil
+        </a>
+
+        <a class="nav-link {% if request.resolver_match.url_name == 'editar_cuenta' %}active{% endif %}"
+           href="{% url 'editar_cuenta' %}">
+          <i class="bi bi-gear me-2"></i> Configuración
+        </a>
+
+        <hr>
+        <a class="nav-link text-danger" href="{% url 'logout' %}">
+          <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ===== Contenido Paciente ===== -->
+    <main class="col-md-9 col-lg-10 px-4 py-4">
+      {% block paciente_content %}{% endblock %}
+    </main>
+
+  </div>
+</div>
+
+<!-- JS -->
+<script src="{% static 'medilab/assets/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

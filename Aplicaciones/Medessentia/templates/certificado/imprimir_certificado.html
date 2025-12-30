@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado Médico - {{ certificado.get_codigo_certificado }}</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1.5cm 2cm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+        }
+
+        .container {
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+        }
+
+        /* Encabezado con logo */
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .logo-container {
+            margin-bottom: 10px;
+        }
+
+        .logo-placeholder {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
+            border: 2px solid #2563eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .header h1 {
+            font-size: 20pt;
+            margin: 10px 0 5px 0;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .header-info {
+            font-size: 10pt;
+            color: #333;
+            margin: 3px 0;
+        }
+
+        .header-codigo {
+            font-size: 9pt;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        /* Título del certificado */
+        .titulo-certificado {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .titulo-certificado h2 {
+            font-size: 16pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+        }
+
+        /* Información del paciente */
+        .info-paciente {
+            margin: 15px 0;
+            border: 1px solid #000;
+        }
+
+        .info-paciente table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-paciente td {
+            padding: 8px 12px;
+            border: 1px solid #000;
+        }
+
+        .info-paciente .label {
+            font-weight: bold;
+            width: 35%;
+            background: #f5f5f5;
+        }
+
+        /* Certificación formal */
+        .certifico {
+            text-align: justify;
+            margin: 15px 0;
+            line-height: 1.6;
+            text-indent: 50px;
+        }
+
+        /* Caja de reposo */
+        .reposo-formal {
+            border: 2px solid #000;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            background: #f9f9f9;
+        }
+
+        .reposo-formal h3 {
+            font-size: 13pt;
+            margin-bottom: 12px;
+            text-decoration: underline;
+        }
+
+        .reposo-tabla {
+            width: 100%;
+            margin-top: 12px;
+            border-collapse: collapse;
+        }
+
+        .reposo-tabla td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #000;
+        }
+
+        .reposo-tabla .valor-grande {
+            font-size: 20pt;
+            font-weight: bold;
+        }
+
+        /* Secciones de texto */
+        .seccion-texto {
+            margin: 12px 0;
+        }
+
+        .seccion-texto h4 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 6px;
+            text-decoration: underline;
+        }
+
+        .seccion-texto p {
+            text-align: justify;
+            line-height: 1.5;
+        }
+
+        /* Firma */
+        .firma-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .firma-linea {
+            border-top: 2px solid #000;
+            width: 280px;
+            margin: 50px auto 8px auto;
+        }
+
+        .firma-nombre {
+            font-weight: bold;
+            font-size: 11pt;
+        }
+
+        .firma-cargo {
+            font-size: 10pt;
+            margin-top: 3px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            margin-top: 15px;
+        }
+
+        /* Botones */
+        .print-buttons {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Marca de agua anulado */
+        .estado-marca {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 72pt;
+            font-weight: bold;
+            color: rgba(220, 38, 38, 0.1);
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Impresión */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            .container {
+                padding: 0;
+            }
+
+            @page {
+                margin: 1.5cm 2cm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Botones -->
+    <div class="print-buttons no-print">
+        <button class="btn btn-primary" onclick="window.print()">
+            🖨️ Imprimir
+        </button>
+        <button class="btn btn-secondary" onclick="window.close()">
+            ✖️ Cerrar
+        </button>
+    </div>
+
+    <!-- Marca de agua si está anulado -->
+    {% if certificado.estado == 'ANULADO' %}
+    <div class="estado-marca">ANULADO</div>
+    {% endif %}
+
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="header">
+            <div class="logo-container">
+                <div class="logo-placeholder">
+                    <!-- Para usar tu logo: <img src="/static/images/logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;"> -->
+                    M
+                </div>
+            </div>
+            <h1>MEDESSENTIA</h1>
+            <div class="header-info">Centro Médico Especializado</div>
+            <div class="header-info">Dirección del consultorio</div>
+            <div class="header-info">Teléfono: (123) 456-7890 | Email: info@medessentia.com</div>
+            <div class="header-codigo">
+                <strong>Certificado N°:</strong> {{ certificado.get_codigo_certificado }}
+                | <strong>Estado:</strong> {{ certificado.get_estado_display }}
+            </div>
+        </div>
+
+        <!-- Título -->
+        <div class="titulo-certificado">
+            <h2>{{ certificado.get_tipo_certificado_display }}</h2>
+        </div>
+
+        <!-- Datos del paciente -->
+        <div class="info-paciente">
+            <table>
+                <tr>
+                    <td class="label">Paciente:</td>
+                    <td>{{ certificado.get_paciente_nombre }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Fecha de Emisión:</td>
+                    <td>{{ certificado.fecha_emision|date:"d/m/Y" }} a las {{ certificado.hora_emision|time:"H:i" }} horas</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Certificación -->
+        <div class="certifico">
+            Quien suscribe, <strong>Dr(a). {{ certificado.get_doctor_nombre }}</strong>, médico tratante, 
+            <strong>CERTIFICA</strong> que el/la paciente antes mencionado(a) ha sido evaluado(a) por el siguiente motivo:
+        </div>
+
+        <!-- Motivo -->
+        <div class="seccion-texto">
+            <h4>MOTIVO:</h4>
+            <p>{{ certificado.motivo }}</p>
+        </div>
+
+        <!-- Diagnóstico -->
+        {% if certificado.diagnostico %}
+        <div class="seccion-texto">
+            <h4>DIAGNÓSTICO:</h4>
+            <p>{{ certificado.diagnostico }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Reposo médico -->
+        {% if certificado.tipo_certificado == 'REPOSO' and certificado.dias_reposo %}
+        <div class="reposo-formal">
+            <h3>REPOSO MÉDICO INDICADO</h3>
+            <table class="reposo-tabla">
+                <tr>
+                    <td style="width: 33%;">
+                        <strong>DÍAS</strong><br>
+                        <span class="valor-grande">{{ certificado.dias_reposo }}</span>
+                    </td>
+                    <td style="width: 33%;">
+                        <strong>DESDE</strong><br>
+                        <span style="font-size: 13pt; font-weight: bold;">{{ certificado.fecha_inicio_reposo|date:"d/m/Y" }}</span>
+                    </td>
+                    <td style="width: 34%;">
+                        <strong>HASTA</strong><br>
+                        <span style="font-size: 13pt; font-weight: bold;">{{ certificado.fecha_fin_reposo|date:"d/m/Y" }}</span>
+                    </td>
+                </tr>
+            </table>
+            <p style="margin-top: 10px; font-size: 10pt;">
+                <strong>Se recomienda reposo absoluto durante el período indicado</strong>
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Indicaciones -->
+        {% if certificado.indicaciones %}
+        <div class="seccion-texto">
+            <h4>INDICACIONES MÉDICAS:</h4>
+            <p>{{ certificado.indicaciones }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Observaciones -->
+        {% if certificado.observaciones %}
+        <div class="seccion-texto">
+            <h4>OBSERVACIONES:</h4>
+            <p>{{ certificado.observaciones }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Texto final -->
+        <div class="certifico" style="margin-top: 20px;">
+            Se extiende el presente certificado a solicitud del interesado para los fines que estime conveniente.
+        </div>
+
+        <!-- Firma -->
+        <div class="firma-section">
+            <div class="firma-linea"></div>
+            <div class="firma-nombre">Dr(a). {{ certificado.get_doctor_nombre }}</div>
+            <div class="firma-cargo">Médico Tratante</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Documento generado por el Sistema MEDESSENTIA el {{ "now"|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,173 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% block title %}Registrar usuario · Medessentia{% endblock %}
+{% block page_title %}Usuarios / Registrar nuevo{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 900px;">
+  <div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Registrar nuevo usuario</h5>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'lista_usuarios' %}">Ver usuarios</a>
+    </div>
+
+    <div class="card-body">
+      <form method="post" novalidate onsubmit="return validarFormulario();">
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <div class="col-md-4">
+            <input type="text" id="username" name="username" class="form-control"
+                   value="{{ prefill.username|default:'' }}"
+                   placeholder="Usuario (ej. jlopez)" required minlength="3">
+          </div>
+
+          <div class="col-md-4">
+            <input type="email" id="email" name="email" class="form-control"
+                   value="{{ prefill.email|default:'' }}"
+                   placeholder="Correo electrónico" required>
+          </div>
+
+          <div class="col-md-4">
+            <div class="input-group">
+              <input id="pw" type="password" name="password" class="form-control"
+                     placeholder="Contraseña (mín. 8)" required minlength="8">
+              <button type="button" class="btn btn-outline-secondary" onclick="togglePw()">Ver</button>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <input type="text" name="first_name" class="form-control"
+                   value="{{ prefill.first_name|default:'' }}" placeholder="Nombre">
+          </div>
+
+          <div class="col-md-6">
+            <input type="text" name="last_name" class="form-control"
+                   value="{{ prefill.last_name|default:'' }}" placeholder="Apellido">
+          </div>
+
+          <div class="col-12"><hr></div>
+
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="asignar_paciente" name="asignar_paciente"
+                     {% if prefill.asignar_paciente %}checked{% endif %}>
+              <label class="form-check-label" for="asignar_paciente">
+                Asignar rol Paciente automáticamente
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <input type="text" id="cedula_usuario" name="cedula_usuario" class="form-control"
+                   value="{{ prefill.cedula_usuario|default:'' }}"
+                   placeholder="Cédula (10 dígitos)" required inputmode="numeric">
+          </div>
+
+          <div class="col-md-4">
+            <input type="text" name="telefono_usuario" class="form-control"
+                   value="{{ prefill.telefono_usuario|default:'' }}"
+                   placeholder="Teléfono (opcional)">
+          </div>
+
+          <div class="col-md-4">
+            <select name="genero_usuario" class="form-select">
+              <option value="">— Género —</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <input type="text" name="direccion_usuario" class="form-control"
+                   value="{{ prefill.direccion_usuario|default:'' }}"
+                   placeholder="Dirección (opcional)">
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-success">Registrar usuario</button>
+          <button type="reset" class="btn btn-outline-secondary">Limpiar</button>
+        </div>
+      </form>
+
+      {% if messages %}
+      <div class="mt-3">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function togglePw() {
+  const pw = document.getElementById('pw');
+  pw.type = pw.type === 'password' ? 'text' : 'password';
+}
+
+function validarFormulario() {
+  let valido = true;
+  let mensajes = [];
+
+  const campos = document.querySelectorAll(
+    'input[required], select[required], textarea[required]'
+  );
+
+  // Limpiar errores previos
+  campos.forEach(campo => campo.classList.remove('is-invalid'));
+
+  // Validar campos obligatorios
+  campos.forEach(campo => {
+    if (!campo.value.trim()) {
+      campo.classList.add('is-invalid');
+      valido = false;
+
+      const label = campo.closest('.col-md-4, .col-md-6, .col-12')
+        ?.querySelector('label')?.innerText || 'El campo es obligatorio';
+
+      mensajes.push(`• ${label}`);
+    }
+  });
+
+  // Validación cédula
+  const cedula = document.getElementById('cedula_usuario');
+  if (cedula && cedula.value && !/^\d{10}$/.test(cedula.value)) {
+    cedula.classList.add('is-invalid');
+    valido = false;
+    mensajes.push('• La cédula debe tener exactamente 10 dígitos');
+  }
+
+  // Validación contraseña
+  const pw = document.getElementById('pw');
+  if (pw && pw.value && pw.value.length < 8) {
+    pw.classList.add('is-invalid');
+    valido = false;
+    mensajes.push('• La contraseña debe tener al menos 8 caracteres');
+  }
+
+  if (!valido) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Formulario incompleto',
+      html: `
+        <p>Corrige los siguientes campos:</p>
+        <div style="text-align:left">${mensajes.join('<br>')}</div>
+      `,
+      confirmButtonText: 'Aceptar'
+    });
+  }
+
+  return valido;
+}
+
+
+</script>
+{% endblock %}
