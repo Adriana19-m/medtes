@@ -695,28 +695,26 @@ def asignar_roles(request):
 
 @login_required
 def lista_perfiles(request):
-    """
-    - Admin: ve todos los perfiles.
-    - Doctor: ve SOLO perfiles cuyos usuarios estén en el grupo 'Paciente'.
-    - Paciente: (opcional) solo ve su propio perfil.
-    """
     qs = PerfilUsuario.objects.select_related("user")
 
     if request.user.groups.filter(name="Doctor").exists():
-        qs = qs.filter(user__groups__name="Paciente").distinct()
+        qs = qs.filter(user__groups__name="Paciente")
         solo_pacientes = True
+
     elif request.user.groups.filter(name="Paciente").exists():
         qs = qs.filter(user=request.user)
         solo_pacientes = False
+
     else:
-       
         solo_pacientes = False
 
-    perfiles = qs.order_by("user__username")
+    perfiles = qs.distinct().order_by("user__username")
+
     return render(request, "lista_perfiles.html", {
         "perfiles": perfiles,
         "solo_pacientes": solo_pacientes,
     })
+
 # -------------------------
 # SIGNOS VITALES
 # -------------------------

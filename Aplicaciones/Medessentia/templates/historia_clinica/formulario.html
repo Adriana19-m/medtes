@@ -429,7 +429,8 @@ function buscarPacientesAuto(query) {
                         <a href="#" class="list-group-item list-group-item-action" 
                            data-id="${paciente.id}" 
                            data-nombre="${paciente.nombre_completo}" 
-                           data-cedula="${paciente.cedula}">
+                           data-cedula="${paciente.cedula}"
+                           data-telefono="${paciente.telefono}">
                             <div>
                                 <strong>${paciente.nombre_completo}</strong>
                                 ${badge}
@@ -446,7 +447,8 @@ function buscarPacientesAuto(query) {
                         seleccionarPaciente(
                             $(this).data('id'), 
                             $(this).data('nombre'), 
-                            $(this).data('cedula')
+                            $(this).data('cedula'),
+                            $(this).data('telefono')
                         );
                     });
                     
@@ -478,17 +480,19 @@ function buscarPacientesAuto(query) {
     });
 }
 
-function seleccionarPaciente(id, nombre, cedula) {
+function seleccionarPaciente(id, nombre, cedula, telefono) {
     $('#paciente_id').val(id);
     $('#buscarPacienteInput').val(nombre);
     $('#nombrePacienteSeleccionado').text(nombre);
     $('#pacienteSeleccionado').show();
     $('#resultadosBusquedaPaciente').hide();
     $('#btnNuevoPaciente').show();
-    
+
     llenarCampoSiVacio('#nombres_completos', nombre);
     llenarCampoSiVacio('#cedula', cedula);
+    llenarCampoSiVacio('input[name="telefono"]', telefono);
 }
+
 
 function llenarCampoSiVacio(selector, valor) {
     if (valor && !$(selector).val()) {
@@ -509,7 +513,7 @@ function abrirRegistroRapido() {
 }
 
 function crearPacienteRapido() {
-    // ✅ Validar formulario
+    
     if (!$('#formRegistroRapido').valid()) {
         Swal.fire({
             icon: 'warning',
@@ -525,7 +529,7 @@ function crearPacienteRapido() {
     const cedula = $('#rapidoCedula').val().trim();
     const telefono = $('#rapidoTelefono').val().trim();
 
-    // ✅ Botón loading
+
     const btnCrear = $('.btn-success[onclick="crearPacienteRapido()"]');
     const originalHTML = btnCrear.html();
     btnCrear.prop('disabled', true)
@@ -548,27 +552,27 @@ function crearPacienteRapido() {
     .then(result => {
         if (result.success) {
 
-            // ✅ ASIGNAR PACIENTE A LA HISTORIA
             seleccionarPaciente(
                 result.paciente.id,
                 result.paciente.nombre_completo,
-                result.paciente.cedula
+                result.paciente.cedula,
+                result.paciente.telefono
             );
 
-            // ✅ LIMPIAR FORMULARIO (CLAVE)
+            
             $('#formRegistroRapido')[0].reset();
 
-            // ✅ LIMPIAR VALIDACIONES
+           
             $('#formRegistroRapido .error').removeClass('error campo-valido');
             $('#formRegistroRapido label.error').remove();
 
-            // ✅ CERRAR MODAL
+            
             const modal = bootstrap.Modal.getInstance(
                 document.getElementById('modalRegistroRapido')
             );
             modal.hide();
 
-            // ✅ MENSAJE UX
+          
             Swal.fire({
                 icon: 'success',
                 title: result.message || 'Paciente registrado',
