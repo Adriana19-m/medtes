@@ -2731,7 +2731,6 @@ def cie10_eliminar(request):
         return JsonResponse({"success": False, "error": str(e)})
 # ========== Fin prueba cie10 por el momento==========
 # ========== Atención Médica - Views ==========
-
 # Vista principal
 @login_required
 def inicio_atencion(request):
@@ -2806,7 +2805,6 @@ def obtener_formulario_atencion(request):
         atencion_id = request.GET.get('id', '')
         historia_id = request.GET.get('historia_id', '')
         atencion = None
-        ultimos_signos = None
         
         if atencion_id:
             try:
@@ -2822,23 +2820,12 @@ def obtener_formulario_atencion(request):
                     id_historia=historia,
                     id_paciente=historia.id_paciente
                 )
-                
-                # Buscar los últimos signos vitales del paciente
-                try:
-                    perfil_usuario = PerfilUsuario.objects.get(user=historia.id_paciente)
-                    ultimos_signos = SignosVitales.objects.filter(
-                        perfil_usuario=perfil_usuario
-                    ).order_by('-fecha_registro').first()
-                except (PerfilUsuario.DoesNotExist, SignosVitales.DoesNotExist):
-                    ultimos_signos = None
-                    
             except HistoriaClinica.DoesNotExist:
                 pass
         
         context = {
             'atencion': atencion,
             'usuario_actual': request.user,
-            'ultimos_signos': ultimos_signos,
         }
         
         form_html = render_to_string('atencion/formulario_atencion.html', context, request=request)
@@ -2999,7 +2986,7 @@ def detalle_atencion(request, id):
             'tipo_atencion': atencion.get_tipo_atencion_display(),
             
             # Signos vitales
-            'presion_arterial': f"{atencion.presion_sistolica or ''}/{atencion.presion_diastolica or ''} {atencion.presion_media or ''}",
+            'presion_arterial': f"{atencion.presion_sistolica or ''}/{atencion.presion_diastolica or ''}",
             'temperatura': f"{atencion.temperatura or ''} °C",
             'frecuencia_respiratoria': f"{atencion.frecuencia_respiratoria or ''} rpm",
             'frecuencia_cardiaca': f"{atencion.frecuencia_cardiaca or ''} lpm",
@@ -3007,8 +2994,6 @@ def detalle_atencion(request, id):
             'peso': f"{atencion.peso or ''} kg",
             'talla': f"{atencion.talla or ''} cm",
             'imc': f"{atencion.imc or ''}",
-            'glucosa_capilar': f"{atencion.glucosa_capilar or ''} mg/dL",
-            'hemoglobina': f"{atencion.hemoglobina or ''} g/dL",
             
             # Motivos
             'motivo_consulta': atencion.motivo_consulta or 'No registrado',
@@ -3019,37 +3004,15 @@ def detalle_atencion(request, id):
             'respiratorio': atencion.respiratorio or 'Normal',
             'cardiovascular': atencion.cardiovascular or 'Normal',
             'digestivo': atencion.digestivo or 'Normal',
-            'genital': atencion.genital or 'Normal',
-            'urinario': atencion.urinario or 'Normal',
-            'esqueletico': atencion.esqueletico or 'Normal',
-            'muscular': atencion.muscular or 'Normal',
-            'nervioso': atencion.nervioso or 'Normal',
-            'endocrino': atencion.endocrino or 'Normal',
-            'hemo_linfatico': atencion.hemo_linfatico or 'Normal',
-            'tegumentario': atencion.tegumentario or 'Normal',
-            
-            # Examenes
-            'examen_frontal': atencion.examen_frontal or 'Sin hallazgos',
-            'examen_posterior': atencion.examen_posterior or 'Sin hallazgos',
-            'examen_general': atencion.examen_general or 'Sin hallazgos',
-            'examen_neurologico': atencion.examen_neurologico or 'Sin hallazgos',
-            
-            # Resultados
-            'resultado_laboratorio': atencion.resultado_laboratorio or 'No realizado',
-            'resultado_imagenologia': atencion.resultado_imagenologia or 'No realizado',
-            'resultado_histopatologia': atencion.resultado_histopatologia or 'No realizado',
             
             # Diagnóstico
             'cie10': f"{atencion.cie10_codigo or ''} - {atencion.cie10_descripcion or ''}",
             'diagnostico_observaciones': atencion.diagnostico_observaciones or 'Sin observaciones',
-            'diagnostico_condicion': atencion.get_diagnostico_condicion_display() or 'No especificado',
-            'diagnostico_cronologia': atencion.get_diagnostico_cronologia_display() or 'No especificado',
             
             # Plan
             'plan_tratamiento': atencion.plan_tratamiento or 'No establecido',
             'tratamiento_no_farmacologico': atencion.tratamiento_no_farmacologico or 'No aplica',
             'evolucion': atencion.evolucion or 'No registrada',
-            'pronostico': atencion.pronostico or 'No establecido',
             
             # Auditoría
             'creado_por': atencion.creado_por.get_full_name() or atencion.creado_por.username,
@@ -3155,67 +3118,117 @@ def buscar_cie10_atencion(request):
         print(traceback.format_exc())
         return JsonResponse({'data': []})
 
-# AJAX: Obtener últimos signos vitales de un paciente
+# AJAX: Obtener últimos signos vitales de un paciente - CORREGIDO
 @login_required
 def obtener_ultimos_signos(request):
     try:
         historia_id = request.GET.get('historia_id', '')
         
         if not historia_id:
-            return JsonResponse({'success': False, 'error': 'ID de historia requerido'})
+            return JsonResponse({
+                'success': False, 
+                'mensaje': 'ID de historia requerido'
+            })
         
-        historia = HistoriaClinica.objects.get(id_historia=historia_id)
-        
+        # Obtener la historia clínica
         try:
-            perfil_usuario = PerfilUsuario.objects.get(user=historia.id_paciente)
+            historia = HistoriaClinica.objects.get(id_historia=historia_id)
+        except HistoriaClinica.DoesNotExist:
+            return JsonResponse({
+                'success': False, 
+                'mensaje': 'Historia clínica no encontrada'
+            })
+        
+        # Buscar perfil de usuario - CORRECCIÓN: usar .first() en lugar de .get()
+        try:
+            perfil_usuario = PerfilUsuario.objects.filter(user=historia.id_paciente).first()
+            
+            if not perfil_usuario:
+                return JsonResponse({
+                    'success': False,
+                    'mensaje': 'No hay signos vitales registrados para este paciente'
+                })
+        except Exception as e:
+            print(f"Error al buscar perfil de usuario: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'mensaje': 'Error al buscar perfil de usuario'
+            })
+        
+        # Buscar últimos signos vitales
+        try:
             ultimos_signos = SignosVitales.objects.filter(
                 perfil_usuario=perfil_usuario
             ).order_by('-fecha_registro').first()
             
-            if ultimos_signos:
-                # Extraer presión arterial
-                
-                
-                datos_signos = {
-                    'presion_sistolica': ultimos_signos.presion_sistolica or '',
-                    'presion_diastolica': ultimos_signos.presion_diastolica or '',
-                    'presion_media': str(ultimos_signos.pa_media or ''),
-                    'temperatura': str(ultimos_signos.temperatura or ''),
-                    'frecuencia_respiratoria': ultimos_signos.frecuencia_respiratoria or '',
-                    'frecuencia_cardiaca': ultimos_signos.frecuencia_cardiaca or '',
-                    'saturacion_oxigeno': ultimos_signos.saturacion_oxigeno or '',
-                    'peso': str(ultimos_signos.peso or ''),
-                    'talla': str(ultimos_signos.talla or ''),
-                    'imc': str(ultimos_signos.imc or ''),
-                    'glucosa_capilar': str(ultimos_signos.glucosa_capilar or ''),
-                    'hemoglobina': str(ultimos_signos.hemoglobina or ''),
-                    'fecha_registro': ultimos_signos.fecha_registro.strftime('%d/%m/%Y %H:%M')
-                }
-
-                
-                return JsonResponse({
-                    'success': True,
-                    'signos': datos_signos
-                })
-            else:
+            if not ultimos_signos:
                 return JsonResponse({
                     'success': False,
-                    'mensaje': 'No se encontraron signos vitales previos'
+                    'mensaje': 'No hay signos vitales registrados para este paciente'
                 })
+            
+            # Función helper para obtener valores de campos
+            def obtener_campo(obj, nombres_posibles):
+                """Intenta obtener un campo usando múltiples nombres posibles"""
+                for nombre in nombres_posibles:
+                    if hasattr(obj, nombre):
+                        valor = getattr(obj, nombre, None)
+                        return str(valor) if valor is not None else ''
+                return ''
+            
+            datos_signos = {
+                'presion_sistolica': obtener_campo(ultimos_signos, [
+                    'presion_sistolica', 'pa_sistolica', 'sistolica', 'presion_arterial_sistolica'
+                ]),
+                'presion_diastolica': obtener_campo(ultimos_signos, [
+                    'presion_diastolica', 'pa_diastolica', 'diastolica', 'presion_arterial_diastolica'
+                ]),
+                'temperatura': obtener_campo(ultimos_signos, [
+                    'temperatura', 'temp'
+                ]),
+                'frecuencia_respiratoria': obtener_campo(ultimos_signos, [
+                    'frecuencia_respiratoria', 'fr', 'resp'
+                ]),
+                'frecuencia_cardiaca': obtener_campo(ultimos_signos, [
+                    'frecuencia_cardiaca', 'fc', 'pulso'
+                ]),
+                'saturacion_oxigeno': obtener_campo(ultimos_signos, [
+                    'saturacion_oxigeno', 'spo2', 'sat_o2', 'saturacion'
+                ]),
+                'peso': obtener_campo(ultimos_signos, [
+                    'peso', 'weight'
+                ]),
+                'talla': obtener_campo(ultimos_signos, [
+                    'talla', 'altura', 'estatura', 'height'
+                ]),
+                'imc': obtener_campo(ultimos_signos, [
+                    'imc', 'bmi', 'indice_masa_corporal'
+                ]),
+                'fecha_registro': ultimos_signos.fecha_registro.strftime('%d/%m/%Y %H:%M')
+            }
+            
+            return JsonResponse({
+                'success': True,
+                'signos': datos_signos
+            })
                 
-        except PerfilUsuario.DoesNotExist:
+        except Exception as e:
+            print(f"Error al buscar signos vitales: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
             return JsonResponse({
                 'success': False,
-                'mensaje': 'El paciente no tiene perfil de usuario'
+                'mensaje': 'No hay signos vitales registrados para este paciente'
             })
             
-    except HistoriaClinica.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Historia clínica no encontrada'})
     except Exception as e:
-        print(f"ERROR en obtener_ultimos_signos: {str(e)}")
+        print(f"ERROR GENERAL en obtener_ultimos_signos: {str(e)}")
         import traceback
         print(traceback.format_exc())
-        return JsonResponse({'success': False, 'error': str(e)})
+        return JsonResponse({
+            'success': False, 
+            'mensaje': 'Error al buscar signos vitales'
+        })
 #==========================================
 #certificado MEDICO
 #==========================================
