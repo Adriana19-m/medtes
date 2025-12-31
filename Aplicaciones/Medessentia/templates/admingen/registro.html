@@ -104,7 +104,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- SweetAlert2 -->
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
@@ -121,10 +121,10 @@ function validarFormulario() {
     'input[required], select[required], textarea[required]'
   );
 
-  // Limpiar errores previos
+
   campos.forEach(campo => campo.classList.remove('is-invalid'));
 
-  // Validar campos obligatorios
+
   campos.forEach(campo => {
     if (!campo.value.trim()) {
       campo.classList.add('is-invalid');
@@ -137,7 +137,7 @@ function validarFormulario() {
     }
   });
 
-  // Validación cédula
+ 
   const cedula = document.getElementById('cedula_usuario');
   if (cedula && cedula.value && !/^\d{10}$/.test(cedula.value)) {
     cedula.classList.add('is-invalid');
@@ -145,7 +145,7 @@ function validarFormulario() {
     mensajes.push('• La cédula debe tener exactamente 10 dígitos');
   }
 
-  // Validación contraseña
+
   const pw = document.getElementById('pw');
   if (pw && pw.value && pw.value.length < 8) {
     pw.classList.add('is-invalid');

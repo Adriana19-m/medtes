@@ -111,7 +111,7 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -122,11 +122,11 @@
     <script>
     let tabla = null;
 
-    // Inicializar cuando el documento esté listo
+    
     $(document).ready(function() {
         console.log("Iniciando módulo Perfiles...");
         
-        // Inicializar DataTable
+       
         tabla = $('#tablaPerfiles').DataTable({
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
@@ -135,7 +135,6 @@
             order: [[0, 'asc']]
         });
 
-        // Buscar con Enter
         $('#inputBuscar').on('keypress', function(e) {
             if (e.which === 13) {
                 buscar();

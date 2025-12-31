@@ -351,6 +351,11 @@
                     <i class="bi bi-file-earmark-medical me-2"></i>
                     Certificado médico
                 </a>
+                <a class="nav-link {% if 'reportes_dashboard' == request.resolver_match.url_name %}active{% endif %}" 
+                href="{% url 'reportes_dashboard' %}">
+                    <i class="bi bi-bar-chart-line me-2"></i>
+                    Reportes
+                </a>
 
             {% endif %}
 

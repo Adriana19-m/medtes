@@ -4,280 +4,247 @@
 
 {% block content %}
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+    <meta charset="UTF-8">
     <title>Editar Signos Vitales</title>
+
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- SweetAlert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        .form-label {
-            font-weight: 500;
+        .form-label { font-weight: 500; }
+        .was-validated .form-control:invalid {
+            border-color: #dc3545;
         }
     </style>
 </head>
+
 <body>
-    <div class="container-fluid py-3">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">
-                    <i class="fas fa-heartbeat me-2"></i>Editar Signos Vitales
-                </h4>
-                <small class="d-block mt-1">
-                    Paciente: {{ signo.perfil_usuario.user.first_name }} {{ signo.perfil_usuario.user.last_name }} ({{ signo.perfil_usuario.user.username }})
-                </small>
-            </div>
+<div class="container-fluid py-3">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-heartbeat me-2"></i>Editar Signos Vitales
+            </h4>
+            <small>
+                Paciente: {{ signo.perfil_usuario.user.first_name }} {{ signo.perfil_usuario.user.last_name }}
+            </small>
+        </div>
 
-            <div class="card-body">
-                <!-- Mostrar mensajes -->
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+        <div class="card-body">
 
-                <form method="post" id="editarSignoForm">
-                    {% csrf_token %}
-                    <div class="row g-3">
-                        <!-- Fecha -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Fecha y Hora <span class="text-danger">*</span></label>
-                            <input name="fecha_registro" type="datetime-local" class="form-control"
-                                   value="{{ prefill.fecha_registro|default:signo.fecha_registro|date:'Y-m-d\TH:i' }}">
-                        </div>
+            <!-- Mensajes Django -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-                        <!-- Presión Arterial -->
-                        <div class="col-md-2">
-                            <label class="form-label">PAS (mmHg)</label>
-                            <input name="pa_sistolica" class="form-control" id="pas"
-                                   value="{{ prefill.pa_sistolica|default:signo.pa_sistolica|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">PAD (mmHg)</label>
-                            <input name="pa_diastolica" class="form-control" id="pad"
-                                   value="{{ prefill.pa_diastolica|default:signo.pa_diastolica|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">PAM (mmHg)</label>
-                            <input name="pa_media" class="form-control" id="pam" readonly
-                                   value="{{ prefill.pa_media|default:signo.pa_media|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">PA</label>
-                            <input name="presion_arterial" class="form-control" id="pa_compuesta" readonly
-                                   value="{{ prefill.presion_arterial|default:signo.presion_arterial|default_if_none:'' }}">
-                        </div>
+            <form method="post" id="editarSignoForm" novalidate>
+                {% csrf_token %}
+                <div class="row g-3">
 
-                        <!-- Signos Vitales -->
-                        <div class="col-md-2">
-                            <label class="form-label">Temperatura (°C) <span class="text-danger">*</span></label>
-                            <input name="temperatura" class="form-control" required step="0.1" min="30" max="45"
-                                   value="{{ prefill.temperatura|default:signo.temperatura|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">F. Respiratoria (rpm) <span class="text-danger">*</span></label>
-                            <input name="frecuencia_respiratoria" class="form-control" required min="8" max="60"
-                                   value="{{ prefill.frecuencia_respiratoria|default:signo.frecuencia_respiratoria|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">F. Cardíaca (lpm) <span class="text-danger">*</span></label>
-                            <input name="frecuencia_cardiaca" class="form-control" required min="40" max="200"
-                                   value="{{ prefill.frecuencia_cardiaca|default:signo.frecuencia_cardiaca|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Sat. O₂ (%) <span class="text-danger">*</span></label>
-                            <input name="saturacion_oxigeno" class="form-control" required min="50" max="100"
-                                   value="{{ prefill.saturacion_oxigeno|default:signo.saturacion_oxigeno|default_if_none:'' }}">
-                        </div>
-
-                        <!-- Antropometría -->
-                        <div class="col-md-2">
-                            <label class="form-label">Peso (kg) <span class="text-danger">*</span></label>
-                            <input name="peso" class="form-control" required id="peso" step="0.01" min="1" max="300"
-                                   value="{{ prefill.peso|default:signo.peso|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Talla (m) <span class="text-danger">*</span></label>
-                            <input name="talla" class="form-control" required id="talla" step="0.01" min="0.5" max="2.5"
-                                   value="{{ prefill.talla|default:signo.talla|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">IMC</label>
-                            <input name="imc" class="form-control" id="imc" readonly
-                                   value="{{ prefill.imc|default:signo.imc|default_if_none:'' }}">
-                        </div>
-
-                        <!-- Exámenes -->
-                        <div class="col-md-2">
-                            <label class="form-label">Glucosa (mg/dL)</label>
-                            <input name="glucosa_capilar" class="form-control" step="0.1" min="20" max="600"
-                                   value="{{ prefill.glucosa_capilar|default:signo.glucosa_capilar|default_if_none:'' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Hemoglobina (g/dL)</label>
-                            <input name="hemoglobina" class="form-control" step="0.1" min="5" max="25"
-                                   value="{{ prefill.hemoglobina|default:signo.hemoglobina|default_if_none:'' }}">
-                        </div>
-
-                        <!-- Observaciones -->
-                        <div class="col-12">
-                            <label class="form-label">Observaciones</label>
-                            <textarea name="observaciones" class="form-control" rows="3">{{ prefill.observaciones|default:signo.observaciones|default_if_none:'' }}</textarea>
-                        </div>
+                    <!-- Fecha -->
+                    <div class="col-md-4">
+                        <label class="form-label">Fecha y Hora *</label>
+                        <input type="datetime-local" name="fecha_registro" class="form-control" required
+                               value="{{ prefill.fecha_registro|default:signo.fecha_registro|date:'Y-m-d\\TH:i' }}">
                     </div>
 
-                    <div class="border-top pt-3 mt-3">
-                        <div class="d-flex justify-content-between">
-                            <div class="btn-group">
-                                <a class="btn btn-outline-secondary" href="{% url 'historia_paciente' signo.perfil_usuario.id %}">
-                                    <i class="fas fa-times me-1"></i> Cancelar
-                                </a>
-                            </div>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-danger" onclick="confirmarEliminar()">
-                                    <i class="fas fa-trash me-1"></i> Eliminar
-                                </button>
-                                <button type="submit" class="btn btn-primary" id="submitBtn">
-                                    <i class="fas fa-save me-1"></i> Guardar
-                                </button>
-                            </div>
-                        </div>
+                    <!-- Presión arterial -->
+                    <div class="col-md-2">
+                        <label class="form-label">PAS</label>
+                        <input name="pa_sistolica" id="pas" class="form-control"
+                               value="{{ prefill.pa_sistolica|default:signo.pa_sistolica|default_if_none:'' }}">
                     </div>
-                </form>
-            </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">PAD</label>
+                        <input name="pa_diastolica" id="pad" class="form-control"
+                               value="{{ prefill.pa_diastolica|default:signo.pa_diastolica|default_if_none:'' }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">PAM</label>
+                        <input name="pa_media" id="pam" class="form-control" readonly
+                               value="{{ prefill.pa_media|default:signo.pa_media|floatformat:2 }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">PA</label>
+                        <input name="presion_arterial" id="pa_compuesta" class="form-control" readonly
+                               value="{{ prefill.presion_arterial|default:signo.presion_arterial }}">
+                    </div>
+
+                    <!-- Signos vitales -->
+                    <div class="col-md-2">
+                        <label class="form-label">Temperatura (°C) *</label>
+                        <input name="temperatura" class="form-control" required min="30" max="45" step="0.1"
+                               value="{{ prefill.temperatura|default:signo.temperatura|floatformat:1 }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">F. Respiratoria *</label>
+                        <input name="frecuencia_respiratoria" class="form-control" required min="8" max="60"
+                               value="{{ prefill.frecuencia_respiratoria|default:signo.frecuencia_respiratoria }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">F. Cardíaca *</label>
+                        <input name="frecuencia_cardiaca" class="form-control" required min="40" max="200"
+                               value="{{ prefill.frecuencia_cardiaca|default:signo.frecuencia_cardiaca }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Sat. O₂ (%) *</label>
+                        <input name="saturacion_oxigeno" class="form-control" required min="50" max="100"
+                               value="{{ prefill.saturacion_oxigeno|default:signo.saturacion_oxigeno }}">
+                    </div>
+
+                    <!-- Antropometría -->
+                    <div class="col-md-2">
+                        <label class="form-label">Peso (kg) *</label>
+                        <input name="peso" id="peso" class="form-control" required min="1" max="300" step="0.01"
+                               value="{{ prefill.peso|default:signo.peso|floatformat:2 }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Talla (m) *</label>
+                        <input name="talla" id="talla" class="form-control" required min="0.5" max="2.5" step="0.01"
+                               value="{{ prefill.talla|default:signo.talla|floatformat:2 }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">IMC</label>
+                        <input name="imc" id="imc" class="form-control" readonly
+                               value="{{ prefill.imc|default:signo.imc|floatformat:2 }}">
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="col-12">
+                        <label class="form-label">Observaciones</label>
+                        <textarea name="observaciones" class="form-control" rows="3">{{ prefill.observaciones|default:signo.observaciones|default_if_none:'' }}</textarea>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'historia_paciente' signo.perfil_usuario.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+
+                    <div>
+                        <button type="button" class="btn btn-danger me-2" onclick="confirmarEliminar()">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-    (function(){
-        // Elementos
-        const pas = document.getElementById('pas');
-        const pad = document.getElementById('pad');
-        const pam = document.getElementById('pam');
-        const paC = document.getElementById('pa_compuesta');
-        const peso = document.getElementById('peso');
-        const talla = document.getElementById('talla');
-        const imc = document.getElementById('imc');
-        const form = document.getElementById('editarSignoForm');
-        const submitBtn = document.getElementById('submitBtn');
+<script>
+(function () {
+    const pas = document.getElementById('pas');
+    const pad = document.getElementById('pad');
+    const pam = document.getElementById('pam');
+    const paC = document.getElementById('pa_compuesta');
+    const peso = document.getElementById('peso');
+    const talla = document.getElementById('talla');
+    const imc = document.getElementById('imc');
+    const form = document.getElementById('editarSignoForm');
+    const submitBtn = document.getElementById('submitBtn');
 
-        // Calcular PAM
-        function calcPAM(){
-            if(pas && pad && pam && paC){
-                const a = parseFloat(pas.value);
-                const d = parseFloat(pad.value);
-                if(!isNaN(a) && !isNaN(d)) {
-                    pam.value = ((2*d + a)/3).toFixed(2);
-                    paC.value = `${Math.round(a)}/${Math.round(d)}`;
-                }
-            }
+    function calcPAM() {
+        const a = parseFloat(pas.value.replace(',', '.'));
+        const d = parseFloat(pad.value.replace(',', '.'));
+        if (!isNaN(a) && !isNaN(d)) {
+            pam.value = ((2 * d + a) / 3).toFixed(2);
+            paC.value = `${Math.round(a)}/${Math.round(d)}`;
+        }
+    }
+
+    function calcIMC() {
+        const p = parseFloat(peso.value.replace(',', '.'));
+        const t = parseFloat(talla.value.replace(',', '.'));
+        if (!isNaN(p) && !isNaN(t) && t > 0) {
+            imc.value = (p / (t * t)).toFixed(2);
+        }
+    }
+
+    pas.addEventListener('input', calcPAM);
+    pad.addEventListener('input', calcPAM);
+    peso.addEventListener('input', calcIMC);
+    talla.addEventListener('input', calcIMC);
+
+    calcPAM();
+    calcIMC();
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
         }
 
-        // Calcular IMC
-        function calcIMC(){
-            if(peso && talla && imc){
-                const p = parseFloat(peso.value);
-                const t = parseFloat(talla.value);
-                if(!isNaN(p) && !isNaN(t) && t>0) {
-                    imc.value = (p/(t*t)).toFixed(2);
-                }
-            }
-        }
-
-        // Event listeners
-        if(pas) pas.addEventListener('input', calcPAM);
-        if(pad) pad.addEventListener('input', calcPAM);
-        if(peso) peso.addEventListener('input', calcIMC);
-        if(talla) talla.addEventListener('input', calcIMC);
-
-        // Calcular al cargar
-        calcPAM();
-        calcIMC();
-
-        // Validar formulario
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const tempInput = document.querySelector('[name="temperatura"]');
-            const spo2Input = document.querySelector('[name="saturacion_oxigeno"]');
-            const pesoInput = document.querySelector('[name="peso"]');
-            const tallaInput = document.querySelector('[name="talla"]');
-            const fcInput = document.querySelector('[name="frecuencia_cardiaca"]');
-            const frInput = document.querySelector('[name="frecuencia_respiratoria"]');
-            
-            const temp = tempInput ? parseFloat(tempInput.value) : NaN;
-            const spo2 = spo2Input ? parseInt(spo2Input.value) : NaN;
-            const pesoVal = pesoInput ? parseFloat(pesoInput.value) : NaN;
-            const tallaVal = tallaInput ? parseFloat(tallaInput.value) : NaN;
-            const fc = fcInput ? parseInt(fcInput.value) : NaN;
-            const fr = frInput ? parseInt(frInput.value) : NaN;
-
-            let errors = [];
-            
-            // Validaciones
-            if(isNaN(temp) || temp === '') {
-                errors.push('La temperatura es requerida');
-            } else if(temp < 30 || temp > 45) {
-                errors.push('La temperatura debe estar entre 30 y 45 °C');
-            }
-            
-            if(isNaN(spo2) || spo2 === '') {
-                errors.push('La saturación de oxígeno es requerida');
-            } else if(spo2 < 50 || spo2 > 100) {
-                errors.push('La saturación debe estar entre 50 y 100%');
-            }
-            
-            if(isNaN(fc) || fc === '') {
-                errors.push('La frecuencia cardíaca es requerida');
-            } else if(fc < 40 || fc > 200) {
-                errors.push('La frecuencia cardíaca debe estar entre 40 y 200 lpm');
-            }
-            
-            if(isNaN(fr) || fr === '') {
-                errors.push('La frecuencia respiratoria es requerida');
-            } else if(fr < 8 || fr > 60) {
-                errors.push('La frecuencia respiratoria debe estar entre 8 y 60 rpm');
-            }
-            
-            if(isNaN(pesoVal) || pesoVal === '' || pesoVal <= 0) {
-                errors.push('El peso debe ser mayor a 0');
-            }
-            
-            if(isNaN(tallaVal) || tallaVal === '' || tallaVal <= 0) {
-                errors.push('La talla debe ser mayor a 0');
-            }
-
-            if(errors.length > 0) {
-                let errorMsg = 'Por favor corrija los siguientes errores:\n\n';
-                errors.forEach(error => {
-                    errorMsg += '• ' + error + '\n';
-                });
-                alert(errorMsg);
-                return false;
-            }
-            
-            // Confirmar guardado
-            if(confirm('¿Está seguro de que desea guardar los cambios?')) {
+        Swal.fire({
+            title: '¿Guardar cambios?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+                Swal.fire({
+                    title: 'Guardando...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
                 form.submit();
             }
         });
+    });
 
-        // Función para eliminar
-        window.confirmarEliminar = function() {
-            if(confirm('¿Está seguro de que desea eliminar este registro?\nEsta acción no se puede deshacer.')) {
+    window.confirmarEliminar = function () {
+        Swal.fire({
+            title: '¿Eliminar registro?',
+            text: 'Esta acción no se puede deshacer',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Eliminar'
+        }).then((result) => {
+            if (result.isConfirmed) {
                 window.location.href = "{% url 'eliminar_signo_vital' signo.id %}";
             }
-        };
-    })();
-    </script>
+        });
+    };
+})();
+</script>
 </body>
 </html>
 {% endblock %}

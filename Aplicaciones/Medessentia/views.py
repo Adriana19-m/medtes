@@ -1001,10 +1001,13 @@ def editar_signo_vital(request, id):
                 if not valor and not obligatorio:
                     return None
                 try:
+                   
+                    valor = valor.replace(',', '.')
                     return Decimal(valor)
                 except (ValueError, InvalidOperation, TypeError):
                     errores.append(f"{nombre} debe ser un número válido.")
                     return None
+
             
             # Campos obligatorios
             fc = parse_int(fc_raw, "Frecuencia cardiaca", obligatorio=True)
@@ -3171,25 +3174,24 @@ def obtener_ultimos_signos(request):
             
             if ultimos_signos:
                 # Extraer presión arterial
-                presion_partes = ultimos_signos.presion_arterial.split('/')
-                presion_sistolica = presion_partes[0].strip() if len(presion_partes) > 0 else ''
-                presion_diastolica = presion_partes[1].strip() if len(presion_partes) > 1 else ''
+                
                 
                 datos_signos = {
-                    'presion_sistolica': presion_sistolica,
-                    'presion_diastolica': presion_diastolica,
-                    'presion_media': str(ultimos_signos.pa_media) if ultimos_signos.pa_media else '',
-                    'temperatura': str(ultimos_signos.temperatura) if ultimos_signos.temperatura else '',
+                    'presion_sistolica': ultimos_signos.presion_sistolica or '',
+                    'presion_diastolica': ultimos_signos.presion_diastolica or '',
+                    'presion_media': str(ultimos_signos.pa_media or ''),
+                    'temperatura': str(ultimos_signos.temperatura or ''),
                     'frecuencia_respiratoria': ultimos_signos.frecuencia_respiratoria or '',
                     'frecuencia_cardiaca': ultimos_signos.frecuencia_cardiaca or '',
                     'saturacion_oxigeno': ultimos_signos.saturacion_oxigeno or '',
-                    'peso': str(ultimos_signos.peso) if ultimos_signos.peso else '',
-                    'talla': str(ultimos_signos.talla) if ultimos_signos.talla else '',
-                    'imc': str(ultimos_signos.imc) if ultimos_signos.imc else '',
-                    'glucosa_capilar': str(ultimos_signos.glucosa_capilar) if ultimos_signos.glucosa_capilar else '',
-                    'hemoglobina': str(ultimos_signos.hemoglobina) if ultimos_signos.hemoglobina else '',
+                    'peso': str(ultimos_signos.peso or ''),
+                    'talla': str(ultimos_signos.talla or ''),
+                    'imc': str(ultimos_signos.imc or ''),
+                    'glucosa_capilar': str(ultimos_signos.glucosa_capilar or ''),
+                    'hemoglobina': str(ultimos_signos.hemoglobina or ''),
                     'fecha_registro': ultimos_signos.fecha_registro.strftime('%d/%m/%Y %H:%M')
                 }
+
                 
                 return JsonResponse({
                     'success': True,
