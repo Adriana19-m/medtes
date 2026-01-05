@@ -132,6 +132,7 @@ urlpatterns = [
     path('formulario/', views.cie10_formulario, name='cie10_formulario'),
     path('guardar/', views.cie10_guardar, name='cie10_guardar'),
     path('eliminar/', views.cie10_eliminar, name='cie10_eliminar'),
+   
     # Historia Clínica
     path('inicio/', views.inicio_historiaclinica, name='inicio_historiaclinica'),
     path('ajax/listado/', views.listado_historias, name='listado_historias'),

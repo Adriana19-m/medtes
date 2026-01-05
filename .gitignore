@@ -1,3 +1,6 @@
 .env
 /venv/
 readme.txt
+manage.py
+*.pyc
+__pycache__/

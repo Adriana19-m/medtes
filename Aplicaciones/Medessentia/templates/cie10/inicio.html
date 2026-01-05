@@ -72,7 +72,7 @@
     <div class="modal fade" id="modalFormulario" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header bg-primary text-white"> 
                     <h5 class="modal-title" id="modalTitulo">
                         <i class="fas fa-edit me-2"></i>CIE-10 - Nuevo Registro
                     </h5>
@@ -112,13 +112,12 @@
         
         // Inicializar modal
         modal = new bootstrap.Modal(document.getElementById('modalFormulario'));
+        // Cargar datos iniciales
+        cargarDatos();
         
         // Inicializar tabla
         inicializarTabla();
         
-        // Cargar datos iniciales
-        cargarDatos();
-
         // Buscar con Enter
         $('#inputBuscar').on('keypress', function(e) {
             if (e.which === 13) {
@@ -129,7 +128,9 @@
 
     function inicializarTabla() {
         tabla = $('#tablaCie10').DataTable({
-            data: [],
+            //data: [],
+            processing: true,
+            ajax: '{% url "cie10_listado" %}',
             columns: [
                 { data: 'id_cie10' },
                 { data: 'codigo' },
@@ -152,7 +153,9 @@
                 }
             ],
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                loadingRecords: "Cargando registros...",
+                processing: "Procesando...",
+                //url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
             },
             pageLength: 10,
             order: [[1, 'asc']]
