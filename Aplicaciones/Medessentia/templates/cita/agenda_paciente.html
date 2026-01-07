@@ -5,8 +5,8 @@
 
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core/locales/es.global.min.js"></script>
 
 <style>
   body {
@@ -37,19 +37,106 @@
   .modal-header {
     background-color: #2aa574 !important;
   }
-  .fc-event {
-    cursor: pointer;
-    font-weight: bold;
+  #debugInfo { display: none !important; }
+ 
+  .fc-event-disponible {
+    background-color: #2aa574 !important;
+    border-color: #238c62 !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+    padding: 3px 6px !important;
+    border-radius: 4px !important;
+    color: white !important;
   }
 
-  #debugInfo { display: none !important; }
+  .fc-event-no-disponible {
+    background-color: #6c757d !important;
+    border-color: #545b62 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+    color: white !important;
+  }
+
+  .fc-event-ocupado {
+    background-color: #dc3545 !important;
+    border-color: #c82333 !important;
+    cursor: not-allowed !important;
+    color: white !important;
+  }
+
+  .fc-event-disponible:hover {
+    background-color: #238c62 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+  }
+
+  .fc-event-title {
+    font-weight: 600 !important;
+    white-space: normal !important;
+    line-height: 1.3 !important;
+  }
+
+  .cita-existente-banner {
+    background: linear-gradient(135deg, #ffd700, #ffcc00);
+    border: 2px solid #e6b800;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  .cita-existente-banner h5 {
+    color: #8b6508;
+    font-weight: 600;
+  }
+  .cita-existente-banner .btn {
+    font-size: 0.9rem;
+    padding: 5px 15px;
+  }
+
+  
+  .fc-day-today {
+    background-color: rgba(42, 165, 116, 0.1) !important;
+  }
 </style>
 
 <div class="container py-4">
   <h2 class="mb-4">Horarios de <strong>{{ doctor.get_full_name|default:doctor.username }}</strong></h2>
+  
+
+  {% if tiene_cita_activa %}
+  <div class="cita-existente-banner">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h5><i class="bi bi-exclamation-triangle-fill me-2"></i>Ya tienes una cita activa</h5>
+        <p class="mb-0">
+          Tienes una cita <strong>{{ cita_activa.estado|lower }}</strong> para el 
+          <strong>{{ cita_activa.fecha_hora|date:"d/m/Y" }}</strong> a las 
+          <strong>{{ cita_activa.fecha_hora|time:"H:i" }}</strong> con 
+          <strong>{{ cita_activa.id_doctor.get_full_name }}</strong>.
+        </p>
+      </div>
+      <div>
+        <a href="{% url 'panel_paciente' %}" class="btn btn-warning">
+          <i class="bi bi-eye me-1"></i>Ver mi cita
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="alert alert-info mb-4">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-info-circle-fill me-2"></i>
+      <div>
+        <strong>Instrucciones:</strong> Haz clic en los bloques <span class="badge bg-success">Disponible</span> para agendar una cita. 
+        Los bloques <span class="badge bg-secondary">No disponible</span> son horarios no laborales.
+        Los bloques <span class="badge bg-danger">Ocupado</span> ya están reservados.
+      </div>
+    </div>
+  </div>
+  
   <div id="calendar"></div>
 </div>
-
 
 <div class="modal fade" id="modalAgendar" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -60,29 +147,66 @@
       </div>
       <div class="modal-body">
         <input type="hidden" id="horario_id">
-        <p><strong>Doctor:</strong> {{ doctor.get_full_name|default:doctor.username }}</p>
-        <p><strong>Fecha:</strong> <span id="modal_fecha"></span></p>
+        <input type="hidden" id="hora_seleccionada">
+        
+        <div class="card mb-3">
+          <div class="card-body">
+            <h6 class="card-subtitle mb-2 text-muted">Doctor</h6>
+            <p class="card-text h5">{{ doctor.get_full_name|default:doctor.username }}</p>
+          </div>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Fecha</h6>
+                <p class="card-text h6" id="modal_fecha"></p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Hora seleccionada</h6>
+                <p class="card-text h6" id="modal_hora_display"></p>
+                <input type="hidden" id="modal_hora_valor">
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <div class="mb-3">
-          <label for="hora_cita" class="form-label"><strong>Seleccione hora</strong></label>
-          <select id="hora_cita" class="form-select" required></select>
+        <div class="mb-3 d-none" id="hora_selector_container">
+          <label for="hora_cita" class="form-label"><strong>Cambiar hora (opcional)</strong></label>
+          <select id="hora_cita" class="form-select">
+            <option value="">Usar hora seleccionada</option>
+          </select>
+          <div class="form-text">Si desea una hora diferente, selecciónela aquí</div>
         </div>
 
         <div class="mb-3">
-          <label for="motivo" class="form-label">Motivo (opcional)</label>
-          <textarea class="form-control" id="motivo" rows="3"></textarea>
+          <label for="motivo" class="form-label"><strong>Motivo (opcional)</strong></label>
+          <textarea class="form-control" id="motivo" rows="3" 
+                    placeholder="Describa brevemente el motivo de su consulta (opcional)"></textarea>
+          <div class="form-text">Campo opcional. Puede dejar este campo en blanco si lo desea.</div>
         </div>
 
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <small>La cita tendrá una duración de 30 minutos. Puede cambiar la hora si lo desea.</small>
+        </div>
+        
         <div id="alertArea"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="submit" class="btn btn-success" id="btnConfirmar">Agendar cita</button>
+        <button type="submit" class="btn btn-success" id="btnConfirmar">
+          <i class="bi bi-calendar-check me-1"></i>Confirmar cita
+        </button>
       </div>
     </form>
   </div>
 </div>
-
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -117,7 +241,6 @@ document.addEventListener('DOMContentLoaded', function() {
       center: 'title',
       right: 'timeGridWeek,timeGridDay'
     },
-    
 
     events: function(fetchInfo, successCallback, failureCallback) {
       const url = `${eventosUrl}?start=${fetchInfo.startStr}&end=${fetchInfo.endStr}`;
@@ -128,7 +251,32 @@ document.addEventListener('DOMContentLoaded', function() {
           return response.json();
         })
         .then(data => {
-          successCallback(data); // FullCalendar ya entiende ISO
+         
+          const eventosConEstilo = data.map(evento => {
+            if (evento.extendedProps && evento.extendedProps.disponible === true) {
+              evento.className = evento.className ? 
+                evento.className + ' fc-event-disponible' : 
+                'fc-event-disponible';
+              evento.title = evento.title || "Disponible";
+              
+             
+              if (evento.start) {
+                const hora = new Date(evento.start).toLocaleTimeString('es-ES', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                });
+                evento.title = `Disponible (${hora})`;
+              }
+            } else {
+              evento.className = evento.className ? 
+                evento.className + ' fc-event-no-disponible' : 
+                ' fc-event-no-disponible';
+              evento.title = evento.title || "No disponible";
+            }
+            return evento;
+          });
+          successCallback(eventosConEstilo);
         })
         .catch(error => {
           console.error('Error al cargar eventos:', error);
@@ -136,52 +284,149 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     },
 
-  
-    eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    eventTimeFormat: { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: false,
+      meridiem: false 
+    },
 
-    eventClick: function(info) {
+    eventClick: async function(info) {
       const props = info.event.extendedProps || {};
-
-     
-      if (props.disponible === false) {
+      
+      
+      const citaData = await verificarCitaActiva();
+      
+      if (citaData.tiene_cita_activa) {
         Swal.fire({
           icon: 'warning',
+          title: 'Ya tienes una cita',
+          html: `
+            <p>Ya tienes una cita <strong>${citaData.estado}</strong> programada:</p>
+            <p><strong>Fecha:</strong> ${citaData.fecha}<br>
+            <strong>Hora:</strong> ${citaData.hora}<br>
+            <strong>Doctor:</strong> ${citaData.doctor}</p>
+            <p class="mt-3">Para agendar una nueva cita, primero debes cancelar la existente desde tu panel.</p>
+          `,
+          confirmButtonText: 'Aceptar',
+          confirmButtonColor: '#3085d6'
+        });
+        return;
+      }
+
+   
+      if (props.disponible !== true) {
+        Swal.fire({
+          icon: 'info',
           title: 'Horario no disponible',
-          text: 'Este bloque ya ha sido ocupado por otro paciente.',
+          text: 'Este horario no está disponible para citas.',
           confirmButtonColor: '#3085d6'
         });
         return;
       }
 
       
-      const modal = new bootstrap.Modal(document.getElementById('modalAgendar'));
-      const selectHora = document.getElementById('hora_cita');
-      selectHora.innerHTML = '';
+      const horaInicio = new Date(info.event.start);
+      const horaFormateada = horaInicio.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
 
-      const [h1, m1] = props.hora_inicio.split(':').map(Number);
-      const [h2, m2] = props.hora_fin.split(':').map(Number);
-      const start = new Date(0, 0, 0, h1, m1);
-      const end = new Date(0, 0, 0, h2, m2);
+      
+      const fechaFormateada = horaInicio.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
 
-      for (let t = new Date(start); t < end; t.setMinutes(t.getMinutes() + 30)) {
-        const horaStr = t.toTimeString().slice(0, 5);
-        const option = document.createElement('option');
-        option.value = horaStr;
-        option.textContent = horaStr;
-        selectHora.appendChild(option);
+    
+      document.getElementById('horario_id').value = info.event.id;
+      document.getElementById('modal_fecha').innerText = fechaFormateada;
+      document.getElementById('modal_hora_display').innerText = horaFormateada;
+      document.getElementById('modal_hora_valor').value = horaFormateada;
+      
+     
+      document.getElementById('hora_selector_container').classList.add('d-none');
+      
+      
+      if (props.hora_inicio && props.hora_fin) {
+        const [h1, m1] = props.hora_inicio.split(':').map(Number);
+        const [h2, m2] = props.hora_fin.split(':').map(Number);
+        const start = new Date(0, 0, 0, h1, m1);
+        const end = new Date(0, 0, 0, h2, m2);
+        
+        const selectHora = document.getElementById('hora_cita');
+        selectHora.innerHTML = '<option value="">Usar hora seleccionada</option>';
+        
+        
+        const diffMs = end - start;
+        const diffMins = Math.round(diffMs / 60000);
+        
+        if (diffMins > 30) {
+          
+          for (let t = new Date(start); t < end; t.setMinutes(t.getMinutes() + 30)) {
+            const horaStr = t.toTimeString().slice(0, 5);
+            const option = document.createElement('option');
+            option.value = horaStr;
+            option.textContent = horaStr;
+           
+            if (horaStr === horaFormateada) {
+              option.selected = true;
+            }
+            selectHora.appendChild(option);
+          }
+        
+          document.getElementById('hora_selector_container').classList.remove('d-none');
+        }
       }
 
-      document.getElementById('horario_id').value = info.event.id;
-      document.getElementById('modal_fecha').innerText =
-        info.event.start.toLocaleDateString('es-ES');
-
+      const modal = new bootstrap.Modal(document.getElementById('modalAgendar'));
       modal.show();
+      
+      
+      añadirBotonCambiarHora();
     }
   });
 
   calendar.render();
 
- 
+
+  function añadirBotonCambiarHora() {
+    const horaDisplay = document.getElementById('modal_hora_display');
+    const container = document.getElementById('hora_selector_container');
+    
+
+    const btnAnterior = horaDisplay.parentElement.querySelector('.btn-cambiar-hora');
+    if (btnAnterior) btnAnterior.remove();
+    
+
+    if (container && !container.classList.contains('d-none')) {
+      const cambiarBtn = document.createElement('button');
+      cambiarBtn.type = 'button';
+      cambiarBtn.className = 'btn btn-sm btn-outline-primary btn-cambiar-hora mt-2';
+      cambiarBtn.innerHTML = '<i class="bi bi-clock me-1"></i>Cambiar hora';
+      cambiarBtn.onclick = function() {
+        container.classList.toggle('d-none');
+      };
+      
+      horaDisplay.parentElement.appendChild(cambiarBtn);
+    }
+  }
+
+
+  async function verificarCitaActiva() {
+    try {
+      const response = await fetch('/cita/verificar-cita-activa/');
+      return await response.json();
+    } catch (error) {
+      console.error('Error al verificar cita activa:', error);
+      return { tiene_cita_activa: false };
+    }
+  }
+
+
   function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -197,52 +442,109 @@ document.addEventListener('DOMContentLoaded', function() {
     return cookieValue;
   }
 
+ 
   const form = document.getElementById('formAgendar');
   form.addEventListener('submit', function(e) {
     e.preventDefault();
-    const horario_id = document.getElementById('horario_id').value;
+    
+    const horarioId = document.getElementById('horario_id').value;
     const motivo = document.getElementById('motivo').value;
-    const hora_cita = document.getElementById('hora_cita').value;
+    
+    const horaSeleccionada = document.getElementById('hora_cita').value || 
+                            document.getElementById('modal_hora_valor').value;
+
+    if (!horaSeleccionada) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Hora no seleccionada',
+        text: 'Por favor, seleccione una hora para la cita.',
+        confirmButtonColor: '#3085d6'
+      });
+      return;
+    }
 
     const url = `/cita/doctor/${doctorId}/agendar/`;
     const formData = new FormData();
-    formData.append('horario_id', horario_id);
-    formData.append('motivo', motivo);
-    formData.append('hora_cita', hora_cita);
+    formData.append('horario_id', horarioId);
+    formData.append('motivo', motivo.trim()); 
+    formData.append('hora_cita', horaSeleccionada);
 
     const btn = document.getElementById('btnConfirmar');
+    const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerText = 'Agendando...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Agendando...';
 
     fetch(url, {
       method: 'POST',
-      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
       body: formData,
     })
-    .then(async res => {
+    .then(async response => {
+      const data = await response.json();
+      
       btn.disabled = false;
-      btn.innerText = 'Agendar cita';
-      const data = await res.json().catch(()=>({message:'Error desconocido del servidor'}));
-      if (!res.ok) {
-        Swal.fire('Error', data.message || 'No se pudo agendar la cita.', 'error');
-        throw new Error(data.message || 'Error');
+      btn.innerHTML = originalText;
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'No se puede agendar',
+            html: 'Ya tienes una cita pendiente o confirmada. No puedes agendar otra hasta que se atienda o cancele la existente.<br><br>Gracias por usar nuestro sistema de citas.',
+            confirmButtonText: 'Aceptar',
+            confirmButtonColor: '#3085d6'
+          });
+        } else if (response.status === 400) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error de validación',
+            text: data.message || 'Por favor, verifique los datos ingresados.',
+            confirmButtonColor: '#3085d6'
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message || 'No se pudo agendar la cita. Por favor, intente nuevamente.',
+            confirmButtonColor: '#3085d6'
+          });
+        }
+        throw new Error(data.message || 'Error al agendar');
       }
       return data;
     })
     .then(data => {
       if (data.status === 'success') {
         bootstrap.Modal.getInstance(document.getElementById('modalAgendar')).hide();
-        Swal.fire('✅ Éxito', data.message, 'success');
-        calendar.refetchEvents();
+        
+        Swal.fire({
+          icon: 'success',
+          title: '✅ Cita agendada exitosamente',
+          html: data.message + '<br><br>Gracias por usar nuestro sistema de citas.',
+          confirmButtonText: 'Aceptar',
+          confirmButtonColor: '#3085d6'
+        }).then(() => {
+          
+          window.location.href = '/panel/paciente/';
+        });
       } else {
-        Swal.fire('⚠️ Atención', data.message, 'warning');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Atención',
+          text: data.message,
+          confirmButtonColor: '#3085d6'
+        });
       }
     })
     .catch(err => {
-      Swal.fire('Error', err.message, 'error');
+      console.error('Error al agendar:', err);
+      btn.disabled = false;
+      btn.innerHTML = originalText;
     });
   });
 });
 </script>
-
 {% endblock %}

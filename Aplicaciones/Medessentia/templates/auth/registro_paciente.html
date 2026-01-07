@@ -19,10 +19,14 @@
     <!-- Usuario / Correo -->
     <div class="row">
       <div class="col-md-6 mb-3">
-        <label class="form-label">Usuario</label>
+        <label class="form-label">Usuario <small class="text-muted">(obligatorio)</small></label>
         <input name="username" class="form-control" required
-               value="{{ prefill.username|default:'' }}">
-        <div class="invalid-feedback">El usuario es obligatorio.</div>
+              placeholder="Ej: maria2024"
+              value="{{ prefill.username|default:'' }}">
+        <div class="invalid-feedback">Debes crear un nombre de usuario.</div>
+        <small class="form-text text-muted">
+          Crea un usuario único para iniciar sesión.
+        </small>
       </div>
       <div class="col-md-6 mb-3">
         <label class="form-label">Correo</label>
@@ -35,48 +39,48 @@
     <!-- Nombre / Apellido -->
     <div class="row">
       <div class="col-md-6 mb-3">
-        <label class="form-label">Nombre</label>
+        <label class="form-label">Nombres</label>
         <input name="first_name" class="form-control" required
                value="{{ prefill.first_name|default:'' }}">
-        <div class="invalid-feedback">El nombre es obligatorio.</div>
+        <div class="invalid-feedback">Los nombres son obligatorios.</div>
       </div>
       <div class="col-md-6 mb-3">
-        <label class="form-label">Apellido</label>
+        <label class="form-label">Apellidos</label>
         <input name="last_name" class="form-control" required
                value="{{ prefill.last_name|default:'' }}">
-        <div class="invalid-feedback">El apellido es obligatorio.</div>
+        <div class="invalid-feedback">Los apellidos son obligatorios.</div>
       </div>
     </div>
 
-    <!-- ===== CONTRASEÑAS ===== -->
+    <!-- Contraseñas -->
     <div class="row">
       <div class="col-md-6 mb-3">
         <label class="form-label">Contraseña</label>
-        <div class="input-group">
+        <div class="input-group has-validation">
           <input type="password" name="password1" id="password1"
                  class="form-control" minlength="8" required>
           <button type="button" class="btn btn-outline-secondary"
                   onclick="togglePassword('password1', this)">
             <i class="bi bi-eye"></i>
           </button>
-        </div>
-        <div class="invalid-feedback">
-          La contraseña debe tener al menos 8 caracteres.
+          <div class="invalid-feedback">
+            La contraseña debe tener al menos 8 caracteres.
+          </div>
         </div>
       </div>
 
       <div class="col-md-6 mb-3">
         <label class="form-label">Confirmar contraseña</label>
-        <div class="input-group">
+        <div class="input-group has-validation">
           <input type="password" name="password2" id="password2"
                  class="form-control" minlength="8" required>
           <button type="button" class="btn btn-outline-secondary"
                   onclick="togglePassword('password2', this)">
             <i class="bi bi-eye"></i>
           </button>
-        </div>
-        <div class="invalid-feedback">
-          Las contraseñas no coinciden o no cumplen el mínimo.
+          <div class="invalid-feedback" id="password2-feedback">
+            Las contraseñas no coinciden.
+          </div>
         </div>
       </div>
     </div>
@@ -102,7 +106,7 @@
         <label class="form-label">Teléfono (10 dígitos)</label>
         <input name="telefono_usuario" id="telefono_usuario"
                maxlength="10" minlength="10"
-               class="form-control" required
+               class="form-control" 
                pattern="^[0-9]{10}$"
                value="{{ prefill.telefono_usuario|default:'' }}">
         <div class="invalid-feedback">
@@ -126,12 +130,11 @@
         <option value="">-- Selecciona --</option>
         <option value="Masculino" {% if prefill.genero_usuario == "Masculino" %}selected{% endif %}>Masculino</option>
         <option value="Femenino" {% if prefill.genero_usuario == "Femenino" %}selected{% endif %}>Femenino</option>
-        <option value="Otro" {% if prefill.genero_usuario == "Otro" %}selected{% endif %}>Otro</option>
       </select>
       <div class="invalid-feedback">Selecciona una opción.</div>
     </div>
 
-    <button class="btn btn-success w-100 mt-3">Crear cuenta</button>
+    <button class="btn btn-success w-100 mt-3" type="submit">Crear cuenta</button>
   </form>
 
   <div class="text-center mt-3">
@@ -145,27 +148,154 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("formRegistroPaciente");
   const pass1 = document.getElementById("password1");
   const pass2 = document.getElementById("password2");
+  const password2Feedback = document.getElementById("password2-feedback");
+  
+  let formSubmitted = false;
 
-  function validarPasswords() {
+  // Función para validar coincidencia de contraseñas
+  function validatePasswordMatch() {
     if (pass1.value !== pass2.value) {
-      pass2.setCustomValidity("Las contraseñas no coinciden");
+      pass2.setCustomValidity("Las contraseñas no coinciden.");
+      password2Feedback.textContent = "Las contraseñas no coinciden.";
+      return false;
     } else {
       pass2.setCustomValidity("");
+      return true;
     }
   }
 
-  pass1.addEventListener("input", validarPasswords);
-  pass2.addEventListener("input", validarPasswords);
-
-  form.addEventListener("submit", function (event) {
-    validarPasswords();
-
-    if (!form.checkValidity()) {
-      event.preventDefault();
-      event.stopPropagation();
+  // Función para validar longitud de contraseña
+  function validatePasswordLength() {
+    if (pass1.value.length > 0 && pass1.value.length < 8) {
+      pass1.setCustomValidity("La contraseña debe tener al menos 8 caracteres.");
+      return false;
+    } else {
+      pass1.setCustomValidity("");
+      return true;
     }
+  }
 
-    form.classList.add("was-validated");
+  // Evento de blur para validar al salir del campo
+  function setupFieldValidation(field) {
+    field.addEventListener('blur', function() {
+      if (formSubmitted || (this.value && !this.checkValidity())) {
+        this.classList.add('is-invalid');
+        this.classList.remove('is-valid');
+      } else if (this.checkValidity()) {
+        this.classList.remove('is-invalid');
+        this.classList.add('is-valid');
+      }
+    });
+  }
+
+  // Configurar validación para todos los campos
+  const allFields = form.querySelectorAll('input, select');
+  allFields.forEach(field => {
+    setupFieldValidation(field);
+    
+    // Remover mensaje de error cuando el usuario empieza a escribir
+    field.addEventListener('input', function() {
+      if (formSubmitted) {
+        if (this.checkValidity()) {
+          this.classList.remove('is-invalid');
+          this.classList.add('is-valid');
+        } else {
+          this.classList.add('is-invalid');
+          this.classList.remove('is-valid');
+        }
+        
+        // Validaciones específicas para contraseñas
+        if (this.id === 'password1' || this.id === 'password2') {
+          validatePasswordLength();
+          validatePasswordMatch();
+        }
+      }
+    });
+  });
+
+  // Validación específica para contraseñas en tiempo real
+  pass1.addEventListener('input', function() {
+    if (formSubmitted) {
+      validatePasswordLength();
+      validatePasswordMatch();
+    }
+  });
+
+  pass2.addEventListener('input', function() {
+    if (formSubmitted) {
+      validatePasswordMatch();
+    }
+  });
+
+  // Validación del formulario al enviar
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    formSubmitted = true;
+    
+    // Validar campos de Bootstrap
+    const isBootstrapValid = form.checkValidity();
+    
+    // Validaciones personalizadas
+    const isLengthValid = validatePasswordLength();
+    const isMatchValid = validatePasswordMatch();
+    
+    // Aplicar clases de validación visual
+    allFields.forEach(field => {
+      if (!field.checkValidity()) {
+        field.classList.add('is-invalid');
+        field.classList.remove('is-valid');
+      } else {
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+      }
+    });
+    
+    // Validar específicamente las contraseñas
+    if (pass1.value.length < 8) {
+      pass1.classList.add('is-invalid');
+      pass1.classList.remove('is-valid');
+    }
+    
+    if (pass1.value !== pass2.value) {
+      pass2.classList.add('is-invalid');
+      pass2.classList.remove('is-valid');
+    }
+    
+    // Si todo es válido, enviar el formulario
+    if (isBootstrapValid && isLengthValid && isMatchValid) {
+      form.submit();
+    } else {
+      // Marcar formulario como validado para mostrar errores
+      form.classList.add("was-validated");
+      
+      // Enfocar el primer campo con error
+      const firstInvalidField = form.querySelector('.is-invalid');
+      if (firstInvalidField) {
+        firstInvalidField.focus();
+      }
+    }
+  });
+
+  // Validación de cédula
+  const cedulaInput = document.getElementById("cedula_usuario");
+  cedulaInput.addEventListener("input", function() {
+    if (this.validity.patternMismatch) {
+      this.setCustomValidity("Debe contener exactamente 10 dígitos numéricos.");
+    } else {
+      this.setCustomValidity("");
+    }
+  });
+
+  // Validación de teléfono (si se ingresa)
+  const telefonoInput = document.getElementById("telefono_usuario");
+  telefonoInput.addEventListener("input", function() {
+    if (this.value && this.validity.patternMismatch) {
+      this.setCustomValidity("Debe contener exactamente 10 dígitos numéricos.");
+    } else {
+      this.setCustomValidity("");
+    }
   });
 });
 
@@ -182,4 +312,36 @@ function togglePassword(inputId, btn) {
   }
 }
 </script>
+
+<style>
+/* Estilos para indicar campos válidos */
+.form-control.is-valid, .form-select.is-valid {
+  border-color: #198754;
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* Ocultar mensajes de error por defecto */
+.input-group.has-validation .invalid-feedback {
+  display: none;
+}
+
+.input-group.has-validation .form-control.is-invalid ~ .invalid-feedback {
+  display: block;
+}
+
+/* Estilo para el botón de mostrar contraseña */
+.input-group button.btn-outline-secondary {
+  border-color: #ced4da;
+}
+
+.input-group button.btn-outline-secondary:hover {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+}
+</style>
+
 {% endblock %}

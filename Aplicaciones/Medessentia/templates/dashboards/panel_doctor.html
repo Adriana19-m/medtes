@@ -4,280 +4,234 @@
 {% block page_subtitle %}Gestiona todas tus actividades médicas{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div class="container-fluid">
     <!-- Resumen rápido -->
-    <div class="col-12">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h5 class="card-title text-white">Bienvenido, Dr. {{ user.first_name|default:"Doctor" }}</h5>
-                        <p class="card-text mb-0">Aquí puedes gestionar pacientes, citas, historias clínicas y más.</p>
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="card-title text-white">Bienvenido, Dr. {{ user.first_name|default:"Doctor" }}</h5>
+                            <p class="card-text mb-0">Aquí puedes gestionar pacientes, citas, historias clínicas y más.</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <i class="bi bi-heart-pulse display-4 opacity-50"></i>
+                        </div>
                     </div>
-                    <div class="col-md-4 text-end">
-                        <i class="bi bi-heart-pulse display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Primera fila de tarjetas -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-people text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Pacientes</h6>
+                            <span class="text-muted small">Listado de perfiles</span>
+                        </div>
                     </div>
+                    <p class="card-text small text-muted flex-grow-1">
+                        Gestiona la información de todos tus pacientes.
+                    </p>
+                    <a href="{% url 'lista_perfiles' %}" 
+                       class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 rounded-3">
+                        <i class="bi bi-arrow-right-circle"></i>
+                        Ver pacientes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-calendar2-week text-success fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Citas</h6>
+                            <span class="text-muted small">Citas agendadas</span>
+                        </div>
+                    </div>
+                    <p class="card-text small text-muted flex-grow-1">
+                        Revisa y agenda citas médicas.
+                    </p>
+                    <a href="{% url 'cita_index' %}" 
+                       class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2 rounded-3">
+                        <i class="bi bi-arrow-right-circle"></i>
+                        Ver citas
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-clock-history text-warning fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Horario</h6>
+                            <span class="text-muted small">Horario de atención</span>
+                        </div>
+                    </div>
+                    <p class="card-text small text-muted flex-grow-1">
+                        Configura tu horario de atención.
+                    </p>
+                    <a href="{% url 'horario_index' %}" 
+                       class="btn btn-warning w-100 d-flex align-items-center justify-content-center gap-2 rounded-3 text-dark">
+                        <i class="bi bi-plus-circle"></i>
+                        Agregar horario
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Tarjetas de funciones principales -->
-   <div class="col-lg-3 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body d-flex flex-column">
-
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-people text-primary fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Pacientes</h6>
-                    <span class="text-muted small">Listado de perfiles</span>
-                </div>
-            </div>
-
-            <p class="card-text small text-muted flex-grow-1">
-                Gestiona la información de todos tus pacientes.
-            </p>
-
-            <a href="{% url 'lista_perfiles' %}" 
-               class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 rounded-3">
-                <i class="bi bi-arrow-right-circle"></i>
-                Ver pacientes
-            </a>
-
-        </div>
-    </div>
-</div>
-
-
-    <div class="col-lg-3 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body d-flex flex-column">
-
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-info bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-clipboard2-pulse text-info fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Signos Vitales</h6>
-                    <span class="text-muted small">Todos los registros</span>
-                </div>
-            </div>
-
-            <p class="card-text small text-muted flex-grow-1">
-                Consulta y registra signos vitales de pacientes.
-            </p>
-
-            <a href="{% url 'signos_vitales' %}" 
-               class="btn btn-info w-100 d-flex align-items-center justify-content-center gap-2 rounded-3 text-white">
-                <i class="bi bi-arrow-right-circle"></i>
-                Abrir
-            </a>
-
-        </div>
-    </div>
-</div>
-
-
-   <div class="col-lg-3 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body d-flex flex-column">
-            
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-success bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-calendar2-week text-success fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Citas</h6>
-                    <span class="text-muted small">Citas agendadas</span>
-                </div>
-            </div>
-
-            <p class="card-text small text-muted flex-grow-1">
-                Revisa y agenda citas médicas.
-            </p>
-
-            <a href="{% url 'cita_index' %}" 
-               class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2 rounded-3">
-                <i class="bi bi-arrow-right-circle"></i>
-                Ver citas
-            </a>
-
-        </div>
-    </div>
-</div>
-
-
-    <div class="col-lg-3 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body d-flex flex-column">
-
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-clock-history text-warning fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Horario</h6>
-                    <span class="text-muted small">Horario de atención</span>
-                </div>
-            </div>
-
-            <p class="card-text small text-muted flex-grow-1">
-                Configura tu horario de atención.
-            </p>
-
-            <a href="{% url 'horario_index' %}" 
-               class="btn btn-warning w-100 d-flex align-items-center justify-content-center gap-2 rounded-3 text-dark">
-                <i class="bi bi-plus-circle"></i>
-                Agregar horario
-            </a>
-
-        </div>
-    </div>
-</div>
-
 
     <!-- Segunda fila de tarjetas -->
-    <div class="col-lg-4 col-md-6">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-danger bg-opacity-10 p-3 rounded me-3">
-                        <i class="bi bi-file-medical text-danger fs-4"></i>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-danger bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-file-medical text-danger fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">CIE-10</h6>
+                            <span class="text-muted small">Clasificación internacional</span>
+                        </div>
                     </div>
-                    <div>
-                        <h6 class="mb-0">CIE-10</h6>
-                        <span class="text-muted small">Clasificación internacional</span>
+                    <p class="card-text small text-muted">Consulta la clasificación internacional de enfermedades.</p>
+                    <a href="{% url 'cie10_inicio' %}" class="btn btn-outline-danger w-100">Abrir</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-clipboard2-data text-info fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Historia Clínica</h6>
+                            <span class="text-muted small">Registros médicos</span>
+                        </div>
                     </div>
+                    <p class="card-text small text-muted">
+                        Acceso completo a la historia clínica del paciente.
+                    </p>
+                    <a href="{% url 'inicio_historiaclinica' %}" class="btn btn-outline-info w-100">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Abrir
+                    </a>
                 </div>
-                <p class="card-text small text-muted">Consulta la clasificación internacional de enfermedades.</p>
-                <a href="{% url 'cie10_inicio' %}" class="btn btn-outline-danger w-100">Abrir</a>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-heart-pulse text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Atención Médica</h6>
+                            <span class="text-muted small">Registros clínicos</span>
+                        </div>
+                    </div>
+                    <p class="card-text small text-muted">
+                        Gestión completa de la atención médica del paciente.
+                    </p>
+                    <a href="{% url 'inicio_atencion' %}" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Abrir
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-<div class="col-lg-4 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body">
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-info bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-clipboard2-data text-info fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Historia Clínica</h6>
-                    <span class="text-muted small">Registros médicos</span>
-                </div>
-            </div>
-
-            <p class="card-text small text-muted">
-                Acceso completo a la historia clínica del paciente.
-            </p>
-
-            <a href="{% url 'inicio_historiaclinica' %}" class="btn btn-outline-info w-100">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Abrir
-            </a>
-        </div>
-    </div>
-</div>
-
-
-<div class="col-lg-4 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body">
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-heart-pulse text-primary fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Atención Médica</h6>
-                    <span class="text-muted small">Registros clínicos</span>
+    <!-- Tercera fila de tarjetas -->
+    <div class="row g-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-prescription2 text-success fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Receta Médica</h6>
+                            <span class="text-muted small">Prescripciones</span>
+                        </div>
+                    </div>
+                    <p class="card-text small text-muted">
+                        Generación y gestión de recetas médicas.
+                    </p>
+                    <a href="{% url 'inicio_receta' %}" class="btn btn-outline-success w-100">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Abrir
+                    </a>
                 </div>
             </div>
-            <p class="card-text small text-muted">
-                Gestión completa de la atención médica del paciente.
-            </p>
-            <a href="{% url 'inicio_atencion' %}" class="btn btn-outline-primary w-100">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Abrir
-            </a>
         </div>
-    </div>
-</div>
 
-
-<div class="col-lg-4 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body">
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-success bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-prescription2 text-success fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Receta Médica</h6>
-                    <span class="text-muted small">Prescripciones</span>
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-file-earmark-medical text-warning fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Certificado Médico</h6>
+                            <span class="text-muted small">Documentos</span>
+                        </div>
+                    </div>
+                    <p class="card-text small text-muted">
+                        Emisión de certificados médicos.
+                    </p>
+                    <a href="{% url 'inicio_certificado' %}" class="btn btn-outline-warning w-100">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Abrir
+                    </a>
                 </div>
             </div>
-            <p class="card-text small text-muted">
-                Generación y gestión de recetas médicas.
-            </p>
-            <a href="{% url 'inicio_receta' %}" class="btn btn-outline-success w-100">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Abrir
-            </a>
         </div>
-    </div>
-</div>
-<div class="col-lg-4 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body">
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-file-earmark-medical text-warning fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Certificado Médico</h6>
-                    <span class="text-muted small">Documentos</span>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-secondary bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-bar-chart-line text-secondary fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Reportes</h6>
+                            <span class="text-muted small">Estadísticas y análisis</span>
+                        </div>
+                    </div>
+                    <p class="card-text small text-muted">
+                        Generación de reportes y visualización de indicadores clínicos.
+                    </p>
+                    <a href="{% url 'reportes_dashboard' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-graph-up-arrow me-1"></i> Ver Reportes
+                    </a>
                 </div>
             </div>
-            <p class="card-text small text-muted">
-                Emisión de certificados médicos.
-            </p>
-            <a href="{% url 'inicio_certificado' %}" class="btn btn-outline-warning w-100">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Abrir
-            </a>
         </div>
     </div>
-</div>
-
-
-   <div class="col-lg-4 col-md-6">
-    <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body">
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-secondary bg-opacity-10 p-3 rounded me-3">
-                    <i class="bi bi-bar-chart-line text-secondary fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0">Reportes</h6>
-                    <span class="text-muted small">Estadísticas y análisis</span>
-                </div>
-            </div>
-
-            <p class="card-text small text-muted">
-                Generación de reportes y visualización de indicadores clínicos.
-            </p>
-
-            <!-- ¡SOLO CAMBIA ESTA LÍNEA! -->
-            <a href="{% url 'reportes_dashboard' %}" class="btn btn-outline-secondary w-100">
-                <i class="bi bi-graph-up-arrow me-1"></i> Ver Reportes
-            </a>
-        </div>
-    </div>
-</div>
-</div>
-
-
-
 </div>
 
 <style>
@@ -304,7 +258,14 @@
     }
     
     .card:hover {
-        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        transform: translateY(-5px);
+        transition: transform 0.3s ease;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+        border-radius: 12px;
     }
 </style>
 {% endblock %}

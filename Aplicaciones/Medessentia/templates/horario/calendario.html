@@ -23,6 +23,16 @@
         .fc-button {
             text-transform: capitalize !important;
         }
+        .fc-day-today {
+            background-color: rgba(13, 110, 253, 0.1) !important;
+        }
+        .fc-event {
+            cursor: pointer;
+        }
+        .fc-day-disabled {
+            background-color: #f8f9fa !important;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -32,12 +42,11 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Calendario de Horarios</h4>
                     <div>
+                    
                         <a href="{% url 'horario_index' %}" class="btn btn-light btn-sm me-2">
-                            <i class="fas fa-list me-1"></i> Ver Lista
+                            <i class="fas fa-arrow-left me-1"></i> Volver
                         </a>
-                        <button class="btn btn-light btn-sm" id="btn_nuevo_horario">
-                            <i class="fas fa-plus me-1"></i> Nuevo Horario
-                        </button>
+                        
                     </div>
                 </div>
             </div>
@@ -93,12 +102,12 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="fecha_inicio" class="form-label fw-bold">Fecha inicio *</label>
-                                <input type="date" id="fecha_inicio" class="form-control" required>
+                                <input type="date" id="fecha_inicio" class="form-control" required min="{{ hoy|date:'Y-m-d' }}">
                                 <div class="form-text">Fecha de inicio del horario</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="fecha_fin" class="form-label fw-bold">Fecha fin *</label>
-                                <input type="date" id="fecha_fin" class="form-control" required>
+                                <input type="date" id="fecha_fin" class="form-control" required min="{{ hoy|date:'Y-m-d' }}">
                                 <div class="form-text">Fecha de fin del horario</div>
                             </div>
                         </div>
@@ -135,9 +144,80 @@
 
     <script>
     let calendar = null;
+    let modalDisponibilidad = null;
+    let eventosCargados = []; // Para almacenar los eventos cargados
+
+    // Función para obtener el nombre del día en español
+    function obtenerNombreDia(fecha) {
+        const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        return dias[fecha.getDay()];
+    }
+
+    // Función para verificar si una fecha ya tiene eventos
+    function fechaTieneEventos(fecha) {
+        const fechaStr = fecha.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        
+        return eventosCargados.some(evento => {
+            const eventDate = evento.start.split('T')[0];
+            return eventDate === fechaStr;
+        });
+    }
+
+    // Función para obtener fechas ocupadas
+    function obtenerFechasOcupadas() {
+        return eventosCargados.map(evento => {
+            return evento.start.split('T')[0]; // Solo la fecha YYYY-MM-DD
+        });
+    }
+
+    // Función para inicializar datepickers
+    function inicializarDatepickers() {
+        const hoy = new Date();
+        const hoyFormato = hoy.toISOString().split('T')[0];
+        
+        // Establecer mínimo de hoy
+        $('#fecha_inicio').attr('min', hoyFormato);
+        $('#fecha_fin').attr('min', hoyFormato);
+        
+        // Actualizar mínimo de fecha_fin cuando cambia fecha_inicio
+        $('#fecha_inicio').on('change', function() {
+            const fechaInicio = $(this).val();
+            $('#fecha_fin').attr('min', fechaInicio);
+            
+            // Si fecha_fin es anterior a fecha_inicio, actualizarla
+            if ($('#fecha_fin').val() && $('#fecha_fin').val() < fechaInicio) {
+                $('#fecha_fin').val(fechaInicio);
+            }
+            
+            // Actualizar día de la semana si se cambia la fecha
+            if (fechaInicio) {
+                const fecha = new Date(fechaInicio + 'T00:00:00');
+                const nombreDia = obtenerNombreDia(fecha);
+                $('#dia_semana_select').val(nombreDia);
+            }
+        });
+        
+        // Actualizar día de la semana para fecha_fin también
+        $('#fecha_fin').on('change', function() {
+            if ($(this).val()) {
+                const fecha = new Date($(this).val() + 'T00:00:00');
+                const nombreDia = obtenerNombreDia(fecha);
+                // Solo actualizar si el select está vacío
+                if (!$('#dia_semana_select').val()) {
+                    $('#dia_semana_select').val(nombreDia);
+                }
+            }
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         console.log("Iniciando módulo Calendario de Horarios...");
+
+        // Inicializar modal
+        modalDisponibilidad = new bootstrap.Modal(document.getElementById('modalDisponibilidad'));
+        
+        // Inicializar datepickers
+        inicializarDatepickers();
 
         // Inicializar calendario
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
@@ -164,12 +244,15 @@
             weekends: true,
             editable: false,
             eventColor: '#0d6efd',
+            
+            // Deshabilitar fechas pasadas
+            validRange: {
+                start: new Date() // Solo permite desde hoy en adelante
+            },
 
             events: function(info, success, failure) {
                 let url = "{% url 'horario_eventos' %}";
-                const doctor = $('#filtro_doctor_cal').val();
-                if (doctor) url += '?doctor_id=' + doctor;
-
+                
                 $.ajax({
                     url: url,
                     type: 'GET',
@@ -178,6 +261,8 @@
                         end: info.endStr
                     },
                     success: function(data) {
+                        // Guardar eventos cargados
+                        eventosCargados = data;
                         success(data);
                     },
                     error: function(xhr) {
@@ -196,11 +281,12 @@
             dateClick: function(info) {
                 const fechaSeleccionada = new Date(info.dateStr);
                 const hoy = new Date();
-
+                
                 // Normalizamos HOY a solo fecha (sin hora)
                 hoy.setHours(0, 0, 0, 0);
                 fechaSeleccionada.setHours(0, 0, 0, 0);
 
+                // Verificar si la fecha es pasada
                 if (fechaSeleccionada < hoy) {
                     Swal.fire({
                         icon: 'warning',
@@ -212,17 +298,48 @@
                     return;
                 }
 
-                // SI ES HOY O FUTURO, PERMITE AGENDAR
-                const date = info.dateStr.split('T')[0];
-                $('#fecha_inicio').val(date);
-                $('#fecha_fin').val(date);
+                // Verificar si la fecha ya tiene eventos
+                if (fechaTieneEventos(fechaSeleccionada)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⚠ Fecha ocupada',
+                        text: 'Esta fecha ya tiene horarios asignados. Por favor seleccione otra fecha.',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#0d6efd'
+                    });
+                    return;
+                }
+
+                // Configurar el formulario con la fecha seleccionada
+                const fechaFormato = fechaSeleccionada.toISOString().split('T')[0];
                 
                 // Resetear formulario
                 $('#formDisponibilidad')[0].reset();
-                $('#fecha_inicio').val(date);
-                $('#fecha_fin').val(date);
                 
-                $('#modalDisponibilidad').modal('show');
+                // Establecer fechas
+                $('#fecha_inicio').val(fechaFormato);
+                $('#fecha_fin').val(fechaFormato);
+                
+                // Establecer automáticamente el día de la semana
+                const nombreDia = obtenerNombreDia(fechaSeleccionada);
+                $('#dia_semana_select').val(nombreDia);
+                
+                // Mostrar modal
+                modalDisponibilidad.show();
+            },
+            
+            // Deshabilitar clic en fechas pasadas visualmente
+            dayCellDidMount: function(info) {
+                const cellDate = new Date(info.date);
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+                cellDate.setHours(0, 0, 0, 0);
+                
+                if (cellDate < hoy) {
+                    info.el.classList.add('fc-day-disabled');
+                    info.el.style.pointerEvents = 'none';
+                    info.el.style.opacity = '0.5';
+                }
             }
         });
 
@@ -230,10 +347,21 @@
 
         // Botón nuevo horario
         $('#btn_nuevo_horario').on('click', function() {
+            const hoy = new Date();
+            const hoyFormato = hoy.toISOString().split('T')[0];
+            const nombreDiaHoy = obtenerNombreDia(hoy);
+            
+            // Resetear formulario
             $('#formDisponibilidad')[0].reset();
-            const hoy = new Date().toISOString().slice(0,10);
-            $('#fecha_inicio, #fecha_fin').val(hoy);
-            $('#modalDisponibilidad').modal('show');
+            
+            // Establecer valores por defecto
+            $('#fecha_inicio').val(hoyFormato);
+            $('#fecha_fin').val(hoyFormato);
+            $('#dia_semana_select').val(nombreDiaHoy);
+            $('#hora_inicio').val('08:00');
+            $('#hora_fin').val('17:00');
+            
+            modalDisponibilidad.show();
         });
 
         // Guardar disponibilidad
@@ -243,6 +371,47 @@
             // Validar formulario
             if (!form.checkValidity()) {
                 form.reportValidity();
+                return;
+            }
+
+            // Validar que fecha_inicio no sea pasada
+            const fechaInicio = new Date($('#fecha_inicio').val() + 'T00:00:00');
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            
+            if (fechaInicio < hoy) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Fecha no válida',
+                    text: 'No puede seleccionar fechas pasadas.',
+                    confirmButtonColor: '#dc3545'
+                });
+                return;
+            }
+
+            // Validar que fecha_fin sea mayor o igual a fecha_inicio
+            const fechaFin = new Date($('#fecha_fin').val() + 'T00:00:00');
+            if (fechaFin < fechaInicio) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Fechas incorrectas',
+                    text: 'La fecha fin debe ser mayor o igual a la fecha inicio.',
+                    confirmButtonColor: '#dc3545'
+                });
+                return;
+            }
+
+            // Validar que hora_fin sea mayor a hora_inicio
+            const horaInicio = $('#hora_inicio').val();
+            const horaFin = $('#hora_fin').val();
+            
+            if (horaInicio >= horaFin) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Horas incorrectas',
+                    text: 'La hora fin debe ser mayor a la hora inicio.',
+                    confirmButtonColor: '#dc3545'
+                });
                 return;
             }
 
@@ -269,7 +438,7 @@
                 contentType: false,
                 success: function(resp) {
                     if (resp.success) {
-                        $('#modalDisponibilidad').modal('hide');
+                        modalDisponibilidad.hide();
                         calendar.refetchEvents();
 
                         Swal.fire({
@@ -284,7 +453,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: '✗ Error',
-                            text: resp.message,
+                            text: resp.message || 'Error al guardar la disponibilidad',
                             confirmButtonColor: '#dc3545'
                         });
                     }

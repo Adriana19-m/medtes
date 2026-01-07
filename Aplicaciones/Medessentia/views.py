@@ -1169,13 +1169,28 @@ def elegir_doctor(request):
     return render(request, 'cita/elegir_doctor.html', {'doctors': doctors})
 
 
-# =====================================================
-# 3) VISTA DE AGENDA (FullCalendar)
-# =====================================================
 @login_required
 def agenda_paciente(request, id_doctor):
     doctor = get_object_or_404(User, pk=id_doctor, groups__name='Doctor')
-    return render(request, 'cita/agenda_paciente.html', {'doctor': doctor})
+    
+    # Verificar si el paciente ya tiene cita activa
+    tiene_cita_activa = Cita.objects.filter(
+        id_paciente=request.user,
+        estado__in=["PENDIENTE", "CONFIRMADA"]
+    ).exists()
+    
+    cita_activa = None
+    if tiene_cita_activa:
+        cita_activa = Cita.objects.filter(
+            id_paciente=request.user,
+            estado__in=["PENDIENTE", "CONFIRMADA"]
+        ).first()
+    
+    return render(request, 'cita/agenda_paciente.html', {
+        'doctor': doctor,
+        'tiene_cita_activa': tiene_cita_activa,
+        'cita_activa': cita_activa
+    })
 
 
 # =====================================================
@@ -1298,6 +1313,15 @@ def eliminar_cita(request, id_cita):
 # =====================================================
 # 5) ENDPOINT AJAX — Agendar cita
 # =====================================================
+from django.utils import timezone
+from datetime import datetime, time, timedelta
+import traceback
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from django.shortcuts import get_object_or_404
+from .models import HorarioDoctor, Cita
+
 @login_required
 @require_http_methods(["POST"])
 def agendar_cita_ajax(request, id_doctor):
@@ -1309,7 +1333,6 @@ def agendar_cita_ajax(request, id_doctor):
     if not horario_id:
         return JsonResponse({"status": "error", "message": "No se envió id de horario"}, status=400)
 
- 
     if "-" in horario_id:
         horario_id = horario_id.split("-")[0]
 
@@ -1322,12 +1345,40 @@ def agendar_cita_ajax(request, id_doctor):
         }, status=404)
 
     try:
-       
+        # VERIFICAR SI EL PACIENTE YA TIENE UNA CITA PENDIENTE/CONFIRMADA
+        citas_activas = Cita.objects.filter(
+            id_paciente=user,
+            estado__in=["PENDIENTE", "CONFIRMADA"]
+        ).count()
+        
+        if citas_activas >= 1:
+            return JsonResponse({
+                "status": "error",
+                "message": "Ya tienes una cita pendiente o confirmada. No puedes agendar otra hasta que se atienda o cancele la existente."
+            }, status=409)
+        
+        # VERIFICAR SI EL HORARIO YA PASÓ (NUEVA VALIDACIÓN)
         h, m = map(int, hora_cita.split(":"))
         hora_inicio_obj = time(h, m)
+        
+        # Crear datetime combinando la fecha del horario con la hora seleccionada
+        fecha_hora_cita = datetime.combine(horario.fecha_inicio, hora_inicio_obj)
+        
+        # Hacer la fecha/hora aware (con zona horaria) para comparar con timezone.now()
+        if timezone.is_naive(fecha_hora_cita):
+            fecha_hora_cita = timezone.make_aware(fecha_hora_cita, timezone.get_current_timezone())
+        
+        # Verificar si la cita es en el pasado
+        if fecha_hora_cita < timezone.now():
+            return JsonResponse({
+                "status": "error",
+                "message": "No se puede agendar en un horario que ya pasó. Por favor, seleccione un horario futuro."
+            }, status=410)  # 410 Gone - recurso ya no disponible
+        
+        # Continuar con el proceso de agendamiento...
         hora_fin_obj = (datetime.combine(datetime.today(), hora_inicio_obj) + timedelta(minutes=30)).time()
 
-
+        # Verificar si el horario ya está ocupado por otro paciente
         cita_existente = Cita.objects.filter(
             id_horario=horario,
             estado__in=["PENDIENTE", "CONFIRMADA"],
@@ -1341,7 +1392,7 @@ def agendar_cita_ajax(request, id_doctor):
                 "message": f"La franja {hora_cita} - {hora_fin_obj.strftime('%H:%M')} ya está ocupada."
             }, status=409)
 
-       
+        # Crear la cita
         fecha_hora = datetime.combine(horario.fecha_inicio, hora_inicio_obj)
         
         if timezone.is_aware(fecha_hora):

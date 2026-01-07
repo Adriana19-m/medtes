@@ -19,6 +19,32 @@
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
         }
+        /* Colores para días específicos */
+        .cita-hoy {
+            background-color: rgba(40, 167, 69, 0.08) !important;
+            border-left: 4px solid #28a745 !important;
+        }
+        .cita-ayer {
+            background-color: rgba(255, 193, 7, 0.08) !important;
+            border-left: 4px solid #ffc107 !important;
+        }
+        .cita-semana {
+            background-color: rgba(23, 162, 184, 0.05) !important;
+        }
+        .badge-hoy {
+            background-color: #28a745 !important;
+        }
+        .badge-ayer {
+            background-color: #fd7e14 !important;
+        }
+        .badge-semana {
+            background-color: #17a2b8 !important;
+        }
+        /* Indicador de orden */
+        .sort-indicator {
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body>
@@ -27,33 +53,57 @@
             <div class="card-header bg-primary text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Mis Citas</h4>
-                    
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-dark" id="ordenBadge">
+                            <i class="fas fa-sort-amount-down me-1"></i> Más recientes primero
+                        </span>
+                    </div>
                 </div>
             </div>
             
-            <div class="card-body">
-                <!-- Barra de búsqueda -->
+            <div class="row mb-3 justify-content-center"> 
+                <div class="col-md-6 text-center"> 
+                        <div class="btn-group">
+                            <button class="btn btn-outline-success btn-sm" onclick="filtrarHoy()" id="btnHoy">
+                                <i class="fas fa-calendar-day me-1"></i> Hoy
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="filtrarAyer()" id="btnAyer">
+                                <i class="fas fa-history me-1"></i> Ayer
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="filtrarSemana()" id="btnSemana">
+                                <i class="fas fa-calendar-week me-1"></i> Esta semana
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="mostrarTodas()" id="btnTodas">
+                                <i class="fas fa-calendar-alt me-1"></i> Todas
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicadores de estado -->
                 <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="inputBuscar" placeholder="Buscar por paciente, fecha o motivo...">
-                            <button class="btn btn-outline-primary" type="button" onclick="buscar()">
-                                <i class="fas fa-search me-1"></i> Buscar
-                            </button>
-                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
-                                <i class="fas fa-times me-1"></i> Limpiar
-                            </button>
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge badge-hoy">Hoy</span>
+                            <span class="badge badge-ayer">Ayer</span>
+                            <span class="badge badge-semana">Esta semana</span>
+                            <span class="badge bg-info">Pendiente</span>
+                            <span class="badge bg-success">Atendida</span>
+                            <span class="badge bg-danger">Cancelada</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Tabla -->
                 <div class="table-responsive">
-                    <table id="tablaCitas" class="table table-striped table-bordered" style="width:100%">
+                    <table id="tablaCitas" class="table table-hover table-bordered" style="width:100%">
                         <thead class="table-dark">
                             <tr>
                                 <th width="200">Paciente</th>
-                                <th width="150">Fecha y Hora</th>
+                                <th width="150" class="sortable">
+                                    Fecha y Hora 
+                                    <i class="fas fa-sort-down sort-indicator"></i>
+                                </th>
                                 <th>Motivo</th>
                                 <th width="120" class="text-center">Estado</th>
                                 <th width="200" class="text-center">Acciones</th>
@@ -61,9 +111,37 @@
                         </thead>
                         <tbody>
                             {% for c in citas %}
-                            <tr>
-                                <td class="fw-semibold">{{ c.id_paciente.first_name }} {{ c.id_paciente.last_name }}</td>
-                                <td>{{ c.fecha_hora|date:"d/m/Y H:i" }}</td>
+                            {% with fecha_cita=c.fecha_hora %}
+                            {% now "Y-m-d" as hoy %}
+                            {% with fecha_cita_str=fecha_cita|date:"Y-m-d" %}
+                            <tr class="{% if fecha_cita_str == hoy %}cita-hoy
+                                       {% elif fecha_cita_str == hoy|add:'-1 day' %}cita-ayer
+                                       {% else %}cita-semana{% endif %}"
+                                data-fecha="{{ fecha_cita_str }}"
+                                data-hora="{{ fecha_cita|time:'H:i' }}"
+                                data-timestamp="{{ fecha_cita|date:'U' }}">
+                                <td class="fw-semibold">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-2">
+                                            {% if fecha_cita_str == hoy %}
+                                                <span class="badge badge-hoy me-1">Hoy</span>
+                                            {% elif fecha_cita_str == hoy|add:'-1 day' %}
+                                                <span class="badge badge-ayer me-1">Ayer</span>
+                                            {% elif fecha_cita|date:"W" == now|date:"W" %}
+                                                <span class="badge badge-semana me-1">Esta semana</span>
+                                            {% endif %}
+                                        </div>
+                                        {{ c.id_paciente.first_name }} {{ c.id_paciente.last_name }}
+                                    </div>
+                                </td>
+                                <td data-order="{{ fecha_cita|date:'U' }}">
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold">{{ fecha_cita|date:"d/m/Y" }}</span>
+                                        <span class="text-muted small">
+                                            <i class="fas fa-clock me-1"></i>{{ fecha_cita|time:"H:i" }}
+                                        </span>
+                                    </div>
+                                </td>
                                 <td>{{ c.motivo|default:"—" }}</td>
                                 <td class="text-center">
                                     {% if c.estado == "ATENDIDA" %}
@@ -87,7 +165,7 @@
                                                     title="Eliminar">
                                                 <i class="fas fa-trash"></i>
                                             </button>
-                                            <a class="btn btn-outline-primary btn-action"
+                                            <a class="btn btn-outline-success btn-action"
                                                href="https://wa.me/593{{ c.id_paciente.telefono_usuario }}?text=Te saludamos desde Medessentia."
                                                target="_blank"
                                                title="WhatsApp">
@@ -101,9 +179,44 @@
                                     {% endif %}
                                 </td>
                             </tr>
+                            {% endwith %}
+                            {% endwith %}
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+                
+                <!-- Resumen y estadísticas -->
+                <div class="mt-3 p-3 bg-light rounded">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-chart-bar me-2 text-primary"></i>
+                                <div>
+                                    <small class="text-muted d-block">Total de citas</small>
+                                    <span class="fw-bold fs-5" id="totalCitas">{{ citas|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-clock me-2 text-warning"></i>
+                                <div>
+                                    <small class="text-muted d-block">Última actualización</small>
+                                    <span class="fw-bold" id="ultimaActualizacion">{% now "d/m/Y H:i" %}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-filter me-2 text-info"></i>
+                                <div>
+                                    <small class="text-muted d-block">Filtro activo</small>
+                                    <span class="fw-bold" id="filtroActivo">Todas las citas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -116,9 +229,9 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-
     <script>
     let tabla = null;
+    let filtroActivo = 'todas';
 
     // Función para obtener el CSRF token
     function getCookie(name) {
@@ -141,13 +254,38 @@
     $(document).ready(function() {
         console.log("Iniciando módulo Mis Citas...");
         
-        // Inicializar DataTable
+        // Inicializar DataTable con orden descendente por fecha
         tabla = $('#tablaCitas').DataTable({
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json',
+                decimal: ",",
+                thousands: "."
             },
-            pageLength: 10,
-            order: [[1, 'desc']]
+            pageLength: 25,
+            order: [[1, 'desc']], // Ordenar por fecha descendente (columna 1)
+            columnDefs: [
+                {
+                    targets: 1, // Columna de fecha
+                    type: 'date', // Especificar que es de tipo fecha
+                    render: function(data, type, row) {
+                        if (type === 'sort') {
+                            return data; // Usar el timestamp para ordenar
+                        }
+                        return data; // Mostrar el valor original
+                    }
+                },
+                {
+                    targets: [0, 2, 3, 4], // Otras columnas
+                    orderable: false // No ordenables
+                }
+            ],
+            initComplete: function() {
+                // Actualizar estadísticas
+                actualizarEstadisticas();
+                
+                // Mostrar mensaje de orden actual
+                $('#ordenBadge').html('<i class="fas fa-sort-amount-down me-1"></i> Más recientes primero');
+            }
         });
 
         // Buscar con Enter
@@ -172,6 +310,7 @@
         }
 
         tabla.search(valor).draw();
+        actualizarEstadisticas();
 
         Swal.fire({
             icon: 'success',
@@ -182,10 +321,10 @@
         });
     }
 
-
     function limpiarBusqueda() {
         $('#inputBuscar').val('');
         tabla.search('').draw();
+        actualizarEstadisticas();
 
         Swal.fire({
             icon: 'info',
@@ -195,9 +334,172 @@
         });
     }
 
+    function filtrarHoy() {
+        const hoy = new Date();
+        const fechaHoy = hoy.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        
+        // Limpiar filtros previos
+        tabla.columns().search('').draw();
+        
+        // Aplicar filtro por fecha de hoy
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                const fila = tabla.row(dataIndex).node();
+                const fechaCita = $(fila).data('fecha');
+                return fechaCita === fechaHoy;
+            }
+        );
+        
+        tabla.draw();
+        $.fn.dataTable.ext.search.pop();
+        
+        // Actualizar UI
+        actualizarBotonesFiltro('hoy');
+        filtroActivo = 'hoy';
+        actualizarEstadisticas();
+        
+        Swal.fire({
+            icon: 'info',
+            title: 'Mostrando citas de hoy',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+
+    function filtrarAyer() {
+        const hoy = new Date();
+        const ayer = new Date(hoy);
+        ayer.setDate(hoy.getDate() - 1);
+        const fechaAyer = ayer.toISOString().split('T')[0];
+        
+        tabla.columns().search('').draw();
+        
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                const fila = tabla.row(dataIndex).node();
+                const fechaCita = $(fila).data('fecha');
+                return fechaCita === fechaAyer;
+            }
+        );
+        
+        tabla.draw();
+        $.fn.dataTable.ext.search.pop();
+        
+        actualizarBotonesFiltro('ayer');
+        filtroActivo = 'ayer';
+        actualizarEstadisticas();
+        
+        Swal.fire({
+            icon: 'info',
+            title: 'Mostrando citas de ayer',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+
+    function filtrarSemana() {
+        const hoy = new Date();
+        const inicioSemana = new Date(hoy);
+        inicioSemana.setDate(hoy.getDate() - hoy.getDay()); // Domingo de esta semana
+        inicioSemana.setHours(0, 0, 0, 0);
+        
+        tabla.columns().search('').draw();
+        
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                const fila = tabla.row(dataIndex).node();
+                const fechaStr = $(fila).data('fecha');
+                const fechaCita = new Date(fechaStr);
+                return fechaCita >= inicioSemana;
+            }
+        );
+        
+        tabla.draw();
+        $.fn.dataTable.ext.search.pop();
+        
+        actualizarBotonesFiltro('semana');
+        filtroActivo = 'semana';
+        actualizarEstadisticas();
+        
+        Swal.fire({
+            icon: 'info',
+            title: 'Mostrando citas de esta semana',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+
+    function mostrarTodas() {
+        // Limpiar todos los filtros
+        tabla.columns().search('').draw();
+        tabla.search('').draw();
+        
+        actualizarBotonesFiltro('todas');
+        filtroActivo = 'todas';
+        actualizarEstadisticas();
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Mostrando todas las citas',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+
+    function actualizarBotonesFiltro(filtroActivo) {
+        // Resetear todos los botones
+        $('#btnHoy').removeClass('active').addClass('btn-outline-success');
+        $('#btnAyer').removeClass('active').addClass('btn-outline-warning');
+        $('#btnSemana').removeClass('active').addClass('btn-outline-info');
+        $('#btnTodas').removeClass('active').addClass('btn-outline-secondary');
+        
+        // Activar el botón correspondiente
+        switch(filtroActivo) {
+            case 'hoy':
+                $('#btnHoy').addClass('active').removeClass('btn-outline-success');
+                $('#filtroActivo').text('Citas de hoy');
+                break;
+            case 'ayer':
+                $('#btnAyer').addClass('active').removeClass('btn-outline-warning');
+                $('#filtroActivo').text('Citas de ayer');
+                break;
+            case 'semana':
+                $('#btnSemana').addClass('active').removeClass('btn-outline-info');
+                $('#filtroActivo').text('Citas de esta semana');
+                break;
+            case 'todas':
+                $('#btnTodas').addClass('active').removeClass('btn-outline-secondary');
+                $('#filtroActivo').text('Todas las citas');
+                break;
+        }
+    }
+
+    function actualizarEstadisticas() {
+        const total = tabla.rows().count();
+        const visibles = tabla.rows({ search: 'applied' }).count();
+        
+        // Contar por estado
+        let pendientes = 0, atendidas = 0, canceladas = 0;
+        
+        tabla.rows({ search: 'applied' }).every(function() {
+            const estado = $(this.node()).find('.badge').text().trim();
+            switch(estado) {
+                case 'Pendiente': pendientes++; break;
+                case 'Atendida': atendidas++; break;
+                case 'Cancelada': canceladas++; break;
+            }
+        });
+        
+        // Actualizar UI
+        $('#totalCitas').text(visibles);
+        $('#ordenBadge').html(`<i class="fas fa-sort-amount-down me-1"></i> ${visibles} citas`);
+        
+        // Actualizar último timestamp
+        const ahora = new Date();
+        $('#ultimaActualizacion').text(ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES'));
+    }
 
     function nuevaCita() {
-        // Redirigir a la página de agendar cita
         window.location.href = '{% url "cita_index" %}';
     }
 
@@ -251,7 +553,6 @@
             }
         });
     }
-
 
     // Eliminar cita
     function eliminarCita(id) {
