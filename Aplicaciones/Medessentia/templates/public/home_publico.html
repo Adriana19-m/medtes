@@ -4,6 +4,15 @@
 
 {% block extra_css %}
 <style>
+  /* Estilos generales responsivos */
+  .hero h2 {
+    font-size: 2.5rem;
+  }
+  
+  .hero p {
+    font-size: 1.1rem;
+  }
+  
   .contact-info-card {
     border-left: 4px solid #0d6efd;
   }
@@ -29,12 +38,136 @@
     border-radius: 30px;
   }
 
+  /* Ajustes para Hero Section */
+  @media (max-width: 992px) {
+    .hero h2 {
+      font-size: 2rem;
+      text-align: center;
+    }
+    
+    .hero p {
+      text-align: center;
+    }
+    
+    .hero .d-flex {
+      justify-content: center;
+    }
+    
+    .hero .col-lg-5 {
+      margin-top: 30px;
+    }
+    
+    .hero .rounded-circle {
+      width: 240px !important;
+      height: 240px !important;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .hero h2 {
+      font-size: 1.8rem;
+    }
+    
+    .hero .rounded-circle {
+      width: 200px !important;
+      height: 200px !important;
+    }
+    
+    .hero .btn {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    
+    .hero .me-2 {
+      margin-right: 0 !important;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .hero h2 {
+      font-size: 1.6rem;
+    }
+    
+    .hero p {
+      font-size: 1rem;
+    }
+    
+    .hero .rounded-circle {
+      width: 180px !important;
+      height: 180px !important;
+    }
+  }
+
+  /* Ajustes para About Section */
+  @media (max-width: 992px) {
+    .about .col-lg-4 {
+      margin-bottom: 30px;
+    }
+    
+    .about img {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      display: block;
+    }
+    
+    .about .col-lg-6 {
+      text-align: center;
+    }
+    
+    .about ul {
+      display: inline-block;
+      text-align: left;
+    }
+  }
+
+  /* Ajustes para Services Section */
+  @media (max-width: 992px) {
+    .services .service-item {
+      margin-bottom: 20px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .services .col-md-4,
+    .services .col-md-6 {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 20px;
+    }
+  }
+
+  /* Ajustes para Contact Section */
   @media (max-width: 768px) {
     .contact-info-card {
       margin-bottom: 20px;
     }
+    
+    .contact .col-lg-5,
+    .contact .col-lg-7 {
+      width: 100%;
+    }
+    
+    .contact form {
+      padding: 20px !important;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .contact input,
+    .contact textarea,
+    .contact button {
+      font-size: 14px;
+    }
+    
+    .contact .btn-lg {
+      padding: 8px 20px;
+      font-size: 16px;
+    }
   }
 
+  /* Estilos del Chatbot */
   .chatbot-modal {
     position: fixed;
     bottom: 90px;
@@ -316,12 +449,12 @@
     border-left-color: #dc3545;
   }
 
-  @media (max-width: 576px) {
+  /* Ajustes responsivos del chatbot */
+  @media (max-width: 768px) {
     .chatbot-modal {
-      width: 300px;
-      right: 10px;
-      bottom: 70px;
-      max-width: calc(100vw - 20px);
+      width: 320px;
+      right: 15px;
+      bottom: 80px;
     }
     
     #chatbot-toggle {
@@ -332,19 +465,44 @@
       font-size: 20px;
     }
     
+    .chatbot-body {
+      height: 280px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .chatbot-modal {
+      width: 300px;
+      right: 10px;
+      bottom: 70px;
+      max-width: calc(100vw - 20px);
+    }
+    
+    #chatbot-toggle {
+      width: 48px;
+      height: 48px;
+      bottom: 15px;
+      right: 15px;
+      font-size: 18px;
+    }
+    
+    .chatbot-modal {
+      width: 90vw;
+      max-width: 340px;
+    }
+    
     .message {
-      max-width: 82%;
+      max-width: 85%;
       padding: 8px 12px;
       font-size: 12.5px;
     }
     
-    .chatbot-body {
-      height: 280px;
-      padding: 10px;
-    }
-    
     .chatbot-header {
       padding: 10px 14px;
+    }
+    
+    .chatbot-body {
+      height: 250px;
     }
     
     .chatbot-footer {
@@ -363,13 +521,25 @@
   
   @media (max-width: 380px) {
     .chatbot-modal {
-      width: 280px;
+      width: 95vw;
+      right: 2.5vw;
+      left: 2.5vw;
+    }
+    
+    #chatbot-toggle {
+      width: 44px;
+      height: 44px;
+      bottom: 10px;
       right: 10px;
     }
     
     .message {
-      max-width: 85%;
+      max-width: 90%;
       font-size: 12px;
+    }
+    
+    .chatbot-body {
+      height: 220px;
     }
   }
 
@@ -385,24 +555,21 @@
 
 <section id="hero" class="hero d-flex align-items-center section-bg">
   <div class="container">
-    <div class="row justify-content-between gy-5">
-      <div class="col-lg-6 d-flex flex-column justify-content-center">
-        <h2 data-aos="fade-up">Tu salud en buenas manos</h2>
-        <p data-aos="fade-up" data-aos-delay="100">
+    <div class="row justify-content-between gy-5 align-items-center">
+      <div class="col-lg-6 d-flex flex-column justify-content-center" data-aos="fade-up">
+        <h2 class="mb-3">Tu salud en buenas manos</h2>
+        <p class="lead mb-4">
           En <strong>Medessentia</strong> te ofrecemos atención médica personalizada
           con profesionales altamente calificados. Agenda tu cita o conoce nuestros servicios.
         </p>
-        <div class="d-flex" data-aos="fade-up" data-aos-delay="200">
-          <a href="{% url 'login' %}" class="btn btn-primary me-2">Agendar Cita</a>
-          <a href="#about" class="btn btn-outline-primary">Conócenos</a>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="#about" class="btn btn-outline-primary px-4 py-2">Conócenos</a>
         </div>
       </div>
-      <div class="col-lg-5 text-center" data-aos="zoom-out">
-        <div class="position-relative d-inline-block">
-          <!-- Círculo de fondo -->
-          <div class="rounded-circle shadow overflow-hidden" 
+      <div class="col-lg-5" data-aos="zoom-out">
+        <div class="text-center">
+          <div class="rounded-circle shadow overflow-hidden mx-auto" 
                style="width: 280px; height: 280px; border: 8px solid #e3f2fd;">
-            <!-- Imagen real -->
             <img 
               src="{% static 'medilab/assets/img/doctora.jpg' %}" 
               class="img-fluid h-100 w-100" 
@@ -410,8 +577,9 @@
               style="object-fit: cover; object-position: center;"
             >
           </div>
+          <p class="mt-3 fw-bold h5">Dra. Alexandra Toapanta</p>
+          <p class="text-muted">Médico General</p>
         </div>
-        <p class="mt-3 fw-bold">Dra. Alexandra Toapanta</p>
       </div>
     </div>
   </div>
@@ -420,20 +588,26 @@
 <section id="about" class="about pt-5">
   <div class="container" data-aos="fade-up">
     <div class="section-header text-center mb-5">
-      <h2>Sobre Nosotros</h2>
-      <p>Tu bienestar, nuestra prioridad</p>
+      <h2 class="mb-3">Sobre Nosotros</h2>
+      <p class="text-muted">Tu bienestar, nuestra prioridad</p>
     </div>
     <div class="row gy-4 align-items-center">
-      <div class="col-lg-4" data-aos="fade-right">
-        <img src="{% static 'medilab/assets/img/consultorio.jpg' %}" class="img-fluid rounded-4 shadow" alt="Consultorio">
+      <div class="col-lg-4 col-md-6 mb-4 mb-lg-0" data-aos="fade-right">
+        <img src="{% static 'medilab/assets/img/consultorio.jpg' %}" 
+             class="img-fluid rounded-4 shadow" 
+             alt="Consultorio">
       </div>
-      <div class="col-lg-6" data-aos="fade-left">
-        <p>En Medessentia trabajamos con un equipo médico interdisciplinario que brinda atención integral.</p>
-        <ul>
-          <li><i class="bi bi-check-circle text-success"></i> Consultas presenciales y en línea.</li>
-          <li><i class="bi bi-check-circle text-success"></i> Diagnóstico personalizado.</li>
-          <li><i class="bi bi-check-circle text-success"></i> Tecnología de última generación.</li>
+      <div class="col-lg-8 col-md-6" data-aos="fade-left">
+        <p class="fs-5 mb-4">En <strong>Medessentia</strong> trabajamos con un equipo médico interdisciplinario que brinda atención integral y personalizada a cada paciente.</p>
+        <ul class="list-unstyled">
+          <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i> Consultas presenciales y en línea.</li>
+          <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i> Diagnóstico personalizado con tecnología avanzada.</li>
+          <li class="mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i> Equipamiento de última generación.</li>
+          <li><i class="bi bi-check-circle-fill text-success me-2"></i> Seguimiento continuo de tu tratamiento.</li>
         </ul>
+        <div class="mt-4">
+          <a href="#contact" class="btn btn-outline-primary">Contáctanos</a>
+        </div>
       </div>
     </div>
   </div>
@@ -442,31 +616,43 @@
 <section id="services" class="services section-bg py-5">
   <div class="container" data-aos="fade-up">
     <div class="section-header text-center mb-5">
-      <h2>Servicios Médicos</h2>
-      <p>Atención integral con calidad y calidez</p>
+      <h2 class="mb-3">Servicios Médicos</h2>
+      <p class="text-muted">Atención integral con calidad y calidez</p>
     </div>
-    <div class="row gy-4">
-      <div class="col-lg-4 col-md-4" data-aos="zoom-in">
-        <div class="service-item text-center p-4 bg-white shadow-sm rounded">
-          <img src="{% static 'medilab/assets/img/neonato.jpg' %}" class="img-fluid rounded mb-3" alt="Neonatología">
-          <h5 class="mt-3">Atención Neonatal</h5>
-          <p>Brindamos cuidados especializados para recién nacidos con personal experto.</p>
+    <div class="row g-4 justify-content-center">
+      <div class="col-lg-4 col-md-6" data-aos="zoom-in">
+        <div class="service-item text-center p-4 bg-white shadow-sm rounded h-100">
+          <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-4" 
+               style="width: 80px; height: 80px;">
+            <img src="{% static 'medilab/assets/img/neonato.jpg' %}" 
+                 class="img-fluid rounded-circle" 
+                 alt="Neonatología"
+                 style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <h5 class="mt-3 fw-bold">Atención Neonatal</h5>
+          <p>Brindamos cuidados especializados para recién nacidos con personal experto y equipamiento neonatal avanzado.</p>
         </div>
       </div>
 
-      <div class="col-lg-4 col-md-4" data-aos="zoom-in" data-aos-delay="150">
-        <div class="service-item text-center p-4 bg-white shadow-sm rounded">
-          <i class="bi bi-heart-pulse fs-1 text-success"></i>
-          <h5 class="mt-3">Consulta General</h5>
-          <p>Evaluaciones médicas completas para todas las edades y condiciones.</p>
+      <div class="col-lg-4 col-md-6" data-aos="zoom-in" data-aos-delay="150">
+        <div class="service-item text-center p-4 bg-white shadow-sm rounded h-100">
+          <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-4" 
+               style="width: 80px; height: 80px;">
+            <i class="bi bi-heart-pulse fs-1 text-success"></i>
+          </div>
+          <h5 class="mt-3 fw-bold">Consulta General</h5>
+          <p>Evaluaciones médicas completas para todas las edades y condiciones. Prevención, diagnóstico y tratamiento.</p>
         </div>
       </div>
 
       <div class="col-lg-4 col-md-6" data-aos="zoom-in" data-aos-delay="300">
-        <div class="service-item text-center p-4 bg-white shadow-sm rounded">
-          <i class="bi bi-eyedropper fs-1 text-success"></i>
-          <h5 class="mt-3">Análisis Clínicos</h5>
-          <p>Laboratorio con resultados rápidos y confiables para diagnóstico oportuno.</p>
+        <div class="service-item text-center p-4 bg-white shadow-sm rounded h-100">
+          <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-4" 
+               style="width: 80px; height: 80px;">
+            <i class="bi bi-eyedropper fs-1 text-success"></i>
+          </div>
+          <h5 class="mt-3 fw-bold">Análisis Clínicos</h5>
+          <p>Laboratorio con resultados rápidos y confiables para diagnóstico oportuno. Toma de muestras en consultorio.</p>
         </div>
       </div>
     </div>
@@ -478,31 +664,32 @@
 
     <!-- Header -->
     <div class="section-header text-center mb-5">
-      <h2 class="fw-bold">Contáctanos</h2>
+      <h2 class="fw-bold mb-3">Contáctanos</h2>
       <p class="text-muted">Estamos para ayudarte</p>
     </div>
 
     <div class="row gy-4 align-items-stretch">
 
       <!-- Información -->
-      <div class="col-lg-5">
+      <div class="col-lg-5 col-md-6">
         <div class="contact-info-card p-4 h-100 shadow-sm rounded bg-white">
-
+          <h4 class="mb-4 text-center">Información de Contacto</h4>
+          
           <div class="d-flex align-items-start mb-4">
-            <div class="icon-circle me-3">
+            <div class="icon-circle me-3 flex-shrink-0">
               <i class="bi bi-geo-alt"></i>
             </div>
             <div>
               <h6 class="fw-semibold mb-1">Dirección</h6>
               <p class="mb-0 text-muted">
                 Abdón Calderón y Mariscal Sucre<br>
-                Cantón Saquisilí
+                Cantón Saquisilí, Ecuador
               </p>
             </div>
           </div>
 
           <div class="d-flex align-items-start mb-4">
-            <div class="icon-circle me-3">
+            <div class="icon-circle me-3 flex-shrink-0">
               <i class="bi bi-telephone"></i>
             </div>
             <div>
@@ -511,8 +698,14 @@
             </div>
           </div>
 
+          <div class="d-flex align-items-start mb-4">
+            <div class="icon-circle me-3 flex-shrink-0">
+              <i class="bi bi-clock"></i>
+            </div>
+          
+
           <div class="d-flex align-items-start">
-            <div class="icon-circle me-3">
+            <div class="icon-circle me-3 flex-shrink-0">
               <i class="bi bi-envelope"></i>
             </div>
             <div>
@@ -527,45 +720,49 @@
       </div>
 
       <!-- Formulario -->
-      <div class="col-lg-7">
+      <div class="col-lg-7 col-md-6">
         <form action="#" method="post"
               class="p-4 p-md-5 bg-white shadow-sm rounded h-100">
           {% csrf_token %}
 
-          <h5 class="fw-semibold mb-4 text-center">
+          <h4 class="fw-semibold mb-4 text-center">
             Envíanos un mensaje
-          </h5>
+          </h4>
 
           <div class="row gy-3">
             <div class="col-md-6">
+              <label class="form-label">Nombre completo</label>
               <input type="text" name="name"
-                     class="form-control form-control-lg"
+                     class="form-control"
                      placeholder="Tu nombre" required>
             </div>
 
             <div class="col-md-6">
+              <label class="form-label">Correo electrónico</label>
               <input type="email" name="email"
-                     class="form-control form-control-lg"
+                     class="form-control"
                      placeholder="Tu correo" required>
             </div>
 
             <div class="col-12">
+              <label class="form-label">Asunto</label>
               <input type="text" name="subject"
-                     class="form-control form-control-lg"
-                     placeholder="Asunto" required>
+                     class="form-control"
+                     placeholder="Asunto del mensaje" required>
             </div>
 
             <div class="col-12">
+              <label class="form-label">Mensaje</label>
               <textarea name="message"
-                        class="form-control form-control-lg"
+                        class="form-control"
                         rows="5"
                         placeholder="Escribe tu mensaje aquí..."
                         required></textarea>
             </div>
 
-            <div class="col-12 text-center mt-3">
+            <div class="col-12 text-center mt-4">
               <button type="submit"
-                      class="btn btn-primary btn-lg px-5">
+                      class="btn btn-primary px-5 py-2">
                 <i class="bi bi-send me-2"></i> Enviar mensaje
               </button>
             </div>
@@ -577,7 +774,7 @@
   </div>
 </section>
 
-
+<!-- Chatbot -->
 <div class="chatbot-container">
   <button id="chatbot-toggle" class="btn btn-primary rounded-circle shadow-lg">
     <i class="bi bi-chat-dots"></i>
@@ -594,7 +791,6 @@
         <p>Como puedo ayudarte con:</p>
         <ul style="font-size: 12px; margin: 5px 0; padding-left: 15px;">
           <li>📅 Agendamiento de citas</li>
-          <li>👩‍⚕️ Información de la doctora</li>
           <li>🕒 Horarios disponibles</li>
         </ul>
         <p><small>¿En qué puedo ayudarte hoy?</small></p>

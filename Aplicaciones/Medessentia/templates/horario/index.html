@@ -39,19 +39,7 @@
             
             <div class="card-body">
                 <!-- Barra de búsqueda -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="inputBuscar" placeholder="Buscar por el día...">
-                            <button class="btn btn-outline-primary" type="button" onclick="buscar()">
-                                <i class="fas fa-search me-1"></i> Buscar
-                            </button>
-                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
-                                <i class="fas fa-times me-1"></i> Limpiar
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            
 
                 <!-- Tabla -->
                 <div class="table-responsive">
@@ -216,12 +204,12 @@
             showCancelButton: true,
             confirmButtonText: 'Buscar',
             cancelButtonText: 'Cancelar',
-            inputValue: $('#inputBuscar').val()  // Mantener valor actual
+            inputValue: $('#inputBuscar').val()  
         }).then((result) => {
             if (result.isConfirmed) {
                 const valor = result.value;
-                $('#inputBuscar').val(valor);  // Actualiza el input normal
-                tabla.search(valor).draw();    // Filtra la tabla
+                $('#inputBuscar').val(valor);  
+                tabla.search(valor).draw();    
                 Swal.fire({
                     icon: 'success',
                     title: 'Resultados filtrados',
