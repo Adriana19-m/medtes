@@ -3,7 +3,12 @@ import pytz
 import requests
 import json
 import re
+import sys
+import os
 
+from django.core.exceptions import ValidationError
+# En views.py - al inicio del archivo
+from Aplicaciones.Medessentia.validators import validar_cedula_ecuatoriana
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User, Group
 from django.contrib.auth import login
@@ -68,15 +73,71 @@ from django.http import HttpResponseRedirect
 from datetime import datetime
 from django.db.models.functions import TruncDay
 from django.urls import reverse
-
-
 from django.contrib.auth.models import User, Group
 from django.db import transaction
 from django.template.loader import render_to_string
 from datetime import datetime, date
 from .models import HistoriaClinica, PerfilUsuario
+
 from django.shortcuts import render
 print(datetime.now())
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
+MAX_INTENTOS = 3
+
+def login_view(request):
+    if 'intentos_login' not in request.session:
+        request.session['intentos_login'] = 0
+
+    if request.method == 'POST':
+        if request.session['intentos_login'] >= MAX_INTENTOS:
+            messages.error(request, 'Has superado el número máximo de intentos. Intenta más tarde.')
+            return render(request, 'login.html')
+
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            request.session['intentos_login'] = 0 
+            return redirect('home')
+        else:
+            request.session['intentos_login'] += 1
+            restantes = MAX_INTENTOS - request.session['intentos_login']
+            messages.error(
+                request,
+                f'Credenciales incorrectas. Intentos restantes: {restantes}'
+            )
+
+    return render(request, 'login.html')
+
+def validar_cedula_ecuatoriana(cedula):
+    from django.core.exceptions import ValidationError
+    
+    if len(cedula) != 10 or not cedula.isdigit():
+        raise ValidationError("La cédula debe tener 10 dígitos numéricos.")
+
+    provincia = int(cedula[:2])
+    if provincia < 1 or provincia > 24:
+        raise ValidationError("La cédula debe pertenecer a una provincia válida (01-24).")
+
+
+    total = 0
+    for i in range(9):
+        num = int(cedula[i])
+        if i % 2 == 0:  
+            num *= 2
+            if num > 9:
+                num -= 9
+        total += num
+
+    verificador = 10 - (total % 10) if total % 10 != 0 else 0
+    if verificador != int(cedula[9]):
+        raise ValidationError("Cédula ecuatoriana no válida.")
 
 def home_publico(request):
     """Página pública principal (tipo Medilab)."""
@@ -198,18 +259,18 @@ def _sanear_telefono(valor):
 @user_passes_test(es_admin)
 def registro(request):
     if request.method == "POST":
-        username   = (request.POST.get("username") or "").strip()
-        email      = (request.POST.get("email") or "").strip()
+        username = (request.POST.get("username") or "").strip()
+        email = (request.POST.get("email") or "").strip()
         first_name = (request.POST.get("first_name") or "").strip()
-        last_name  = (request.POST.get("last_name") or "").strip()
-        password   = (request.POST.get("password") or "")
-        cedula     = (request.POST.get("cedula_usuario") or "").strip()
+        last_name = (request.POST.get("last_name") or "").strip()
+        password = (request.POST.get("password") or "")
+        cedula = (request.POST.get("cedula_usuario") or "").strip()
 
         # Teléfono: jamás NULL
         telefono_final = _sanear_telefono(request.POST.get("telefono_usuario"))
 
-        direccion  = (request.POST.get("direccion_usuario") or "").strip()
-        genero     = (request.POST.get("genero_usuario") or "").strip() or None
+        direccion = (request.POST.get("direccion_usuario") or "").strip()
+        genero = (request.POST.get("genero_usuario") or "").strip() or None
         auto_paciente = request.POST.get("asignar_paciente") == "on"
 
         # Validaciones mínimas
@@ -220,9 +281,20 @@ def registro(request):
             errores.append("Debes ingresar un correo.")
         if not password or len(password) < 8:
             errores.append("La contraseña debe tener al menos 8 caracteres.")
-        if not (cedula.isdigit() and len(cedula) == 10):
+        
+        # Validación de cédula
+        if not cedula:
+            errores.append("La cédula es obligatoria.")
+        elif not (cedula.isdigit() and len(cedula) == 10):
             errores.append("La cédula debe tener 10 dígitos.")
-        # Si el admin escribió algo en el campo, valida 10 dígitos
+        else:
+            # Validar algoritmo de cédula ecuatoriana
+            try:
+                validar_cedula_ecuatoriana(cedula)
+            except ValidationError as e:
+                errores.append(str(e))
+        
+        # Validación de teléfono
         if request.POST.get("telefono_usuario"):
             if len("".join(ch for ch in request.POST.get("telefono_usuario") if ch.isdigit())) != 10:
                 errores.append("El teléfono debe tener 10 dígitos.")
@@ -261,7 +333,7 @@ def registro(request):
                 user=user,
                 genero_usuario=genero,
                 cedula_usuario=cedula,
-                telefono_usuario=telefono_final,  
+                telefono_usuario=telefono_final,
                 direccion_usuario=direccion,
             )
             if auto_paciente:
@@ -1196,6 +1268,7 @@ def agenda_paciente(request, id_doctor):
 # =====================================================
 # 4) ENDPOINT JSON — Horarios disponibles
 # =====================================================
+
 @login_required
 def horarios_disponibles(request, id_doctor):
     try:
@@ -1207,9 +1280,15 @@ def horarios_disponibles(request, id_doctor):
         if not start or not end:
             return JsonResponse([], safe=False)
 
-        start_dt = timezone.make_aware(datetime.fromisoformat(start[:19]), tz_ecuador)
-        end_dt = timezone.make_aware(datetime.fromisoformat(end[:19]), tz_ecuador)
+        # Convertir a datetime naive primero
+        start_naive = datetime.fromisoformat(start[:19])
+        end_naive = datetime.fromisoformat(end[:19])
+        
+        # Luego hacer aware con la zona horaria correcta
+        start_dt = timezone.make_aware(start_naive, tz_ecuador)
+        end_dt = timezone.make_aware(end_naive, tz_ecuador)
 
+        # Obtener los horarios del doctor
         horarios = HorarioDoctor.objects.filter(
             id_doctor=id_doctor,
             tipo_horario="TRABAJO",
@@ -1227,37 +1306,65 @@ def horarios_disponibles(request, id_doctor):
 
         cur_date = start_dt.date()
         while cur_date <= end_dt.date():
-
+            
+            dia_semana_nombre = weekday_map[cur_date.weekday()]
+            
             for h in horarios.filter(
-                dia_semana=weekday_map[cur_date.weekday()],
+                dia_semana=dia_semana_nombre,
                 fecha_inicio__lte=cur_date,
                 fecha_fin__gte=cur_date
             ):
-                start_time = datetime.combine(cur_date, h.hora_inicio)
-                end_time = datetime.combine(cur_date, h.hora_fin)
-
+                # Crear datetime naive para Ecuador
+                start_time_naive = datetime.combine(cur_date, h.hora_inicio)
+                end_time_naive = datetime.combine(cur_date, h.hora_fin)
+                
+                # Convertir a aware para Ecuador
+                start_time = timezone.make_aware(start_time_naive, tz_ecuador)
+                end_time = timezone.make_aware(end_time_naive, tz_ecuador)
+                
+                # Obtener citas ocupadas - Filtrar por fecha y hora exacta
                 citas_ocupadas = Cita.objects.filter(
-                    id_horario=h,
-                    estado__in=["PENDIENTE", "CONFIRMADA"]
-                ).values_list("fecha_hora", flat=True)
-
-                ocupados = set(
-                    c.replace(tzinfo=None)
-                    for c in citas_ocupadas
+                    id_doctor_id=id_doctor,  # Asegurarnos de que es del mismo doctor
+                    id_horario=h,  # Mismo horario
+                    estado__in=["PENDIENTE", "CONFIRMADA", "ATENDIDA"],
+                    fecha_hora__date=cur_date  # Misma fecha
                 )
+                
+                # Crear una lista de horas ocupadas en formato datetime aware
+                ocupados = []
+                for cita in citas_ocupadas:
+                    # Si la cita tiene fecha_hora naive, convertirla a aware
+                    if cita.fecha_hora.tzinfo is None:
+                        # Combinar con la fecha actual y hacer aware
+                        cita_datetime = datetime.combine(cur_date, cita.fecha_hora.time())
+                        cita_aware = timezone.make_aware(cita_datetime, tz_ecuador)
+                    else:
+                        # Si ya es aware, convertir a zona horaria de Ecuador
+                        cita_aware = cita.fecha_hora.astimezone(tz_ecuador)
+                    ocupados.append(cita_aware.replace(second=0, microsecond=0))
 
                 current = start_time
                 while current + duracion_slot <= end_time:
-                    slot_datetime = current.replace(tzinfo=None)
-
-                    slot_ocupado = slot_datetime in ocupados
-
+                    slot_datetime = current.replace(second=0, microsecond=0)
+                    
+                    # Verificar si este slot está ocupado
+                    slot_ocupado = False
+                    for cita_ocupada in ocupados:
+                        # Comparar el mismo slot (misma fecha y hora)
+                        if cita_ocupada == slot_datetime:
+                            slot_ocupado = True
+                            break
+                    
                     if not slot_ocupado:
+                        # Convertir a string ISO para FullCalendar
+                        start_iso = slot_datetime.astimezone(pytz.UTC).isoformat()
+                        end_iso = (slot_datetime + duracion_slot).astimezone(pytz.UTC).isoformat()
+                        
                         events.append({
-                            "id": str(h.id_horario),
+                            "id": f"{h.id_horario}-{slot_datetime.strftime('%Y%m%d%H%M')}",
                             "title": "Disponible",
-                            "start": current.isoformat(),
-                            "end": (current + duracion_slot).isoformat(),
+                            "start": start_iso,
+                            "end": end_iso,
                             "backgroundColor": "#28a745",
                             "borderColor": "#28a745",
                             "allDay": False,
@@ -1266,8 +1373,10 @@ def horarios_disponibles(request, id_doctor):
                                 "disponible": True,
                                 "hora_inicio": current.strftime("%H:%M"),
                                 "hora_fin": (current + duracion_slot).strftime("%H:%M"),
+                                "fecha": cur_date.isoformat(),
                             }
                         })
+                    # else: // Si está ocupado, no lo agregamos a events
 
                     current += duracion_slot
 
@@ -1275,9 +1384,9 @@ def horarios_disponibles(request, id_doctor):
 
         return JsonResponse(events, safe=False)
 
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
-        return JsonResponse({"error": "Error interno"}, status=500)
+        return JsonResponse({"error": f"Error interno: {str(e)}"}, status=500)
 
 
 @login_required
@@ -1297,7 +1406,60 @@ def marcar_cita_atendida(request, id_cita):
     except Exception as e:
         return JsonResponse({"status": "error", "message": f"Error interno: {str(e)}"}, status=500)
 
-
+# =====================================================
+# CANCELAR CITA
+# =====================================================
+@login_required
+@require_POST
+def cancelar_cita(request, id_cita):
+    """Cancela una cita cambiando su estado a CANCELADA."""
+    try:
+        cita = Cita.objects.get(id_cita=id_cita, id_doctor=request.user)
+        
+        if cita.estado == "CANCELADA":
+            return JsonResponse({
+                "success": False, 
+                "message": "Esta cita ya está cancelada."
+            })
+        
+        # Obtener motivo de cancelación si se envió
+        data = json.loads(request.body)
+        motivo_cancelacion = data.get('motivo', '')
+        
+        # Actualizar estado de la cita
+        cita.estado = "CANCELADA"
+        if motivo_cancelacion:
+            cita.motivo = f"{cita.motivo}\n\n[Cancelación]: {motivo_cancelacion}"
+        cita.save()
+        
+        # Opcional: enviar notificación por WhatsApp si está habilitado
+        notificar = data.get('notificar', False)
+        mensaje_notificacion = ""
+        
+        if notificar and hasattr(cita.id_paciente, 'telefono_usuario'):
+            try:
+                # Aquí iría el código para enviar WhatsApp
+                # Por ahora solo simulamos
+                mensaje_notificacion = "Notificación enviada al paciente"
+            except Exception as e:
+                mensaje_notificacion = f"Error al enviar notificación: {str(e)}"
+        
+        return JsonResponse({
+            "success": True, 
+            "message": "Cita cancelada correctamente.",
+            "notificacion": mensaje_notificacion
+        })
+        
+    except Cita.DoesNotExist:
+        return JsonResponse({
+            "success": False, 
+            "message": "Cita no encontrada."
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            "success": False, 
+            "message": f"Error interno: {str(e)}"
+        }, status=500)
 @login_required
 @require_POST
 def eliminar_cita(request, id_cita):
@@ -1364,12 +1526,17 @@ def agendar_cita_ajax(request, id_doctor):
         # Crear datetime combinando la fecha del horario con la hora seleccionada
         fecha_hora_cita = datetime.combine(horario.fecha_inicio, hora_inicio_obj)
         
-        # Hacer la fecha/hora aware (con zona horaria) para comparar con timezone.now()
-        if timezone.is_naive(fecha_hora_cita):
-            fecha_hora_cita = timezone.make_aware(fecha_hora_cita, timezone.get_current_timezone())
+        # Usar la misma zona horaria que en horarios_disponibles
+        tz_ecuador = pytz.timezone('America/Guayaquil')
+        
+        # Hacer la fecha/hora aware con la zona horaria de Ecuador
+        fecha_hora_cita = timezone.make_aware(fecha_hora_cita, tz_ecuador)
+        
+        # Obtener el tiempo actual en la misma zona horaria
+        ahora = timezone.now().astimezone(tz_ecuador)
         
         # Verificar si la cita es en el pasado
-        if fecha_hora_cita < timezone.now():
+        if fecha_hora_cita < ahora:
             return JsonResponse({
                 "status": "error",
                 "message": "No se puede agendar en un horario que ya pasó. Por favor, seleccione un horario futuro."
@@ -1379,30 +1546,29 @@ def agendar_cita_ajax(request, id_doctor):
         hora_fin_obj = (datetime.combine(datetime.today(), hora_inicio_obj) + timedelta(minutes=30)).time()
 
         # Verificar si el horario ya está ocupado por otro paciente
+        # Usar la misma zona horaria para la búsqueda
+        fecha_hora_cita_for_query = fecha_hora_cita.replace(tzinfo=None)  # Convertir a naive para búsqueda
+        
         cita_existente = Cita.objects.filter(
             id_horario=horario,
             estado__in=["PENDIENTE", "CONFIRMADA"],
-            fecha_hora__time__gte=hora_inicio_obj,
-            fecha_hora__time__lt=hora_fin_obj
+            fecha_hora=fecha_hora_cita_for_query
         ).exists()
 
         if cita_existente:
             return JsonResponse({
                 "status": "error",
-                "message": f"La franja {hora_cita} - {hora_fin_obj.strftime('%H:%M')} ya está ocupada."
+                "message": f"La franja {hora_cita} ya está ocupada."
             }, status=409)
 
-        # Crear la cita
-        fecha_hora = datetime.combine(horario.fecha_inicio, hora_inicio_obj)
+        # Crear la cita - usar naive datetime como antes
+        fecha_hora_naive = datetime.combine(horario.fecha_inicio, hora_inicio_obj)
         
-        if timezone.is_aware(fecha_hora):
-            fecha_hora = fecha_hora.replace(tzinfo=None)
-
         cita = Cita.objects.create(
             id_paciente=user,
             id_doctor_id=id_doctor,
             id_horario=horario,
-            fecha_hora=fecha_hora,
+            fecha_hora=fecha_hora_naive,  # Guardar como naive
             motivo=motivo,
             registrado_por=user,
         )

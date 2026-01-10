@@ -25,7 +25,7 @@ urlpatterns = [
     ),
     name="login",
     ),
-
+    
     path("logout/", auth_views.LogoutView.as_view(next_page="/"), name="logout"),
     path("redirigir/", views.redirigir_segun_rol, name="redirigir_segun_rol"),
     # -------------------------
@@ -115,6 +115,7 @@ urlpatterns = [
     path("cita/doctor/<int:id_doctor>/agendar/", views.agendar_cita_ajax, name="cita_agendar_cita_ajax"),
     path("cita/<int:id_cita>/atender/", views.marcar_cita_atendida, name="marcar_cita_atendida"),
     path("cita/<int:id_cita>/eliminar/", views.eliminar_cita, name="eliminar_cita"),
+    path('cita/<int:id_cita>/cancelar/', views.cancelar_cita, name='cancelar_cita'),
 
     # Horario doctor
     path('horario/index/', views.horario_index, name='horario_index'),

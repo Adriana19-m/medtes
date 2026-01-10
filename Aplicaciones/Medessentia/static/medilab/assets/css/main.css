@@ -245,6 +245,10 @@ h6 {
 .header .topbar .contact-info i span {
   padding-left: 5px;
   color: var(--contrast-color);
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  vertical-align: middle;
 }
 
 @media (max-width: 575px) {
@@ -1726,4 +1730,89 @@ section,
 --------------------------------------------------------------*/
 .starter-section {
   /* Add your styles here */
+}
+/* override.css - Forzar estilos para el header */
+#header.header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  width: 100% !important;
+}
+
+.topbar {
+  min-height: 40px !important;
+  max-height: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.topbar .container {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.topbar .contact-info {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.topbar .contact-info i {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.topbar .contact-info i a,
+.topbar .contact-info i span {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  line-height: normal !important;
+  vertical-align: middle !important;
+}
+
+.topbar .d-none.d-md-flex.align-items-center {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Asegurar que todo el contenido tenga el mismo alto de línea */
+.topbar * {
+  line-height: 40px !important;
+  vertical-align: middle !important;
+}
+
+/* Espaciado para contenido */
+main {
+  padding-top: 140px !important;
+}
+
+@media (max-width: 768px) {
+  .topbar .contact-info .bi-envelope {
+    display: none !important;
+  }
+  
+  .topbar .d-none.d-md-flex.align-items-center {
+    display: none !important;
+  }
+  
+  main {
+    padding-top: 100px !important;
+  }
 }

@@ -92,15 +92,19 @@
     <!-- Cédula / Teléfono -->
     <div class="row">
       <div class="col-md-6 mb-3">
-        <label class="form-label">Cédula (10 dígitos)</label>
+        <label class="form-label">Cédula (10 dígitos ecuatoriana)</label>
         <input name="cedula_usuario" id="cedula_usuario"
                maxlength="10" minlength="10"
                class="form-control" required
                pattern="^[0-9]{10}$"
-               value="{{ prefill.cedula_usuario|default:'' }}">
-        <div class="invalid-feedback">
-          Debe ingresar una cédula válida de 10 dígitos.
+               value="{{ prefill.cedula_usuario|default:'' }}"
+               oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+        <div class="invalid-feedback" id="cedula-error">
+          Debe ingresar una cédula ecuatoriana válida de 10 dígitos.
         </div>
+        <small class="form-text text-muted">
+          Ejemplo: 1710034065 (formato ecuatoriano válido)
+        </small>
       </div>
       <div class="col-md-6 mb-3">
         <label class="form-label">Teléfono (10 dígitos)</label>
@@ -108,7 +112,8 @@
                maxlength="10" minlength="10"
                class="form-control" 
                pattern="^[0-9]{10}$"
-               value="{{ prefill.telefono_usuario|default:'' }}">
+               value="{{ prefill.telefono_usuario|default:'' }}"
+               oninput="this.value = this.value.replace(/[^0-9]/g, '')">
         <div class="invalid-feedback">
           Debe ingresar un número válido de 10 dígitos.
         </div>
@@ -144,203 +149,297 @@
 
 <!-- ======= JavaScript ======= -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const form = document.getElementById("formRegistroPaciente");
-  const pass1 = document.getElementById("password1");
-  const pass2 = document.getElementById("password2");
-  const password2Feedback = document.getElementById("password2-feedback");
-  
-  let formSubmitted = false;
-
-  // Función para validar coincidencia de contraseñas
-  function validatePasswordMatch() {
-    if (pass1.value !== pass2.value) {
-      pass2.setCustomValidity("Las contraseñas no coinciden.");
-      password2Feedback.textContent = "Las contraseñas no coinciden.";
-      return false;
-    } else {
-      pass2.setCustomValidity("");
-      return true;
+// Función para validar cédula ecuatoriana con algoritmo
+function validarCedulaEcuatoriana(cedula) {
+    if (!/^\d{10}$/.test(cedula)) {
+        return { valido: false, mensaje: "Debe contener exactamente 10 dígitos numéricos." };
     }
-  }
-
-  // Función para validar longitud de contraseña
-  function validatePasswordLength() {
-    if (pass1.value.length > 0 && pass1.value.length < 8) {
-      pass1.setCustomValidity("La contraseña debe tener al menos 8 caracteres.");
-      return false;
-    } else {
-      pass1.setCustomValidity("");
-      return true;
-    }
-  }
-
-  // Evento de blur para validar al salir del campo
-  function setupFieldValidation(field) {
-    field.addEventListener('blur', function() {
-      if (formSubmitted || (this.value && !this.checkValidity())) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-      } else if (this.checkValidity()) {
-        this.classList.remove('is-invalid');
-        this.classList.add('is-valid');
-      }
-    });
-  }
-
-  // Configurar validación para todos los campos
-  const allFields = form.querySelectorAll('input, select');
-  allFields.forEach(field => {
-    setupFieldValidation(field);
     
-    // Remover mensaje de error cuando el usuario empieza a escribir
-    field.addEventListener('input', function() {
-      if (formSubmitted) {
-        if (this.checkValidity()) {
-          this.classList.remove('is-invalid');
-          this.classList.add('is-valid');
-        } else {
-          this.classList.add('is-invalid');
-          this.classList.remove('is-valid');
+    // Validar provincia (01-24)
+    const provincia = parseInt(cedula.substring(0, 2));
+    if (provincia < 1 || provincia > 24) {
+        return { valido: false, mensaje: "La cédula debe pertenecer a una provincia válida (01-24)." };
+    }
+    
+    // Algoritmo de validación
+    let total = 0;
+    for (let i = 0; i < 9; i++) {
+        let num = parseInt(cedula[i]);
+        if (i % 2 === 0) { // posiciones impares (0-index)
+            num *= 2;
+            if (num > 9) {
+                num -= 9;
+            }
         }
-        
-        // Validaciones específicas para contraseñas
-        if (this.id === 'password1' || this.id === 'password2') {
-          validatePasswordLength();
-          validatePasswordMatch();
-        }
-      }
-    });
-  });
+        total += num;
+    }
+    
+    const verificador = total % 10 === 0 ? 0 : 10 - (total % 10);
+    if (verificador !== parseInt(cedula[9])) {
+        return { valido: false, mensaje: "Cédula ecuatoriana no válida." };
+    }
+    
+    return { valido: true, mensaje: "" };
+}
 
-  // Validación específica para contraseñas en tiempo real
-  pass1.addEventListener('input', function() {
-    if (formSubmitted) {
-      validatePasswordLength();
-      validatePasswordMatch();
-    }
-  });
-
-  pass2.addEventListener('input', function() {
-    if (formSubmitted) {
-      validatePasswordMatch();
-    }
-  });
-
-  // Validación del formulario al enviar
-  form.addEventListener("submit", function (event) {
-    event.preventDefault();
-    event.stopPropagation();
+// Función para mostrar/ocultar contraseña
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector("i");
     
-    formSubmitted = true;
-    
-    // Validar campos de Bootstrap
-    const isBootstrapValid = form.checkValidity();
-    
-    // Validaciones personalizadas
-    const isLengthValid = validatePasswordLength();
-    const isMatchValid = validatePasswordMatch();
-    
-    // Aplicar clases de validación visual
-    allFields.forEach(field => {
-      if (!field.checkValidity()) {
-        field.classList.add('is-invalid');
-        field.classList.remove('is-valid');
-      } else {
-        field.classList.remove('is-invalid');
-        field.classList.add('is-valid');
-      }
-    });
-    
-    // Validar específicamente las contraseñas
-    if (pass1.value.length < 8) {
-      pass1.classList.add('is-invalid');
-      pass1.classList.remove('is-valid');
-    }
-    
-    if (pass1.value !== pass2.value) {
-      pass2.classList.add('is-invalid');
-      pass2.classList.remove('is-valid');
-    }
-    
-    // Si todo es válido, enviar el formulario
-    if (isBootstrapValid && isLengthValid && isMatchValid) {
-      form.submit();
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.replace("bi-eye", "bi-eye-slash");
     } else {
-      // Marcar formulario como validado para mostrar errores
-      form.classList.add("was-validated");
-      
-      // Enfocar el primer campo con error
-      const firstInvalidField = form.querySelector('.is-invalid');
-      if (firstInvalidField) {
-        firstInvalidField.focus();
-      }
+        input.type = "password";
+        icon.classList.replace("bi-eye-slash", "bi-eye");
     }
-  });
+}
 
-  // Validación de cédula
-  const cedulaInput = document.getElementById("cedula_usuario");
-  cedulaInput.addEventListener("input", function() {
-    if (this.validity.patternMismatch) {
-      this.setCustomValidity("Debe contener exactamente 10 dígitos numéricos.");
-    } else {
-      this.setCustomValidity("");
-    }
-  });
-
-  // Validación de teléfono (si se ingresa)
-  const telefonoInput = document.getElementById("telefono_usuario");
-  telefonoInput.addEventListener("input", function() {
-    if (this.value && this.validity.patternMismatch) {
-      this.setCustomValidity("Debe contener exactamente 10 dígitos numéricos.");
-    } else {
-      this.setCustomValidity("");
-    }
-  });
+// Validación en tiempo real para la cédula
+const cedulaInput = document.getElementById("cedula_usuario");
+cedulaInput.addEventListener("blur", function() {
+    validarCampoCedula(this);
 });
 
-function togglePassword(inputId, btn) {
-  const input = document.getElementById(inputId);
-  const icon = btn.querySelector("i");
+cedulaInput.addEventListener("input", function() {
+    // Limpiar validación cuando el usuario empieza a escribir
+    if (this.classList.contains("is-invalid") || this.classList.contains("is-valid")) {
+        this.classList.remove("is-invalid", "is-valid");
+        const errorDiv = document.getElementById("cedula-error");
+        if (errorDiv) {
+            errorDiv.textContent = "Debe ingresar una cédula ecuatoriana válida de 10 dígitos.";
+        }
+    }
+});
 
-  if (input.type === "password") {
-    input.type = "text";
-    icon.classList.replace("bi-eye", "bi-eye-slash");
-  } else {
-    input.type = "password";
-    icon.classList.replace("bi-eye-slash", "bi-eye");
-  }
+function validarCampoCedula(input) {
+    const cedula = input.value.trim();
+    
+    if (cedula === "") {
+        input.setCustomValidity("La cédula es obligatoria.");
+        input.classList.add("is-invalid");
+        input.classList.remove("is-valid");
+        return;
+    }
+    
+    const resultado = validarCedulaEcuatoriana(cedula);
+    const errorDiv = document.getElementById("cedula-error");
+    
+    if (!resultado.valido) {
+        input.setCustomValidity(resultado.mensaje);
+        input.classList.add("is-invalid");
+        input.classList.remove("is-valid");
+        if (errorDiv) {
+            errorDiv.textContent = resultado.mensaje;
+        }
+    } else {
+        input.setCustomValidity("");
+        input.classList.remove("is-invalid");
+        input.classList.add("is-valid");
+        if (errorDiv) {
+            errorDiv.textContent = "";
+        }
+    }
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("formRegistroPaciente");
+    const pass1 = document.getElementById("password1");
+    const pass2 = document.getElementById("password2");
+    const password2Feedback = document.getElementById("password2-feedback");
+    const telefonoInput = document.getElementById("telefono_usuario");
+    
+    let formSubmitted = false;
+
+    // Función para validar coincidencia de contraseñas
+    function validatePasswordMatch() {
+        if (pass1.value !== pass2.value) {
+            pass2.setCustomValidity("Las contraseñas no coinciden.");
+            password2Feedback.textContent = "Las contraseñas no coinciden.";
+            return false;
+        } else {
+            pass2.setCustomValidity("");
+            return true;
+        }
+    }
+
+    // Función para validar longitud de contraseña
+    function validatePasswordLength() {
+        if (pass1.value.length > 0 && pass1.value.length < 8) {
+            pass1.setCustomValidity("La contraseña debe tener al menos 8 caracteres.");
+            return false;
+        } else {
+            pass1.setCustomValidity("");
+            return true;
+        }
+    }
+
+    // Configurar validación para todos los campos
+    const allFields = form.querySelectorAll('input, select');
+    allFields.forEach(field => {
+        // Remover mensaje de error cuando el usuario empieza a escribir
+        field.addEventListener('input', function() {
+            if (formSubmitted) {
+                if (this.checkValidity()) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                }
+                
+                // Validaciones específicas para contraseñas
+                if (this.id === 'password1' || this.id === 'password2') {
+                    validatePasswordLength();
+                    validatePasswordMatch();
+                }
+                
+                // Validación específica para cédula
+                if (this.id === 'cedula_usuario') {
+                    validarCampoCedula(this);
+                }
+            }
+        });
+    });
+
+    // Validación específica para contraseñas en tiempo real
+    pass1.addEventListener('input', function() {
+        if (formSubmitted) {
+            validatePasswordLength();
+            validatePasswordMatch();
+        }
+    });
+
+    pass2.addEventListener('input', function() {
+        if (formSubmitted) {
+            validatePasswordMatch();
+        }
+    });
+
+    // Validación del formulario al enviar
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        formSubmitted = true;
+        
+        // Validar campos de Bootstrap
+        const isBootstrapValid = form.checkValidity();
+        
+        // Validaciones personalizadas
+        const isLengthValid = validatePasswordLength();
+        const isMatchValid = validatePasswordMatch();
+        
+        // Validar cédula específicamente
+        const cedulaResultado = validarCedulaEcuatoriana(cedulaInput.value);
+        if (!cedulaResultado.valido) {
+            cedulaInput.setCustomValidity(cedulaResultado.mensaje);
+            cedulaInput.classList.add('is-invalid');
+            cedulaInput.classList.remove('is-valid');
+            const errorDiv = document.getElementById("cedula-error");
+            if (errorDiv) {
+                errorDiv.textContent = cedulaResultado.mensaje;
+            }
+        } else {
+            cedulaInput.setCustomValidity("");
+            cedulaInput.classList.remove('is-invalid');
+            cedulaInput.classList.add('is-valid');
+        }
+        
+        // Aplicar clases de validación visual a todos los campos
+        allFields.forEach(field => {
+            if (!field.checkValidity()) {
+                field.classList.add('is-invalid');
+                field.classList.remove('is-valid');
+            } else {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            }
+        });
+        
+        // Validar específicamente las contraseñas
+        if (pass1.value.length < 8) {
+            pass1.classList.add('is-invalid');
+            pass1.classList.remove('is-valid');
+        }
+        
+        if (pass1.value !== pass2.value) {
+            pass2.classList.add('is-invalid');
+            pass2.classList.remove('is-valid');
+        }
+        
+        // Si todo es válido, enviar el formulario
+        if (isBootstrapValid && isLengthValid && isMatchValid && cedulaResultado.valido) {
+            form.submit();
+        } else {
+            // Marcar formulario como validado para mostrar errores
+            form.classList.add("was-validated");
+            
+            // Enfocar el primer campo con error
+            const firstInvalidField = form.querySelector('.is-invalid');
+            if (firstInvalidField) {
+                firstInvalidField.focus();
+            }
+        }
+    });
+
+    // Validación de teléfono (si se ingresa)
+    telefonoInput.addEventListener("blur", function() {
+        const telefono = this.value.trim();
+        
+        if (telefono && !/^\d{10}$/.test(telefono)) {
+            this.setCustomValidity("Debe contener exactamente 10 dígitos numéricos.");
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+        } else {
+            this.setCustomValidity("");
+            if (telefono) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-invalid', 'is-valid');
+            }
+        }
+    });
+});
 </script>
 
 <style>
 /* Estilos para indicar campos válidos */
 .form-control.is-valid, .form-select.is-valid {
-  border-color: #198754;
-  padding-right: calc(1.5em + 0.75rem);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right calc(0.375em + 0.1875rem) center;
-  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    border-color: #198754;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
 }
 
 /* Ocultar mensajes de error por defecto */
 .input-group.has-validation .invalid-feedback {
-  display: none;
+    display: none;
 }
 
 .input-group.has-validation .form-control.is-invalid ~ .invalid-feedback {
-  display: block;
+    display: block;
 }
 
 /* Estilo para el botón de mostrar contraseña */
 .input-group button.btn-outline-secondary {
-  border-color: #ced4da;
+    border-color: #ced4da;
 }
 
 .input-group button.btn-outline-secondary:hover {
-  background-color: #e9ecef;
-  border-color: #ced4da;
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+
+/* Estilo para mensajes de validación de cédula */
+#cedula-error {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
 }
 </style>
 

@@ -7,16 +7,27 @@
   <div class="container" data-aos="fade-up">
     <div class="row justify-content-center">
       <div class="col-md-8 col-lg-5">
+
+        {# Mensajes del sistema #}
         {% if messages %}
           {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} mb-3">{{ message }}</div>
+            <div class="alert alert-{{ message.tags|default:'info' }} mb-3">
+              {{ message }}
+            </div>
           {% endfor %}
         {% endif %}
+
+        {# Advertencia de seguridad #}
+        <div class="alert alert-warning small mb-3">
+          <i class="bi bi-shield-lock"></i>
+          Por seguridad, el sistema monitorea los intentos fallidos de acceso.
+        </div>
 
         <div class="card shadow-sm">
           <div class="card-header text-center">
             <h5 class="mb-0">Iniciar Sesión</h5>
           </div>
+
           <div class="card-body">
             <form method="post" novalidate>
               {% csrf_token %}
@@ -25,26 +36,45 @@
                 <input type="hidden" name="next" value="{{ next }}">
               {% endif %}
 
+              {# Error general de login (Django) #}
               {% if form.non_field_errors %}
                 <div class="alert alert-danger">
-                  {% for err in form.non_field_errors %}
-                    {{ err }}
-                  {% endfor %}
+                  Usuario o contraseña incorrectos.
                 </div>
               {% endif %}
 
               <div class="mb-3">
                 <label for="id_username" class="form-label">Usuario</label>
-                <input id="id_username" name="username" type="text" class="form-control"
-                       value="{{ form.username.value|default_if_none:'' }}" required autofocus>
+                <input
+                  id="id_username"
+                  name="username"
+                  type="text"
+                  class="form-control"
+                  value="{{ form.username.value|default_if_none:'' }}"
+                  required
+                  autofocus
+                  autocomplete="username"
+                >
               </div>
 
-              <!-- Campo de contraseña con botón de ver -->
               <div class="mb-3 position-relative">
                 <label for="id_password" class="form-label">Contraseña</label>
                 <div class="input-group">
-                  <input id="id_password" name="password" type="password" class="form-control" required>
-                  <button type="button" class="btn btn-outline-secondary" id="togglePassword" tabindex="-1">
+                  <input
+                    id="id_password"
+                    name="password"
+                    type="password"
+                    class="form-control"
+                    required
+                    autocomplete="current-password"
+                  >
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    id="togglePassword"
+                    tabindex="-1"
+                    aria-label="Mostrar u ocultar contraseña"
+                  >
                     <i class="bi bi-eye-slash" id="eyeIcon"></i>
                   </button>
                 </div>
@@ -52,10 +82,21 @@
 
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <a href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a>
-                <a href="{% url 'registro_paciente' %}">Registrarse (Paciente)</a>
+
+                {% if not hide_register_link %}
+                  <a href="{% url 'registro_paciente' %}">
+                    Registrarse (Paciente)
+                  </a>
+                {% endif %}
               </div>
 
-              <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+              <button
+                type="submit"
+                class="btn btn-primary w-100"
+                id="btnLogin"
+              >
+                Ingresar
+              </button>
             </form>
           </div>
         </div>
@@ -65,31 +106,35 @@
             <i class="bi bi-arrow-left"></i> Volver
           </a>
         </div>
+
       </div>
     </div>
   </div>
 </section>
 
-<!-- Script para mostrar/ocultar contraseña -->
+{# Mostrar / ocultar contraseña #}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const toggleBtn = document.getElementById('togglePassword');
   const passwordInput = document.getElementById('id_password');
   const eyeIcon = document.getElementById('eyeIcon');
 
-  toggleBtn.addEventListener('click', function() {
-    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordInput.setAttribute('type', type);
-
-    // Cambia el ícono según el estado
-    if (type === 'password') {
-      eyeIcon.classList.remove('bi-eye');
-      eyeIcon.classList.add('bi-eye-slash');
-    } else {
-      eyeIcon.classList.remove('bi-eye-slash');
-      eyeIcon.classList.add('bi-eye');
-    }
+  toggleBtn.addEventListener('click', function () {
+    const isPassword = passwordInput.type === 'password';
+    passwordInput.type = isPassword ? 'text' : 'password';
+    eyeIcon.classList.toggle('bi-eye', isPassword);
+    eyeIcon.classList.toggle('bi-eye-slash', !isPassword);
   });
 });
 </script>
+
+{# Deshabilitar botón al enviar #}
+<script>
+document.querySelector('form').addEventListener('submit', function () {
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true;
+  btn.innerText = 'Verificando...';
+});
+</script>
+
 {% endblock %}
