@@ -13,25 +13,165 @@
     <style>
         #calendar {
             background: white;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
         }
+        
         .fc-header-toolbar {
-            margin-bottom: 1.5em !important;
+            margin-bottom: 1em !important;
         }
+        
         .fc-button {
             text-transform: capitalize !important;
+            font-size: 0.875rem !important;
         }
+        
         .fc-day-today {
             background-color: rgba(13, 110, 253, 0.1) !important;
         }
+        
         .fc-event {
             cursor: pointer;
+            font-size: 0.75rem !important;
+            padding: 2px 4px !important;
         }
+        
         .fc-day-disabled {
             background-color: #f8f9fa !important;
             cursor: not-allowed;
+        }
+        
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            #calendar {
+                padding: 10px;
+            }
+            
+            .fc-toolbar {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+            }
+            
+            .fc-toolbar-chunk {
+                margin-bottom: 10px !important;
+                width: 100%;
+            }
+            
+            .fc-toolbar-title {
+                font-size: 1.2rem !important;
+                text-align: center;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .fc-button-group {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .fc-button {
+                flex: 1;
+                margin: 0 2px !important;
+                padding: 4px 8px !important;
+                font-size: 0.75rem !important;
+            }
+            
+            .fc-col-header-cell {
+                font-size: 0.75rem !important;
+                padding: 4px 2px !important;
+            }
+            
+            .fc-timegrid-slot {
+                font-size: 0.7rem !important;
+            }
+            
+            .fc-timegrid-axis {
+                font-size: 0.7rem !important;
+            }
+            
+            .fc-event-title {
+                font-size: 0.7rem !important;
+            }
+            
+            .card-header h4 {
+                font-size: 1.2rem;
+            }
+            
+            .btn-sm {
+                padding: 4px 8px;
+                font-size: 0.875rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            #calendar {
+                padding: 5px;
+            }
+            
+            .fc-toolbar-title {
+                font-size: 1rem !important;
+            }
+            
+            .fc-button {
+                font-size: 0.7rem !important;
+                padding: 3px 6px !important;
+                margin: 0 1px !important;
+            }
+            
+            .fc-header-toolbar {
+                margin-bottom: 0.5em !important;
+            }
+            
+            .fc-view-harness {
+                max-height: 400px !important;
+                overflow-y: auto !important;
+            }
+            
+            .fc-timegrid-body {
+                min-width: 500px !important;
+            }
+            
+            .fc-scrollgrid {
+                min-width: 500px !important;
+            }
+        }
+        
+        .calendar-container {
+            overflow-x: auto;
+        }
+        
+        .fc-timeGridDay-view .fc-timegrid-slots {
+            font-size: 0.8rem !important;
+        }
+        
+        .fc-event-time {
+            font-weight: bold;
+            font-size: 0.7rem !important;
+        }
+        
+        @media (max-width: 768px) {
+            .modal-dialog {
+                margin: 10px !important;
+            }
+            
+            .modal-content {
+                padding: 10px;
+            }
+            
+            .modal-body .row {
+                margin-bottom: 10px !important;
+            }
+            
+            .form-label {
+                font-size: 0.9rem !important;
+            }
+            
+            .form-control, .form-select {
+                font-size: 0.9rem !important;
+                padding: 6px 10px !important;
+            }
         }
     </style>
 </head>
@@ -39,20 +179,20 @@
     <div class="container-fluid py-3">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Calendario de Horarios</h4>
-                    <div>
-                    
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <h4 class="mb-0 mb-md-2 mb-lg-0"><i class="fas fa-calendar-alt me-2"></i>Calendario de Horarios</h4>
+                    <div class="d-flex">
                         <a href="{% url 'horario_index' %}" class="btn btn-light btn-sm me-2">
                             <i class="fas fa-arrow-left me-1"></i> Volver
                         </a>
-                        
                     </div>
                 </div>
             </div>
             
             <div class="card-body">
-                <div id="calendar"></div>
+                <div class="calendar-container">
+                    <div id="calendar"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -145,29 +285,33 @@
     <script>
     let calendar = null;
     let modalDisponibilidad = null;
-    let eventosCargados = []; // Para almacenar los eventos cargados
+    let eventosCargados = [];
 
-    // Función para obtener el nombre del día en español
+    // Función para detectar si es dispositivo móvil
+    function esDispositivoMovil() {
+        return window.innerWidth <= 768;
+    }
+
+    // Función para obtener el nombre del día en español - CORREGIDA para coincidir con opciones del select
     function obtenerNombreDia(fecha) {
-        const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
         return dias[fecha.getDay()];
     }
 
     // Función para verificar si una fecha ya tiene eventos
     function fechaTieneEventos(fecha) {
-        const fechaStr = fecha.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-        
+        const fechaStr = fecha.toISOString().split('T')[0];
         return eventosCargados.some(evento => {
             const eventDate = evento.start.split('T')[0];
             return eventDate === fechaStr;
         });
     }
 
-    // Función para obtener fechas ocupadas
-    function obtenerFechasOcupadas() {
-        return eventosCargados.map(evento => {
-            return evento.start.split('T')[0]; // Solo la fecha YYYY-MM-DD
-        });
+    // Función para formatear hora a HH:MM
+    function formatearHora(fecha) {
+        const horas = fecha.getHours().toString().padStart(2, '0');
+        const minutos = fecha.getMinutes().toString().padStart(2, '0');
+        return `${horas}:${minutos}`;
     }
 
     // Función para inicializar datepickers
@@ -175,21 +319,18 @@
         const hoy = new Date();
         const hoyFormato = hoy.toISOString().split('T')[0];
         
-        // Establecer mínimo de hoy
         $('#fecha_inicio').attr('min', hoyFormato);
         $('#fecha_fin').attr('min', hoyFormato);
         
-        // Actualizar mínimo de fecha_fin cuando cambia fecha_inicio
         $('#fecha_inicio').on('change', function() {
             const fechaInicio = $(this).val();
             $('#fecha_fin').attr('min', fechaInicio);
             
-            // Si fecha_fin es anterior a fecha_inicio, actualizarla
             if ($('#fecha_fin').val() && $('#fecha_fin').val() < fechaInicio) {
                 $('#fecha_fin').val(fechaInicio);
             }
             
-            // Actualizar día de la semana si se cambia la fecha
+            // Actualizar automáticamente el día de la semana cuando cambia la fecha
             if (fechaInicio) {
                 const fecha = new Date(fechaInicio + 'T00:00:00');
                 const nombreDia = obtenerNombreDia(fecha);
@@ -197,7 +338,6 @@
             }
         });
         
-        // Actualizar día de la semana para fecha_fin también
         $('#fecha_fin').on('change', function() {
             if ($(this).val()) {
                 const fecha = new Date($(this).val() + 'T00:00:00');
@@ -219,9 +359,13 @@
         // Inicializar datepickers
         inicializarDatepickers();
 
-        // Inicializar calendario
+        // Determinar vista inicial basada en el tamaño de pantalla
+        const vistaInicial = esDispositivoMovil() ? 'timeGridDay' : 'timeGridWeek';
+        const botonesVista = esDispositivoMovil() ? 'timeGridDay,listWeek' : 'timeGridWeek,timeGridDay,listWeek';
+
+        // Inicializar calendario con configuración responsive
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-            initialView: 'timeGridWeek',
+            initialView: vistaInicial,
             locale: 'es',
             allDaySlot: false,
             buttonText: {
@@ -233,21 +377,31 @@
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'timeGridWeek,timeGridDay,listWeek'
+                right: botonesVista
             },
             slotMinTime: '06:00:00',
             slotMaxTime: '22:00:00',
             nowIndicator: true,
             selectable: true,
             selectMirror: true,
-            dayMaxEvents: true,
+            dayMaxEvents: esDispositivoMovil() ? 3 : true,
             weekends: true,
             editable: false,
             eventColor: '#0d6efd',
+            height: 'auto',
+            contentHeight: 'auto',
+            
+            // Configuraciones responsive
+            dayMaxEventRows: esDispositivoMovil() ? 2 : false,
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                meridiem: false
+            },
             
             // Deshabilitar fechas pasadas
             validRange: {
-                start: new Date() // Solo permite desde hoy en adelante
+                start: new Date()
             },
 
             events: function(info, success, failure) {
@@ -261,7 +415,6 @@
                         end: info.endStr
                     },
                     success: function(data) {
-                        // Guardar eventos cargados
                         eventosCargados = data;
                         success(data);
                     },
@@ -282,11 +435,9 @@
                 const fechaSeleccionada = new Date(info.dateStr);
                 const hoy = new Date();
                 
-                // Normalizamos HOY a solo fecha (sin hora)
                 hoy.setHours(0, 0, 0, 0);
                 fechaSeleccionada.setHours(0, 0, 0, 0);
 
-                // Verificar si la fecha es pasada
                 if (fechaSeleccionada < hoy) {
                     Swal.fire({
                         icon: 'warning',
@@ -298,7 +449,6 @@
                     return;
                 }
 
-                // Verificar si la fecha ya tiene eventos
                 if (fechaTieneEventos(fechaSeleccionada)) {
                     Swal.fire({
                         icon: 'warning',
@@ -310,21 +460,41 @@
                     return;
                 }
 
-                // Configurar el formulario con la fecha seleccionada
-                const fechaFormato = fechaSeleccionada.toISOString().split('T')[0];
+                // Obtener fecha y hora exacta del clic
+                const fechaHoraClic = new Date(info.dateStr);
+                
+                // Formatear fecha (YYYY-MM-DD)
+                const fechaFormato = fechaHoraClic.toISOString().split('T')[0];
+                
+                // Formatear hora inicio (HH:MM)
+                const horaInicio = formatearHora(fechaHoraClic);
+                
+                // Calcular hora fin (1 hora después por defecto)
+                const horaFinDate = new Date(fechaHoraClic.getTime() + 60 * 60 * 1000);
+                const horaFin = formatearHora(horaFinDate);
                 
                 // Resetear formulario
                 $('#formDisponibilidad')[0].reset();
                 
-                // Establecer fechas
+                // Establecer valores automáticamente
                 $('#fecha_inicio').val(fechaFormato);
                 $('#fecha_fin').val(fechaFormato);
+                $('#hora_inicio').val(horaInicio);
+                $('#hora_fin').val(horaFin);
                 
-                // Establecer automáticamente el día de la semana
-                const nombreDia = obtenerNombreDia(fechaSeleccionada);
-                $('#dia_semana_select').val(nombreDia);
+                // Establecer automáticamente el día de la semana - CORREGIDO
+                const nombreDia = obtenerNombreDia(fechaHoraClic);
+                console.log("Día de la semana detectado:", nombreDia);
                 
-                // Mostrar modal
+                // Asegurarse de que el select muestre el valor correcto
+                $('#dia_semana_select').val(nombreDia).trigger('change');
+                
+                // Mostrar información en consola para debug
+                console.log('Fecha clic:', fechaFormato);
+                console.log('Hora inicio:', horaInicio);
+                console.log('Hora fin:', horaFin);
+                console.log('Día de la semana seleccionado:', $('#dia_semana_select').val());
+                
                 modalDisponibilidad.show();
             },
             
@@ -340,41 +510,45 @@
                     info.el.style.pointerEvents = 'none';
                     info.el.style.opacity = '0.5';
                 }
+                
+                // Ajustar tamaño de fuente en móviles
+                if (esDispositivoMovil()) {
+                    info.el.style.fontSize = '0.8rem';
+                }
+            },
+            
+            // Ajustar eventos para móviles
+            eventDidMount: function(info) {
+                if (esDispositivoMovil()) {
+                    info.el.style.fontSize = '0.7rem';
+                    info.el.style.padding = '1px 3px';
+                }
             }
         });
 
         calendar.render();
 
-        // Botón nuevo horario
-        $('#btn_nuevo_horario').on('click', function() {
-            const hoy = new Date();
-            const hoyFormato = hoy.toISOString().split('T')[0];
-            const nombreDiaHoy = obtenerNombreDia(hoy);
+        // Redimensionar calendario cuando cambie el tamaño de la ventana
+        window.addEventListener('resize', function() {
+            calendar.updateSize();
             
-            // Resetear formulario
-            $('#formDisponibilidad')[0].reset();
-            
-            // Establecer valores por defecto
-            $('#fecha_inicio').val(hoyFormato);
-            $('#fecha_fin').val(hoyFormato);
-            $('#dia_semana_select').val(nombreDiaHoy);
-            $('#hora_inicio').val('08:00');
-            $('#hora_fin').val('17:00');
-            
-            modalDisponibilidad.show();
+            // Cambiar vista si es necesario
+            if (esDispositivoMovil() && calendar.view.type !== 'timeGridDay' && calendar.view.type !== 'listWeek') {
+                calendar.changeView('timeGridDay');
+            } else if (!esDispositivoMovil() && calendar.view.type === 'timeGridDay') {
+                calendar.changeView('timeGridWeek');
+            }
         });
 
         // Guardar disponibilidad
         $('#guardarDisponibilidad').on('click', function() {
             const form = document.getElementById('formDisponibilidad');
             
-            // Validar formulario
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
 
-            // Validar que fecha_inicio no sea pasada
             const fechaInicio = new Date($('#fecha_inicio').val() + 'T00:00:00');
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
@@ -389,7 +563,6 @@
                 return;
             }
 
-            // Validar que fecha_fin sea mayor o igual a fecha_inicio
             const fechaFin = new Date($('#fecha_fin').val() + 'T00:00:00');
             if (fechaFin < fechaInicio) {
                 Swal.fire({
@@ -401,7 +574,6 @@
                 return;
             }
 
-            // Validar que hora_fin sea mayor a hora_inicio
             const horaInicio = $('#hora_inicio').val();
             const horaFin = $('#hora_fin').val();
             
@@ -424,7 +596,6 @@
             data.append('es_recurrente', $('#es_recurrente').is(':checked'));
             data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-            // Deshabilitar botón
             const btnGuardar = $(this);
             const originalHTML = btnGuardar.html();
             btnGuardar.prop('disabled', true);

@@ -17,267 +17,358 @@
 
   {% block extra_css %}{% endblock %}
 
-  <style>
+ <style>
+  body {
+    background-color: #f5f9f7;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding-top: 60px; /* Para compensar la topbar fija */
+  }
+  
+  /* ===== TOPBAR FIXED ===== */
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    height: 60px; /* Altura fija */
+  }
+  
+  .topbar {
+    background-color: #0d6efd !important;
+    padding: 0; /* Quitamos padding vertical */
+    height: 60px; /* Altura fija */
+    display: flex;
+    align-items: center;
+  }
+  
+  .topbar .container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px; /* Padding horizontal */
+    height: 100%; /* Asegura que ocupe toda la altura */
+  }
+  
+  .topbar .contact-info {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    flex-wrap: nowrap; /* Evita que se rompa la línea */
+    white-space: nowrap; /* Evita saltos de línea */
+  }
+  
+  .topbar .contact-info i {
+    margin-right: 5px;
+    flex-shrink: 0; /* Evita que los íconos se encojan */
+  }
+  
+  .topbar .contact-info span {
+    white-space: nowrap; /* Evita saltos de línea en el texto */
+  }
+  
+  .topbar .contact-info .bi-phone {
+    margin-left: 20px;
+  }
+  
+  .topbar,
+  .topbar a,
+  .topbar span,
+  .topbar i {
+    color: #ffffff !important;
+    text-decoration: none;
+  }
+  
+  .topbar .btn-outline-secondary {
+    border-color: #ffffff !important;
+    color: #ffffff !important;
+    background-color: transparent !important;
+    white-space: nowrap; /* Evita que el texto del botón se rompa */
+    flex-shrink: 0; /* Evita que el botón se encoja */
+  }
+  
+  .topbar .btn-outline-secondary:hover {
+    background-color: #ffffff !important;
+    color: #0d6efd !important;
+  }
+  
+  /* ===== SIDEBAR ===== */
+  .sidebar-paciente {
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    min-height: calc(100vh - 60px); 
+    margin-top: 60px; /* Compensa la topbar fija */
+  }
+  
+  .sidebar-paciente .nav-link {
+    border-radius: 8px;
+    margin-bottom: 4px;
+    color: #333;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+  }
+  
+  .sidebar-paciente .nav-link.active,
+  .sidebar-paciente .nav-link:hover {
+    background-color: #0d6efd;
+    color: #fff;
+  }
+  
+  .sidebar-paciente h6 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  
+  /* ===== CONTENIDO PRINCIPAL ===== */
+  .main-content {
+    padding: 15px 20px 20px 20px;
+    min-height: calc(100vh - 60px);
+    margin-top: 60px; /* Compensa la topbar fija */
+  }
+  /* Eliminar márgenes/paddings superiores innecesarios del contenido principal */
+  .main-content {
+      padding-top: 5px !important; /* Reducido de 20px */
+      margin-top: 0 !important; /* Eliminado el margin-top de 60px */
+  }
+  
+  /* ===== PERFIL DE USUARIO EN SIDEBAR ===== */
+  .user-profile-sidebar {
+    padding: 20px 15px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    background: #0d6efd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+  }
+  
+  /* ===== RESPONSIVE ===== */
+  
+  /* Para tablets y móviles (hasta 991.98px) */
+  @media (max-width: 991.98px) {
     body {
-      background-color: #f5f9f7;
-      font-family: 'Roboto', sans-serif;
+      padding-top: 60px; /* Mantiene el espacio para la topbar fija */
     }
     
-    
-    .topbar {
-      background-color: #0d6efd !important;
-      padding: 8px 0;
+    /* Ajustes para el topbar en móviles */
+    .topbar .container {
+      flex-wrap: wrap; /* Permite que los elementos se ajusten */
+      height: auto; /* Altura automática */
+      min-height: 60px; /* Altura mínima */
+      padding: 10px 15px; /* Más padding en móviles */
     }
     
-    .topbar,
-    .topbar a,
-    .topbar span,
-    .topbar i,
-    .topbar .contact-info,
-    .topbar .contact-info a,
-    .topbar .contact-info i,
-    .topbar .contact-info span,
-    .topbar .btn,
-    .topbar .btn span,
-    .topbar .btn i {
-      color: #ffffff !important;
+    .topbar .contact-info {
+      width: 100%;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap; /* Permite ajuste en móviles muy pequeños */
     }
     
-    .topbar .contact-info a,
-    .topbar .contact-info span {
-      text-decoration: none;
-      transition: opacity 0.3s ease;
+    .topbar .contact-info .bi-envelope {
+      margin-right: 10px;
     }
     
-    .topbar .contact-info a:hover {
-      opacity: 0.8;
-      text-decoration: underline;
+    .topbar .contact-info .bi-phone {
+      margin-left: 0;
+    }
+    
+    .topbar .d-flex.align-items-center {
+      width: 100%;
+      justify-content: flex-end; /* Alinea a la derecha */
+    }
+    
+    /* Sidebar móvil */
+    .sidebar-paciente {
+      position: fixed;
+      left: 0;
+      top: 60px; 
+      width: 280px;
+      height: calc(100vh - 60px);
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      margin-top: 0; /* Quita el margen superior en móvil */
+    }
+    
+    .sidebar-paciente.show {
+      transform: translateX(0);
+    }
+    
+    .main-content {
+      width: 100%;
+      padding: 15px;
+      margin-top: 60px; /* Mantiene el margen */
+    }
+    
+    /* Botón para mostrar/ocultar sidebar */
+    .sidebar-toggle {
+      display: block !important;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1001;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #0d6efd;
+      color: white;
+      border: none;
+      box-shadow: 0 4px 12px rgba(0,110,253,0.3);
+    }
+    
+    /* Overlay para sidebar */
+    .overlay-sidebar {
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+    
+    .overlay-sidebar.show {
+      display: block;
+    }
+  }
+  
+  /* Para móviles (hasta 768px) */
+  @media (max-width: 768px) {
+    .topbar .contact-info {
+      font-size: 14px; /* Reduce ligeramente el tamaño de fuente */
+    }
+    
+    .topbar .contact-info i {
+      font-size: 14px;
     }
     
     .topbar .btn-outline-secondary {
-      border-color: #ffffff !important;
-      color: #ffffff !important;
-      background-color: transparent !important;
+      padding: 4px 8px;
+      font-size: 14px;
     }
-    
-    .topbar .btn-outline-secondary:hover {
-      background-color: #ffffff !important;
-      color: #0d6efd !important;
-    }
-
-    .sidebar-paciente {
-      background: #ffffff;
-      border-right: 1px solid #e5e7eb;
-      min-height: calc(100vh - 60px); 
-    }
-    
-    .sidebar-paciente .nav-link {
-      border-radius: 8px;
-      margin-bottom: 4px;
-      color: #333;
-      padding: 10px 15px;
-      transition: all 0.3s ease;
-    }
-    
-    .sidebar-paciente .nav-link.active,
-    .sidebar-paciente .nav-link:hover {
-      background-color: #0d6efd;
-      color: #fff;
-    }
-    
-    .sidebar-paciente h6 {
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    
     
     .main-content {
-      padding: 20px;
-      min-height: calc(100vh - 60px); 
+      padding: 15px 10px;
     }
     
-
     .user-profile-sidebar {
-      padding: 20px 15px;
-      border-bottom: 1px solid #e5e7eb;
+      padding: 15px 10px;
     }
     
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      background: #0d6efd;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 18px;
+    .sidebar-paciente {
+      width: 250px;
     }
-    
+  }
   
-    @media (max-width: 991.98px) {
-      .sidebar-paciente {
-        position: fixed;
-        left: 0;
-        top: 60px; 
-        width: 280px;
-        height: calc(100vh - 60px);
-        z-index: 1000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-      }
-      
-      .sidebar-paciente.show {
-        transform: translateX(0);
-      }
-      
-      .main-content {
-        width: 100%;
-        padding: 15px;
-      }
-      
-    
-      .sidebar-toggle {
-        display: block !important;
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1001;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: #0d6efd;
-        color: white;
-        border: none;
-        box-shadow: 0 4px 12px rgba(0,110,253,0.3);
-      }
-      
-      .overlay-sidebar {
-        display: none;
-        position: fixed;
-        top: 60px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 999;
-      }
-      
-      .overlay-sidebar.show {
-        display: block;
-      }
+  /* Para móviles pequeños (hasta 576px) */
+  @media (max-width: 576px) {
+    .topbar {
+      height: auto; /* Altura automática */
+      min-height: 60px; /* Altura mínima */
     }
     
-    @media (max-width: 768px) {
-      .topbar .container {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      
-      .topbar .contact-info {
-        margin-bottom: 8px;
-        flex-wrap: wrap;
-      }
-      
-      .topbar .contact-info i:first-child {
-        margin-right: 8px;
-      }
-      
-      .topbar .contact-info i.bi-phone {
-        margin-left: 0;
-      }
-      
-      .main-content {
-        padding: 15px 10px;
-      }
-      
-      .user-profile-sidebar {
-        padding: 15px 10px;
-      }
-      
-      .sidebar-paciente {
-        width: 250px;
-      }
+    .topbar .container {
+      padding: 8px 10px; /* Menos padding */
     }
     
-    @media (max-width: 576px) {
-      .topbar {
-        padding: 10px 0;
-      }
-      
-      .topbar .contact-info {
-        font-size: 0.9rem;
-      }
-      
-      .topbar .contact-info i {
-        font-size: 0.9rem;
-      }
-      
-      .topbar .btn-outline-secondary {
-        padding: 4px 8px;
-        font-size: 0.85rem;
-      }
-      
-      .topbar span.me-3 {
-        margin-right: 10px;
-        margin-bottom: 5px;
-        display: inline-block;
-      }
-      
-      .main-content {
-        padding: 15px 8px;
-      }
+    .topbar .contact-info {
+      font-size: 13px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 5px; /* Espacio entre elementos */
     }
     
-    @media (max-width: 400px) {
-      .sidebar-paciente {
-        width: 100%;
-      }
-      
-      .topbar .contact-info {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      
-      .topbar .contact-info i {
-        margin-bottom: 5px;
-      }
-      
-      .topbar .contact-info i.bi-phone {
-        margin-left: 0;
-      }
+    .topbar .contact-info i {
+      font-size: 13px;
+      margin-right: 3px;
     }
     
+    .topbar .contact-info .bi-phone {
+      margin-left: 0;
+    }
+    
+    .topbar .btn-outline-secondary {
+      padding: 3px 6px;
+      font-size: 13px;
+    }
+    
+    .topbar .d-flex.align-items-center span.me-3 {
+      display: none; /* Oculta el saludo en móviles muy pequeños */
+    }
+    
+    .main-content {
+      padding: 15px 8px;
+    }
+  }
   
+  /* Para móviles muy pequeños (hasta 400px) */
+  @media (max-width: 400px) {
+    .sidebar-paciente {
+      width: 100%;
+    }
+    
+    .topbar .contact-info {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5px;
+    }
+    
+    .topbar .contact-info i {
+      margin-bottom: 2px;
+    }
+    
+    .topbar .contact-info .bi-phone {
+      margin-left: 0;
+    }
+    
+    .topbar .d-flex.align-items-center {
+      justify-content: center; /* Centra en móviles muy pequeños */
+      margin-top: 5px;
+    }
+  }
+  
+  /* Clase para ocultar en móviles */
+  .d-none-mobile {
+    display: inline-flex !important; /* Cambiado a inline-flex para mejor alineación */
+  }
+  
+  @media (max-width: 768px) {
     .d-none-mobile {
-      display: block;
+      display: none !important;
     }
-    
-    @media (max-width: 768px) {
-      .d-none-mobile {
-        display: none;
-      }
-    }
-  </style>
+  }
+  
+</style>
 </head>
 
 <body>
 
 <!-- ===== Topbar ===== -->
-<header class="header sticky-top">
-  <div class="topbar d-flex align-items-center">
-    <div class="container d-flex justify-content-between">
+<header class="header">
+  <div class="topbar">
+    <div class="container">
       <div class="contact-info d-flex align-items-center">
         <i class="bi bi-envelope me-2 d-none-mobile"></i>
         <span class="d-none-mobile">medessentiaconsultoriomedico@gmail.com</span>
-        <i class="bi bi-phone ms-4 me-2"></i>
+        <i class="bi bi-phone ms-3 ms-md-4 me-2"></i>
         <span>0991043977</span>
       </div>
 
       <div class="d-flex align-items-center">
-        <span class="me-3">Hola, {{ user.first_name|default:user.username }}</span>
+        <span class="me-3 d-none d-sm-inline">Hola, {{ user.first_name|default:user.username }}</span>
         <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-secondary">Cerrar sesión</a>
       </div>
     </div>

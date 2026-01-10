@@ -2,7 +2,21 @@
 {% load static %}
 {% block title %}Reportes y Estadísticas | Medessentia{% endblock %}
 {% block page_title %}Reportes y Estadísticas{% endblock %}
-
+{% block extra_css %}
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .border-left-primary { border-left: 0.25rem solid #4e73df !important; }
+    .border-left-success { border-left: 0.25rem solid #1cc88a !important; }
+    .border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+    .border-left-danger { border-left: 0.25rem solid #e74a3b !important; }
+    
+    .chart-container { position: relative; height: 300px; width: 100%; }
+  
+    .container-fluid { color: #212529; }
+    
+ 
+</style>
+{% endblock %}
 {% block content %}
 <div class="container-fluid py-3">
     <!-- Filtros -->
@@ -109,7 +123,36 @@
             </div>
         </div>
     </div>
-
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-download me-2"></i>Exportar Reportes</h5>
+            </div>
+            <div class="card-body">
+                <!-- Contenedor para botones de DataTables -->
+                <div id="exportButtons" class="d-flex gap-2 mb-3"></div>
+                
+                <!-- Botones manuales (opcionales - puedes eliminarlos si usas solo los de DataTables) -->
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" id="btnExportPDF">
+                        <i class="fas fa-file-pdf me-2"></i> Exportar PDF
+                    </button>
+                    <button class="btn btn-outline-success" id="btnExportExcel">
+                        <i class="fas fa-file-excel me-2"></i> Exportar Excel
+                    </button>
+                    <button class="btn btn-outline-secondary" id="btnImprimir">
+                        <i class="fas fa-print me-2"></i> Imprimir
+                    </button>
+                    <button class="btn btn-outline-info" id="btn_actualizar">
+                        <i class="fas fa-redo me-2"></i> Actualizar Datos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
     <!-- Gráficos -->
     <div class="row mb-4">
         <!-- Gráfico de citas por día -->
@@ -210,38 +253,8 @@
         {% endif %}
     </div>
 
-    <!-- Botones de exportación -->
-    <!-- Botones de exportación -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-download me-2"></i>Exportar Reportes</h5>
-            </div>
-            <div class="card-body">
-                <!-- Contenedor para botones de DataTables -->
-                <div id="exportButtons" class="d-flex gap-2 mb-3"></div>
-                
-                <!-- Botones manuales (opcionales - puedes eliminarlos si usas solo los de DataTables) -->
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary" id="btnExportPDF">
-                        <i class="fas fa-file-pdf me-2"></i> Exportar PDF
-                    </button>
-                    <button class="btn btn-outline-success" id="btnExportExcel">
-                        <i class="fas fa-file-excel me-2"></i> Exportar Excel
-                    </button>
-                    <button class="btn btn-outline-secondary" id="btnImprimir">
-                        <i class="fas fa-print me-2"></i> Imprimir
-                    </button>
-                    <button class="btn btn-outline-info" id="btn_actualizar">
-                        <i class="fas fa-redo me-2"></i> Actualizar Datos
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
+    
+
 
 <!-- Incluir Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

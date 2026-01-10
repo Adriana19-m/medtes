@@ -69,17 +69,7 @@
             <div class="card-body">
                 <!-- Barra de búsqueda y filtro -->
                 <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="inputBuscar" placeholder="Buscar por paciente, expediente, motivo...">
-                            <button class="btn btn-outline-primary" type="button" onclick="buscar()">
-                                <i class="fas fa-search me-1"></i> Buscar
-                            </button>
-                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
-                                <i class="fas fa-times me-1"></i> Limpiar
-                            </button>
-                        </div>
-                    </div>
+                    
                     <div class="col-md-6">
                         <select id="selectHistoria" class="form-select" onchange="cargarRecetas()">
                             <option value="">Todas las historias...</option>
@@ -247,7 +237,7 @@
                 }
             ],
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json',
             },
             pageLength: 10,
             order: [[0, 'desc']]

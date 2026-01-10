@@ -45,6 +45,15 @@
             font-size: 0.8rem;
             margin-left: 5px;
         }
+        /* Botón de cancelar con color especial */
+        .btn-cancelar {
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-cancelar:hover {
+            background-color: #dc3545;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -61,8 +70,10 @@
                 </div>
             </div>
             
-            <div class="row mb-3 justify-content-center"> 
-                <div class="col-md-6 text-center"> 
+            <div class="card-body">
+                <!-- Controles de filtro -->
+                <div class="row mb-3 justify-content-center"> 
+                    <div class="col-md-6 text-center"> 
                         <div class="btn-group">
                             <button class="btn btn-outline-success btn-sm" onclick="filtrarHoy()" id="btnHoy">
                                 <i class="fas fa-calendar-day me-1"></i> Hoy
@@ -94,6 +105,21 @@
                     </div>
                 </div>
 
+                <!-- Barra de búsqueda -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="inputBuscar" placeholder="Buscar por paciente, motivo...">
+                            <button class="btn btn-outline-primary" type="button" onclick="buscar()">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
+                                <i class="fas fa-times"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tabla -->
                 <div class="table-responsive">
                     <table id="tablaCitas" class="table table-hover table-bordered" style="width:100%">
@@ -106,7 +132,7 @@
                                 </th>
                                 <th>Motivo</th>
                                 <th width="120" class="text-center">Estado</th>
-                                <th width="200" class="text-center">Acciones</th>
+                                <th width="220" class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -119,7 +145,9 @@
                                        {% else %}cita-semana{% endif %}"
                                 data-fecha="{{ fecha_cita_str }}"
                                 data-hora="{{ fecha_cita|time:'H:i' }}"
-                                data-timestamp="{{ fecha_cita|date:'U' }}">
+                                data-timestamp="{{ fecha_cita|date:'U' }}"
+                                data-estado="{{ c.estado }}"
+                                data-id="{{ c.id_cita }}">
                                 <td class="fw-semibold">
                                     <div class="d-flex align-items-center">
                                         <div class="me-2">
@@ -160,6 +188,12 @@
                                                     title="Marcar como atendida">
                                                 <i class="fas fa-check"></i>
                                             </button>
+                                            <!-- BOTÓN PARA CANCELAR CITA - AÑADIDO -->
+                                            <button class="btn btn-outline-warning btn-action btn-cancelar" 
+                                                    onclick="cancelarCita({{ c.id_cita }})" 
+                                                    title="Cancelar cita">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
                                             <button class="btn btn-outline-danger btn-action" 
                                                     onclick="eliminarCita({{ c.id_cita }})" 
                                                     title="Eliminar">
@@ -174,7 +208,7 @@
                                         </div>
                                     {% else %}
                                         <button class="btn btn-outline-secondary btn-sm" disabled>
-                                            <i class="fas fa-lock"></i>
+                                            <i class="fas fa-lock"></i> Acciones bloqueadas
                                         </button>
                                     {% endif %}
                                 </td>
@@ -222,6 +256,39 @@
         </div>
     </div>
 
+    <!-- Modal para confirmar cancelación -->
+    <div class="modal fade" id="modalCancelarCita" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Cancelar Cita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cancelar esta cita?</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Nota:</strong> Esta acción cambiará el estado de la cita a "CANCELADA" y notificará al paciente si es necesario.
+                    </div>
+                    <div class="mb-3">
+                        <label for="motivoCancelacion" class="form-label">Motivo de cancelación (opcional)</label>
+                        <textarea class="form-control" id="motivoCancelacion" rows="3" placeholder="Ej: El paciente no se presentó, cambio de fecha..."></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="notificarPaciente">
+                        <label class="form-check-label" for="notificarPaciente">
+                            Notificar al paciente por WhatsApp
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-warning" id="confirmarCancelacion">Sí, cancelar cita</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -232,6 +299,8 @@
     <script>
     let tabla = null;
     let filtroActivo = 'todas';
+    let citaParaCancelar = null;
+    let modalCancelar = null;
 
     // Función para obtener el CSRF token
     function getCookie(name) {
@@ -253,6 +322,9 @@
     // Inicializar cuando el documento esté listo
     $(document).ready(function() {
         console.log("Iniciando módulo Mis Citas...");
+        
+        // Inicializar modal
+        modalCancelar = new bootstrap.Modal(document.getElementById('modalCancelarCita'));
         
         // Inicializar DataTable con orden descendente por fecha
         tabla = $('#tablaCitas').DataTable({
@@ -292,6 +364,13 @@
         $('#inputBuscar').on('keypress', function(e) {
             if (e.which === 13) {
                 buscar();
+            }
+        });
+
+        // Configurar evento para confirmar cancelación
+        $('#confirmarCancelacion').click(function() {
+            if (citaParaCancelar) {
+                procesarCancelacion(citaParaCancelar);
             }
         });
     });
@@ -499,8 +578,161 @@
         $('#ultimaActualizacion').text(ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES'));
     }
 
-    function nuevaCita() {
-        window.location.href = '{% url "cita_index" %}';
+    // ========== FUNCIÓN PARA CANCELAR CITA ==========
+    function cancelarCita(id) {
+        citaParaCancelar = id;
+        
+        // Mostrar modal de confirmación
+        $('#motivoCancelacion').val('');
+        $('#notificarPaciente').prop('checked', true);
+        modalCancelar.show();
+    }
+
+    function procesarCancelacion(id) {
+        const motivo = $('#motivoCancelacion').val();
+        const notificar = $('#notificarPaciente').is(':checked');
+        
+        // Cerrar modal
+        modalCancelar.hide();
+        
+        Swal.fire({
+            title: 'Cancelando cita...',
+            text: 'Por favor espera',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Enviar solicitud al servidor
+        fetch('/cita/' + id + '/cancelar/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                motivo: motivo,
+                notificar: notificar
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cita cancelada',
+                    html: `
+                        <div class="text-center">
+                            <i class="fas fa-ban fa-3x text-warning mb-3"></i>
+                            <p>${data.message}</p>
+                            ${data.notificacion ? 
+                                '<div class="alert alert-success mt-2"><i class="fas fa-check-circle"></i> ' + data.notificacion + '</div>' : 
+                                ''
+                            }
+                        </div>
+                    `,
+                    confirmButtonText: 'Aceptar'
+                }).then(() => {
+                    // Actualizar la fila específica sin recargar toda la página
+                    const fila = $(`tr[data-id="${id}"]`);
+                    
+                    // Actualizar estado en la tabla
+                    fila.attr('data-estado', 'CANCELADA');
+                    fila.find('.badge').removeClass('bg-info text-dark').addClass('bg-danger').text('Cancelada');
+                    
+                    // Deshabilitar acciones
+                    fila.find('.btn-group').html(`
+                        <button class="btn btn-outline-secondary btn-sm" disabled>
+                            <i class="fas fa-lock"></i> Acciones bloqueadas
+                        </button>
+                    `);
+                    
+                    // Actualizar estadísticas
+                    actualizarEstadisticas();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'No se pudo cancelar la cita'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo conectar con el servidor'
+            });
+        });
+    }
+
+    // Alternativa: Cancelar cita con SweetAlert2 simple (sin modal)
+    function cancelarCitaSimple(id) {
+        Swal.fire({
+            title: '¿Cancelar esta cita?',
+            text: 'La cita será marcada como cancelada',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, cancelar',
+            cancelButtonText: 'No, mantener',
+            input: 'text',
+            inputLabel: 'Motivo de cancelación (opcional)',
+            inputPlaceholder: 'Ej: Paciente no disponible...'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Cancelando cita...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                fetch('/cita/' + id + '/cancelar/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        motivo: result.value || ''
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Cita cancelada',
+                            text: data.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo cancelar la cita'
+                    });
+                });
+            }
+        });
     }
 
     // Marcar como atendida

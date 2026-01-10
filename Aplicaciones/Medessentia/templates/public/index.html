@@ -2,6 +2,209 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
+<!-- Estilos corregidos para topbar -->
+<style>
+  /* Asegurar que el header sea fijo y consistente */
+  #header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    background: white;
+  }
+
+  /* Topbar - correo y teléfono */
+  .topbar {
+    background-color: #0d6efd !important;
+    padding: 0;
+    height: 40px;
+  }
+
+  .topbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    padding: 0 15px;
+  }
+
+  .topbar .contact-info {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    gap: 20px;
+  }
+
+  .topbar .contact-info i {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: white;
+  }
+
+  .topbar .contact-info a,
+  .topbar .contact-info span {
+    color: white;
+    text-decoration: none;
+  }
+
+  .topbar .contact-info a:hover {
+    text-decoration: underline;
+  }
+
+  .topbar .contact-info .bi-envelope a {
+    font-size: 0.9rem;
+  }
+
+  .topbar .contact-info .bi-phone span {
+    font-size: 0.9rem;
+  }
+
+  .topbar .d-none.d-md-flex.align-items-center {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .topbar .btn-sm {
+    padding: 4px 12px;
+    font-size: 0.875rem;
+  }
+
+  /* Branding - logo y navegación */
+  .branding {
+    background: white;
+    border-bottom: 1px solid #eaeaea;
+    padding: 15px 0;
+  }
+
+  .branding .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sitename {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #0d6efd;
+    margin: 0;
+  }
+
+  /* Ajustes para la navegación */
+  .navmenu {
+    display: flex;
+    align-items: center;
+  }
+
+  .navmenu ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 20px;
+  }
+
+  .navmenu ul li a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+  }
+
+  .navmenu ul li a:hover,
+  .navmenu ul li a.active {
+    color: #0d6efd;
+  }
+
+  /* Botón CTA */
+  .cta-btn {
+    background: #0d6efd;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.3s;
+  }
+
+  .cta-btn:hover {
+    background: #0b5ed7;
+    color: white;
+  }
+
+  /* Compensar contenido por header fijo */
+  .main {
+    padding-top: 140px; /* Topbar (40px) + Branding (100px aprox) */
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 992px) {
+    .topbar .contact-info {
+      gap: 15px;
+    }
+    
+    .navmenu ul {
+      gap: 15px;
+    }
+    
+    .sitename {
+      font-size: 1.6rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    /* Ocultar correo en móviles */
+    .topbar .contact-info .bi-envelope {
+      display: none;
+    }
+    
+    .topbar .container {
+      justify-content: center;
+    }
+    
+    .topbar .d-none.d-md-flex.align-items-center {
+      display: none !important;
+    }
+    
+    .branding {
+      padding: 10px 0;
+    }
+    
+    .sitename {
+      font-size: 1.4rem;
+    }
+    
+    .cta-btn {
+      display: none;
+    }
+    
+    .main {
+      padding-top: 110px;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .topbar {
+      height: 35px;
+      font-size: 0.85rem;
+    }
+    
+    .topbar .contact-info .bi-phone span {
+      font-size: 0.85rem;
+    }
+    
+    .sitename {
+      font-size: 1.2rem;
+    }
+    
+    .main {
+      padding-top: 100px;
+    }
+  }
+</style>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title>Medessentia · Inicio</title>
@@ -32,53 +235,63 @@
 <body class="index-page">
 
   <!-- ======= Header ======= -->
-  <header id="header" class="header sticky-top">
-
-    <div class="topbar d-flex align-items-center">
-      <div class="container d-flex justify-content-center justify-content-md-between">
-        <div class="contact-info d-flex align-items-center">
-          <i class="bi bi-envelope d-flex align-items-center">
-            <a href="mailto:medessentiaconsultoriomedico@gmail.com">medessentiaconsultoriomedico@gmail.com</a>
+<!-- ======= Header ======= -->
+ <!-- ======= Header ======= -->
+<header id="header" class="header sticky-top">
+  <!-- Topbar -->
+  <div class="topbar d-flex align-items-center">
+    <div class="container">
+      <div class="contact-info d-flex align-items-center justify-content-between w-100">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-envelope d-flex align-items-center me-3">
+            <a href="mailto:medessentiaconsultoriomedico@gmail.com">
+              medessentiaconsultoriomedico@gmail.com
+            </a>
           </i>
-          <i class="bi bi-phone d-flex align-items-center ms-4"><span>0991043977</span></i>
+          <i class="bi bi-phone d-flex align-items-center">
+            <span>0991043977</span>
+          </i>
         </div>
+        
         <div class="d-none d-md-flex align-items-center">
           {% if user.is_authenticated %}
             <span class="me-3">Hola, {{ user.first_name|default:user.username }}</span>
-            <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-secondary">Cerrar sesión</a>
+            <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">Cerrar sesión</a>
           {% else %}
-            <a href="{% url 'login' %}" class="btn btn-sm btn-outline-primary me-2">Iniciar sesión</a>
-            <a href="{% url 'registro_paciente' %}" class="btn btn-sm btn-primary">Registrarse (Paciente)</a>
+            <a href="{% url 'login' %}" class="btn btn-sm btn-outline-light me-2">Iniciar sesión</a>
+            <a href="{% url 'registro_paciente' %}" class="btn btn-sm btn-primary">Registrarse</a>
           {% endif %}
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="branding d-flex align-items-center">
-      <div class="container position-relative d-flex align-items-center justify-content-between">
-        <a href="#" class="logo d-flex align-items-center me-auto">
-          <h1 class="sitename">Medessentia</h1>
-        </a>
+  <!-- Branding + Nav -->
+  <div class="branding d-flex align-items-center">
+    <div class="container d-flex align-items-center justify-content-between">
+      <a href="#" class="logo d-flex align-items-center me-auto">
+        <h1 class="sitename">Medessentia</h1>
+      </a>
 
-        <nav id="navmenu" class="navmenu">
-          <ul>
-            <li><a href="#hero" class="active">Inicio</a></li>
-            <li><a href="#about">Nosotros</a></li>
-            <li><a href="#services">Servicios</a></li>
-            <li><a href="#departments">Especialidades</a></li>
-            <li><a href="#doctors">Médicos</a></li>
-            <li><a href="#contact">Contacto</a></li>
-            {% if user.is_authenticated and user.groups.filter(name="Paciente").exists %}
-              <li><a href="{% url 'panel_paciente' %}">Mi Panel</a></li>
-            {% endif %}
-          </ul>
-          <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
-        </nav>
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="#hero" class="active">Inicio</a></li>
+          <li><a href="#about">Nosotros</a></li>
+          <li><a href="#services">Servicios</a></li>
+          <li><a href="#departments">Especialidades</a></li>
+          <li><a href="#doctors">Médicos</a></li>
+          <li><a href="#contact">Contacto</a></li>
+          {% if user.is_authenticated and user.groups.filter(name="Paciente").exists %}
+            <li><a href="{% url 'panel_paciente' %}">Mi Panel</a></li>
+          {% endif %}
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
 
-        <a class="cta-btn d-none d-sm-block" href="#appointment">Agendar Cita</a>
-      </div>
+      <a class="cta-btn d-none d-sm-block" href="#appointment">Agendar Cita</a>
     </div>
-  </header>
+  </div>
+</header>
   <!-- End Header -->
 
   <main class="main">

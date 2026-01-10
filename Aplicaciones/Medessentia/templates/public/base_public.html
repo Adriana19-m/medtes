@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com" rel="preconnect">
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Poppins:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Después de main.css -->
+  <link href="{% static 'medilab/assets/css/override.css' %}" rel="stylesheet">
 
   <!-- Vendor CSS -->
   <link href="{% static 'medilab/assets/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
@@ -22,265 +24,82 @@
   <link href="{% static 'medilab/assets/css/main.css' %}" rel="stylesheet">
   
   <!-- Estilos responsivos adicionales -->
-  <style>
-    /* Estilos base para topbar */
-    .topbar {
-      background-color: #0d6efd !important;
-      padding: 8px 0;
+  <!-- SOLO este CSS, elimina todo lo anterior -->
+<style>
+  /* Override específico para topbar - alta especificidad */
+  body .topbar {
+    background-color: #0d6efd !important;
+    padding: 0 !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  body .topbar .container {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    height: 100% !important;
+    padding: 0 15px !important;
+  }
+
+  body .topbar .contact-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 20px !important;
+    margin: 0 !important;
+  }
+
+  body .topbar .contact-info i {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    color: white !important;
+    margin: 0 !important;
+  }
+
+  body .topbar .contact-info a,
+  body .topbar .contact-info span {
+    color: white !important;
+    text-decoration: none !important;
+  }
+
+  body .topbar .d-none.d-md-flex.align-items-center {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  /* Asegurar que el header sea fijo y no se solape */
+  #header.header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1030 !important;
+    width: 100% !important;
+  }
+
+  /* Compensar el contenido para que no quede debajo del header fijo */
+  .main {
+    padding-top: 140px !important;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body .topbar .contact-info .bi-envelope {
+      display: none !important;
     }
     
-    /* Estilos para el logo y branding */
-    .sitename {
-      font-size: 1.8rem;
+    body .topbar .d-none.d-md-flex.align-items-center {
+      display: none !important;
     }
     
-    /* Media Queries para responsividad */
-    @media (max-width: 1200px) {
-      .sitename {
-        font-size: 1.6rem;
-      }
+    .main {
+      padding-top: 100px !important;
     }
-    
-    @media (max-width: 992px) {
-      /* Ajustes para topbar en tablets */
-      .topbar .container {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      
-      .topbar .contact-info {
-        margin-bottom: 10px;
-        flex-wrap: wrap;
-      }
-      
-      .topbar .contact-info i.bi-phone {
-        margin-left: 0;
-      }
-      
-      /* Branding area */
-      .branding .container {
-        flex-wrap: wrap;
-      }
-      
-      .logo {
-        margin-bottom: 10px;
-      }
-      
-      /* Navegación */
-      .navmenu {
-        width: 100%;
-        order: 3;
-        margin-top: 10px;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      /* Topbar ajustes para móviles */
-      .topbar .contact-info {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      
-      .topbar .contact-info i {
-        margin-bottom: 5px;
-      }
-      
-      .topbar .contact-info i.bi-envelope,
-      .topbar .contact-info i.bi-phone {
-        margin-left: 0;
-      }
-      
-      .topbar .d-flex.align-items-center {
-        width: 100%;
-        justify-content: space-between;
-      }
-      
-      /* Botones de sesión */
-      .topbar .btn-sm {
-        padding: 4px 8px;
-        font-size: 0.85rem;
-      }
-      
-      /* Logo */
-      .sitename {
-        font-size: 1.5rem;
-      }
-      
-      /* Botón CTA en branding */
-      .cta-btn {
-        padding: 8px 16px;
-        font-size: 0.9rem;
-      }
-      
-      /* Footer */
-      .footer .copyright {
-        font-size: 0.9rem;
-        padding: 0 10px;
-      }
-      
-      /* Botón scroll top */
-      .scroll-top {
-        width: 40px;
-        height: 40px;
-        bottom: 20px;
-        right: 20px;
-      }
-    }
-    
-    @media (max-width: 576px) {
-      /* Ajustes para móviles pequeños */
-      .topbar {
-        padding: 10px 0;
-      }
-      
-      .topbar .container {
-        padding: 0 10px;
-      }
-      
-      .topbar .contact-info {
-        font-size: 0.85rem;
-      }
-      
-      .topbar .contact-info a {
-        word-break: break-word;
-      }
-      
-      .topbar .d-flex.align-items-center span.me-3 {
-        display: none; /* Ocultar saludo en móviles muy pequeños */
-      }
-      
-      .topbar .btn-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-      }
-      
-      /* Branding */
-      .sitename {
-        font-size: 1.3rem;
-      }
-      
-      /* Botón de menú móvil */
-      .mobile-nav-toggle {
-        font-size: 1.5rem;
-      }
-      
-      /* Footer */
-      .footer .copyright {
-        font-size: 0.8rem;
-        line-height: 1.4;
-      }
-      
-      /* Botón scroll top más pequeño */
-      .scroll-top {
-        width: 35px;
-        height: 35px;
-        font-size: 1rem;
-      }
-    }
-    
-    @media (max-width: 400px) {
-      /* Ajustes para móviles muy pequeños */
-      .topbar .contact-info i.bi-envelope span,
-      .topbar .contact-info i.bi-phone span {
-        font-size: 0.8rem;
-      }
-      
-      .topbar .btn-sm {
-        padding: 3px 6px;
-        font-size: 0.8rem;
-      }
-      
-      .sitename {
-        font-size: 1.2rem;
-      }
-      
-      .topbar .d-flex.align-items-center {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-      }
-      
-      .topbar .d-flex.align-items-center span.me-3 {
-        display: block;
-        margin-bottom: 5px;
-      }
-    }
-    
-    /* Mejoras de accesibilidad y usabilidad */
-    .mobile-nav-toggle {
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-    
-    .mobile-nav-toggle:hover {
-      transform: scale(1.1);
-    }
-    
-    .scroll-top {
-      transition: all 0.3s ease;
-    }
-    
-    .scroll-top:hover {
-      transform: translateY(-3px);
-    }
-    
-    /* Asegurar que los enlaces sean tappable en móviles */
-    .navmenu a,
-    .cta-btn,
-    .topbar a {
-      min-height: 44px;
-      min-width: 44px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    /* Mejorar contraste en topbar */
-    .topbar,
-    .topbar a,
-    .topbar span,
-    .topbar i,
-    .topbar .contact-info,
-    .topbar .contact-info a,
-    .topbar .contact-info i,
-    .topbar .contact-info span,
-    .topbar .btn,
-    .topbar .btn span,
-    .topbar .btn i {
-      color: #ffffff !important;
-    }
-    
-    .topbar .contact-info a:hover {
-      opacity: 0.8;
-    }
-    
-    .topbar .btn-outline-secondary {
-      border-color: #ffffff !important;
-      color: #ffffff !important;
-      background-color: transparent !important;
-    }
-    
-    .topbar .btn-outline-secondary:hover {
-      background-color: #ffffff !important;
-      color: #0d6efd !important;
-    }
-    
-    .topbar .btn-outline-light {
-      border-color: #ffffff !important;
-      color: #ffffff !important;
-    }
-    
-    .topbar .btn-outline-light:hover {
-      background-color: #ffffff !important;
-      color: #0d6efd !important;
-    }
-    
-    /* Prevenir desbordamiento de texto */
-    .container {
-      overflow-x: hidden;
-    }
-  </style>
+  }
+</style>
   
   {% block extra_css %}{% endblock %}
 </head>
@@ -317,7 +136,7 @@
             Iniciar sesión
           </a>
           {% if not hide_register_link %}
-            <a class="btn btn-sm btn-primary" href="{% url 'registro_paciente' %}">Registrarse</a>
+            <a class="btn btn-sm btn-outline-light me-2 " href="{% url 'registro_paciente' %}">Registrarse</a>
           {% endif %}
         {% endif %}
       </div>
