@@ -2314,6 +2314,7 @@ def chatbot_info_agendamiento(request):
             'fecha_consulta': hoy.strftime('%d/%m/%Y')
         }
     })
+#======== Historia 
 @login_required
 def inicio_historiaclinica(request):
     return render(request, 'historia_clinica/inicio.html')
@@ -2564,118 +2565,72 @@ def eliminar_historia(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 # AJAX: Buscar pacientes - *** CORREGIDO ***
+
 @login_required
 def buscar_pacientes(request):
     try:
         query = request.GET.get('q', '').strip()
-        
-        print(f"🔍 Buscando pacientes con: '{query}'")
-        
+
         if len(query) < 2:
             return JsonResponse({'data': []})
-        
-        # Normalizar query para búsqueda más flexible
-        query_normalizado = query.lower()
-        
-        # 1. Buscar en el grupo Paciente
+
+        # Grupo Paciente
         try:
             grupo_paciente = Group.objects.get(name='Paciente')
-            usuarios_base = grupo_paciente.user_set.all()
-            print(f"✅ Grupo 'Paciente' encontrado con {usuarios_base.count()} usuarios")
         except Group.DoesNotExist:
-            usuarios_base = User.objects.filter(is_staff=False, is_superuser=False)
-            print(f"⚠️ Grupo 'Paciente' no existe, usando usuarios normales: {usuarios_base.count()}")
-        
-        # 2. Búsqueda múltiple con OR
-        usuarios_filtrados = usuarios_base.filter(
+            return JsonResponse({'data': []})
+
+        # Usuarios pacientes
+        usuarios = User.objects.filter(groups=grupo_paciente).distinct()
+
+        usuarios = usuarios.filter(
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
             Q(username__icontains=query) |
-            Q(email__icontains=query)
-        ).distinct()
-        
-        print(f"📋 Usuarios filtrados por nombre/username: {usuarios_filtrados.count()}")
-        
-        # 3. Buscar también por cédula en PerfilUsuario
-        perfiles_cedula = PerfilUsuario.objects.filter(
-            cedula_usuario__icontains=query
-        ).select_related('user')
-        
-        usuarios_por_cedula = [perfil.user for perfil in perfiles_cedula]
-        print(f"🆔 Usuarios encontrados por cédula: {len(usuarios_por_cedula)}")
-        
-        # 4. Combinar resultados sin duplicados
-        usuarios_dict = {}
-        
-        # Agregar usuarios filtrados
-        for usuario in usuarios_filtrados:
-            usuarios_dict[usuario.id] = usuario
-        
-        # Agregar usuarios por cédula
-        for usuario in usuarios_por_cedula:
-            if usuario.id not in usuarios_dict:
-                usuarios_dict[usuario.id] = usuario
-        
-        usuarios_finales = list(usuarios_dict.values())
-        print(f"✨ Total usuarios únicos encontrados: {len(usuarios_finales)}")
-        
-        # 5. Ordenar por relevancia (primero los que coinciden con el inicio del nombre)
-        def score_relevancia(usuario):
-            score = 0
-            nombre_completo = f"{usuario.first_name} {usuario.last_name}".lower()
-            
-            # Mayor score si el query está al inicio
-            if nombre_completo.startswith(query_normalizado):
-                score += 100
-            elif query_normalizado in nombre_completo:
-                score += 50
-            
-            # Bonus si coincide con username
-            if usuario.username.lower().startswith(query_normalizado):
-                score += 75
-            
-            return score
-        
-        usuarios_finales.sort(key=score_relevancia, reverse=True)
-        
-        # 6. Limitar a 20 resultados (aumentado desde 10)
-        usuarios_finales = usuarios_finales[:20]
-        
-        # 7. Construir respuesta
+            Q(email__icontains=query) |
+            Q(perfil__cedula_usuario__icontains=query)
+        ).select_related('perfil')
+
         data = []
-        for usuario in usuarios_finales:
-            try:
-                perfil = PerfilUsuario.objects.get(user=usuario)
-                cedula = perfil.cedula_usuario or 'Sin cédula'
-                telefono = perfil.telefono_usuario or 'Sin teléfono'
-            except PerfilUsuario.DoesNotExist:
-                cedula = 'Sin cédula'
-                telefono = 'Sin teléfono'
-            
-            tiene_historia = HistoriaClinica.objects.filter(id_paciente=usuario).exists()
-            
-            nombre_completo = f"{usuario.first_name or ''} {usuario.last_name or ''}".strip()
-            if not nombre_completo:
-                nombre_completo = usuario.username
-            
+        vistos = set()
+
+        for usuario in usuarios:
+            perfil = getattr(usuario, 'perfil', None)
+
+            if not perfil:
+                continue
+
+            # ❌ IGNORAR perfiles vacíos
+            if perfil.cedula_usuario == '0000000000' and perfil.telefono_usuario == '0000000000':
+                continue
+
+            # Evitar duplicados por usuario
+            if usuario.id in vistos:
+                continue
+            vistos.add(usuario.id)
+
+            nombre = f"{usuario.first_name} {usuario.last_name}".strip() or usuario.username
+
+            tiene_historia = HistoriaClinica.objects.filter(
+                id_paciente=usuario
+            ).exists()
+
             data.append({
                 'id': usuario.id,
-                'nombre_completo': nombre_completo,
-                'cedula': cedula,
-                'telefono': telefono,
+                'nombre_completo': nombre,
+                'cedula': perfil.cedula_usuario,
+                'telefono': perfil.telefono_usuario,
                 'email': usuario.email or 'Sin email',
                 'tiene_historia': tiene_historia,
-                'username': usuario.username
             })
-        
-        print(f"📤 Retornando {len(data)} pacientes al frontend")
-        return JsonResponse({'data': data, 'total': len(data)})
-        
+
+        return JsonResponse({'data': data})
+
     except Exception as e:
         import traceback
-        print(f"❌ Error en buscar_pacientes: {str(e)}")
+        print("❌ Error buscar_pacientes:", e)
         print(traceback.format_exc())
-        return JsonResponse({'data': [], 'error': str(e)}, status=500)
+        return JsonResponse({'data': []}, status=500)
 # AJAX: Crear paciente rápido - CORREGIDO
 @login_required
 def crear_paciente_rapido(request):
@@ -2688,11 +2643,27 @@ def crear_paciente_rapido(request):
         telefono = data.get('telefono', '').strip()
 
         if not nombres or not apellidos:
-            return JsonResponse({'success': False, 'error': 'Nombres y apellidos son obligatorios'})
+            return JsonResponse({
+                'success': False,
+                'error': 'Nombres y apellidos son obligatorios'
+            })
+
+        # ✅ VALIDAR CÉDULA ECUATORIANA (SI SE ENVÍA)
+        if cedula:
+            try:
+                validar_cedula_ecuatoriana(cedula)
+            except ValidationError as e:
+                return JsonResponse({
+                    'success': False,
+                    'error': str(e)
+                })
 
         # 🔍 BUSCAR SI YA EXISTE POR CÉDULA
         if cedula:
-            perfil_existente = PerfilUsuario.objects.filter(cedula_usuario=cedula).select_related('user').first()
+            perfil_existente = PerfilUsuario.objects.filter(
+                cedula_usuario=cedula
+            ).select_related('user').first()
+
             if perfil_existente:
                 user = perfil_existente.user
                 return JsonResponse({
@@ -2706,7 +2677,7 @@ def crear_paciente_rapido(request):
                     'message': 'Paciente ya existente'
                 })
 
-        # 🆕 CREAR SOLO SI NO EXISTE
+        # 🆕 CREAR PACIENTE
         with transaction.atomic():
             username = f"paciente_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
@@ -2736,33 +2707,47 @@ def crear_paciente_rapido(request):
                 'cedula': cedula or 'Sin cédula',
                 'telefono': telefono or 'Sin teléfono',
             },
-            'message': 'Paciente creado'
+            'message': 'Paciente creado correctamente'
         })
 
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor'
+        }, status=500)
 
 
 # AJAX: Generar expediente
+import re
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import HistoriaClinica
+
+
 @login_required
 def generar_expediente(request):
-    try:
-        fecha_actual = datetime.now()
-        fecha_str = fecha_actual.strftime('%Y%m%d')
-        
-        count_hoy = HistoriaClinica.objects.filter(
-            fecha_creacion__date=fecha_actual.date()
-        ).count()
-        
-        numero = str(count_hoy + 1).zfill(4)
-        expediente = f"HC-{fecha_str}-{numero}"
-        
-        return JsonResponse({'expediente': expediente})
-        
-    except Exception as e:
-        print(f"Error en generar_expediente: {str(e)}")
-        expediente = f"HC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        return JsonResponse({'expediente': expediente})
+    """
+    Genera un número de expediente correlativo:
+    HC-001, HC-002, HC-003 ...
+    Ignora expedientes antiguos con fecha.
+    """
+
+    expedientes = HistoriaClinica.objects.values_list(
+        'expediente_no', flat=True
+    )
+
+    numeros = []
+
+    for exp in expedientes:
+        match = re.fullmatch(r'HC-(\d{3})', exp)
+        if match:
+            numeros.append(int(match.group(1)))
+
+    siguiente = max(numeros) + 1 if numeros else 1
+    expediente = f'HC-{siguiente:03d}'
+
+    return JsonResponse({'expediente': expediente})
+
 
 # AJAX: Obtener datos del paciente - CORREGIDO
 @login_required
@@ -3868,10 +3853,6 @@ def listado_recetas(request):
         }, status=500)
 
 
-# ============================================================================
-# OBTENER FORMULARIO DE RECETA
-# ============================================================================
-
 @login_required
 def obtener_formulario_receta(request):
     """
@@ -3880,107 +3861,121 @@ def obtener_formulario_receta(request):
     try:
         receta_id = request.GET.get('receta_id', '')
         historia_id = request.GET.get('historia_id', '')
-        
-        print(f"🔍 obtener_formulario_receta - receta_id: {receta_id}, historia_id: {historia_id}")
-        
+        id_atencion = request.GET.get('id_atencion', '')
+
+        print(
+            f"🔍 obtener_formulario_receta - "
+            f"receta_id: {receta_id}, historia_id: {historia_id}, id_atencion: {id_atencion}"
+        )
+
         receta = None
         historia = None
         paciente_nombre = ''
         expediente_no = ''
         paciente_id = None
-        
-        # ===== MODO EDICIÓN =====
+        atencion = None
+
+        # =====================================================
+        # MODO EDICIÓN (receta existente)
+        # =====================================================
         if receta_id:
-            # Obtener receta con sus detalles
             receta = get_object_or_404(
                 Receta.objects.prefetch_related('detalles'),
                 id_receta=receta_id,
                 id_doctor=request.user.id
             )
-            
-            # Obtener atención y datos relacionados
+
             atencion = get_object_or_404(
                 AtencionMedica.objects.select_related('id_historia'),
                 id_atencion=receta.id_atencion
             )
-            
+
             historia = atencion.id_historia
-            paciente_id = receta.id_paciente  # ID del paciente desde la receta
-            
-            # Obtener nombre del paciente
-            try:
-                paciente_user = User.objects.get(id=paciente_id)
-                paciente_nombre = f"{paciente_user.first_name or ''} {paciente_user.last_name or ''}".strip()
-                if not paciente_nombre:
-                    paciente_nombre = paciente_user.username
-            except User.DoesNotExist:
-                paciente_nombre = "Paciente no encontrado"
-            
-            # Verificar si hay un nombre en la historia
-            if hasattr(historia, 'nombres_completos') and historia.nombres_completos:
-                paciente_nombre = historia.nombres_completos
-            
-            expediente_no = historia.expediente_no or 'Sin expediente'
-            
-        # ===== MODO NUEVA RECETA =====
+            paciente_id = receta.id_paciente
+
+        # =====================================================
+        # MODO NUEVA RECETA DESDE ATENCIÓN ✅ (CASO TUYO)
+        # =====================================================
+        elif id_atencion:
+            atencion = get_object_or_404(
+                AtencionMedica.objects.select_related('id_historia'),
+                id_atencion=id_atencion,
+                id_doctor=request.user
+            )
+
+            historia = atencion.id_historia
+            paciente_id = historia.id_paciente_id
+
+            # Buscar si ya existe receta para esta atención
+            receta = Receta.objects.filter(
+                id_atencion=atencion.id_atencion
+            ).first()
+
+        # =====================================================
+        # MODO NUEVA RECETA DESDE HISTORIA
+        # =====================================================
         elif historia_id:
-            # Obtener historia clínica
             historia = get_object_or_404(
                 HistoriaClinica.objects.select_related('id_paciente'),
                 id_historia=historia_id
             )
-            
-            # Verificar que el doctor tenga al menos una atención con esta historia
+
             tiene_atencion = AtencionMedica.objects.filter(
                 id_historia=historia,
                 id_doctor=request.user
             ).exists()
-            
+
             if not tiene_atencion:
                 return JsonResponse({
                     'success': False,
                     'error': 'No tiene atenciones registradas con este paciente'
                 }, status=403)
-            
+
             paciente_id = historia.id_paciente_id
-            
-            # Obtener datos del paciente
-            if hasattr(historia, 'nombres_completos') and historia.nombres_completos:
+
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Debe especificar id_atencion, historia_id o receta_id'
+            }, status=400)
+
+        # =====================================================
+        # DATOS DEL PACIENTE
+        # =====================================================
+        if historia:
+            if getattr(historia, 'nombres_completos', ''):
                 paciente_nombre = historia.nombres_completos
             elif historia.id_paciente:
                 paciente = historia.id_paciente
                 paciente_nombre = f"{paciente.first_name or ''} {paciente.last_name or ''}".strip()
                 if not paciente_nombre:
                     paciente_nombre = paciente.username
-            
+
             expediente_no = historia.expediente_no or 'Sin expediente'
-            
-        else:
-            return JsonResponse({
-                'success': False,
-                'error': 'Debe especificar historia_id o receta_id'
-            }, status=400)
-        
-        # Renderizar formulario
+
+        # =====================================================
+        # RENDER FORMULARIO
+        # =====================================================
         context = {
             'receta': receta,
             'historia': historia,
+            'atencion': atencion,
             'paciente_nombre': paciente_nombre,
             'expediente_no': expediente_no,
             'paciente_id': paciente_id,
         }
-        
+
         form_html = render_to_string(
             'receta/formulario_receta.html',
             context,
             request=request
         )
-        
+
         return JsonResponse({
             'success': True,
             'form_html': form_html
         })
-        
+
     except Exception as e:
         print(f"❌ ERROR en obtener_formulario_receta: {str(e)}")
         print(traceback.format_exc())
@@ -3988,6 +3983,7 @@ def obtener_formulario_receta(request):
             'success': False,
             'error': f'Error al cargar formulario: {str(e)}'
         }, status=500)
+
 
 
 # ============================================================================
