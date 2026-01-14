@@ -124,13 +124,12 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
 
-    <script>
+<script>
     let tabla = null;
     let modalFormulario = null;
     let modalDetalle = null;
 
     // Función para obtener el CSRF token
-    // Función para obtener el token CSRF
     function getCSRFToken() {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
         return csrfToken ? csrfToken.value : '';
@@ -141,8 +140,18 @@
         console.log("Iniciando módulo Atenciones Médicas...");
         
         // Inicializar modals
-        modalFormulario = new bootstrap.Modal(document.getElementById('modalFormulario'));
-        modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'));
+        const modalFormularioElement = document.getElementById('modalFormulario');
+        const modalDetalleElement = document.getElementById('modalDetalle');
+        
+        modalFormulario = new bootstrap.Modal(modalFormularioElement);
+        modalDetalle = new bootstrap.Modal(modalDetalleElement);
+        
+        // Evento cuando se cierra el modal del formulario
+        modalFormularioElement.addEventListener('hidden.bs.modal', function () {
+            console.log('🗑️ Modal cerrado - Preparando para próxima apertura');
+            // NO limpiar el HTML aquí, solo preparar para la próxima carga
+            // El contenido se limpiará cuando se abra de nuevo
+        });
         
         // Inicializar tabla
         inicializarTabla();
@@ -298,8 +307,7 @@
         });
     }
 
-
-   function limpiarBusqueda() {
+    function limpiarBusqueda() {
         $('#inputBuscar').val('');
 
         Swal.fire({
@@ -313,14 +321,23 @@
         cargarDatos();
     }
 
-
     function abrirFormulario(id = null) {
+        console.log('📋 Abriendo formulario...', id ? `ID: ${id}` : 'Nuevo');
+        
         const url = id ? 
             '{% url "obtener_formulario_atencion" %}?id=' + id : 
             '{% url "obtener_formulario_atencion" %}';
         
         const titulo = id ? 'Editar Registro' : 'Nuevo Registro';
         $('#modalTitulo').html('<i class="fas fa-edit me-2"></i>Atención Médica - ' + titulo);
+        
+        // Limpiar contenido anterior
+        $('#modalContenido').html(`
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary"></div>
+                <p class="mt-2">Cargando formulario...</p>
+            </div>
+        `);
         
         // Mostrar modal inmediatamente
         modalFormulario.show();
@@ -332,6 +349,7 @@
             success: function(response) {
                 if (response.form_html) {
                     $('#modalContenido').html(response.form_html);
+                    console.log('✅ Formulario cargado exitosamente');
                 } else {
                     $('#modalContenido').html(`
                         <div class="alert alert-danger">
@@ -574,4 +592,6 @@ function abrirCertificado(id_atencion) {
 </script>
 </body>
 </html>
+    </script>
+
 {% endblock %}

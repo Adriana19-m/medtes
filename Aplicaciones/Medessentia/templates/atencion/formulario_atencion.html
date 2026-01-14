@@ -27,7 +27,7 @@
                                     <label class="form-label fw-bold">Buscar Paciente/Historia <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.6em; padding: 2px 6px;">Campo obligatorio</span></label>
                                     <input type="text" class="form-control" id="buscarHistoriaInput" 
                                            placeholder="Escriba expediente, nombre o cédula del paciente..." 
-                                           value="{% if atencion %}{{ atencion.id_historia.expediente_no }} - {{ atencion.id_historia.nombres_completos }}{% endif %}">
+                                           value="{% if atencion and atencion.id_historia %}{{ atencion.id_historia.expediente_no }} - {{ atencion.id_historia.nombres_completos }}{% endif %}">
                                     <div id="resultadosBusquedaHistoria" class="list-group mt-2" style="display:none; max-height:200px; overflow-y:auto; position:absolute; z-index:1000; width:calc(66.666% - 1rem);"></div>
                                 </div>
                                 <div class="col-md-4 d-flex align-items-end">
@@ -37,11 +37,11 @@
                                 </div>
                             </div>
                             
-                            <div id="historiaSeleccionada" class="alert alert-success mt-3" style="display:{% if atencion %}block{% else %}none{% endif %}">
+                            <div id="historiaSeleccionada" class="alert alert-success mt-3" style="display:{% if atencion and atencion.id_historia %}block{% else %}none{% endif %}">
                                 <i class="fas fa-check-circle me-2"></i>
                                 <strong>Paciente seleccionado:</strong> 
                                 <span id="nombrePacienteSeleccionado">
-                                    {% if atencion %}{{ atencion.id_historia.expediente_no }} - {{ atencion.id_historia.nombres_completos }}{% endif %}
+                                    {% if atencion and atencion.id_historia %}{{ atencion.id_historia.expediente_no }} - {{ atencion.id_historia.nombres_completos }}{% endif %}
                                 </span>
                             </div>
                         </div>
@@ -55,16 +55,16 @@
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Fecha y Hora <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.6em; padding: 2px 6px;">Obligatorio</span></label>
                             <input type="datetime-local" name="fecha_atencion" id="fecha_atencion" class="form-control" 
-                                   value="{% if atencion %}{{ atencion.fecha_atencion|date:'Y-m-d\\TH:i' }}{% else %}{{ now|date:'Y-m-d\\TH:i' }}{% endif %}" required>
+                                   value="{% if atencion and atencion.fecha_atencion %}{{ atencion.fecha_atencion|date:'Y-m-d\TH:i' }}{% endif %}" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Tipo de Atención <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.6em; padding: 2px 6px;">Obligatorio</span></label>
                             <select name="tipo_atencion" class="form-select" required>
                                 <option value="">Seleccione...</option>
-                                <option value="PRIMERA_VEZ" {% if atencion.tipo_atencion == 'PRIMERA_VEZ' %}selected{% endif %}>Primera Vez</option>
-                                <option value="CONTROL" {% if atencion.tipo_atencion == 'CONTROL' %}selected{% endif %}>Control</option>
-                                <option value="EMERGENCIA" {% if atencion.tipo_atencion == 'EMERGENCIA' %}selected{% endif %}>Emergencia</option>
-                                <option value="TELECONSULTA" {% if atencion.tipo_atencion == 'TELECONSULTA' %}selected{% endif %}>Teleconsulta</option>
+                                <option value="PRIMERA_VEZ" {% if atencion and atencion.tipo_atencion == 'PRIMERA_VEZ' %}selected{% endif %}>Primera Vez</option>
+                                <option value="CONTROL" {% if atencion and atencion.tipo_atencion == 'CONTROL' %}selected{% endif %}>Control</option>
+                                <option value="EMERGENCIA" {% if atencion and atencion.tipo_atencion == 'EMERGENCIA' %}selected{% endif %}>Emergencia</option>
+                                <option value="TELECONSULTA" {% if atencion and atencion.tipo_atencion == 'TELECONSULTA' %}selected{% endif %}>Teleconsulta</option>
                             </select>
                         </div>
                     </div>
@@ -83,11 +83,11 @@
                 <div class="accordion-body">
                     <div class="mb-3">
                         <label class="form-label fw-bold">Motivo de Consulta <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.6em; padding: 2px 6px;">Obligatorio</span></label>
-                        <textarea name="motivo_consulta" class="form-control" rows="4" required>{{ atencion.motivo_consulta|default:'' }}</textarea>
+                        <textarea name="motivo_consulta" class="form-control" rows="4" required>{% if atencion %}{{ atencion.motivo_consulta|default:'' }}{% endif %}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Enfermedad Actual</label>
-                        <textarea name="enfermedad_actual" class="form-control" rows="4">{{ atencion.enfermedad_actual|default:'' }}</textarea>
+                        <textarea name="enfermedad_actual" class="form-control" rows="4">{% if atencion %}{{ atencion.enfermedad_actual|default:'' }}{% endif %}</textarea>
                     </div>
                 </div>
             </div>
@@ -102,47 +102,66 @@
             </h2>
             <div id="seccion3" class="accordion-collapse collapse" data-bs-parent="#accordionAtencion">
                 <div class="accordion-body">
+                    <!-- Alerta de signos vitales previos -->
+                    <div id="alertaSignosPrevios" class="alert alert-info" style="display:none;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Últimos signos vitales registrados:</strong>
+                                <span id="fechaUltimosSignos"></span>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-primary me-2" onclick="cargarSignosPrevios()">
+                                    <i class="fas fa-download me-1"></i>Cargar Datos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="cerrarAlertaSignos()">
+                                    <i class="fas fa-times me-1"></i>Ingresar Nuevos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">Presión Arterial</label>
                             <div class="input-group">
-                                <input type="text" name="presion_sistolica" class="form-control" placeholder="Sistólica" 
-                                       value="{{ atencion.presion_sistolica|default:'' }}">
+                                <input type="text" name="presion_sistolica" id="presion_sistolica" class="form-control" placeholder="Sistólica" 
+                                       value="{% if atencion %}{{ atencion.presion_sistolica|default:'' }}{% endif %}">
                                 <span class="input-group-text">/</span>
-                                <input type="text" name="presion_diastolica" class="form-control" placeholder="Diastólica" 
-                                       value="{{ atencion.presion_diastolica|default:'' }}">
+                                <input type="text" name="presion_diastolica" id="presion_diastolica" class="form-control" placeholder="Diastólica" 
+                                       value="{% if atencion %}{{ atencion.presion_diastolica|default:'' }}{% endif %}">
                                 <span class="input-group-text">mmHg</span>
                             </div>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Temperatura</label>
                             <div class="input-group">
-                                <input type="number" name="temperatura" class="form-control" step="0.1" 
-                                       value="{{ atencion.temperatura|default:'' }}">
+                                <input type="number" name="temperatura" id="temperatura" class="form-control" step="0.1" 
+                                       value="{% if atencion %}{{ atencion.temperatura|default:'' }}{% endif %}">
                                 <span class="input-group-text">°C</span>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">F. Respiratoria</label>
                             <div class="input-group">
-                                <input type="number" name="frecuencia_respiratoria" class="form-control" 
-                                       value="{{ atencion.frecuencia_respiratoria|default:'' }}">
+                                <input type="number" name="frecuencia_respiratoria" id="frecuencia_respiratoria" class="form-control" 
+                                       value="{% if atencion %}{{ atencion.frecuencia_respiratoria|default:'' }}{% endif %}">
                                 <span class="input-group-text">rpm</span>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">F. Cardíaca</label>
                             <div class="input-group">
-                                <input type="number" name="frecuencia_cardiaca" class="form-control" 
-                                       value="{{ atencion.frecuencia_cardiaca|default:'' }}">
+                                <input type="number" name="frecuencia_cardiaca" id="frecuencia_cardiaca" class="form-control" 
+                                       value="{% if atencion %}{{ atencion.frecuencia_cardiaca|default:'' }}{% endif %}">
                                 <span class="input-group-text">lpm</span>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Sat. Oxígeno</label>
                             <div class="input-group">
-                                <input type="number" name="saturacion_oxigeno" class="form-control" 
-                                       value="{{ atencion.saturacion_oxigeno|default:'' }}">
+                                <input type="number" name="saturacion_oxigeno" id="saturacion_oxigeno" class="form-control" 
+                                       value="{% if atencion %}{{ atencion.saturacion_oxigeno|default:'' }}{% endif %}">
                                 <span class="input-group-text">%</span>
                             </div>
                         </div>
@@ -150,7 +169,7 @@
                             <label class="form-label">Peso</label>
                             <div class="input-group">
                                 <input type="number" name="peso" id="peso" class="form-control" step="0.01" 
-                                       value="{{ atencion.peso|default:'' }}" onchange="calcularIMC()">
+                                       value="{% if atencion %}{{ atencion.peso|default:'' }}{% endif %}" onchange="calcularIMC()">
                                 <span class="input-group-text">kg</span>
                             </div>
                         </div>
@@ -158,14 +177,14 @@
                             <label class="form-label">Talla</label>
                             <div class="input-group">
                                 <input type="number" name="talla" id="talla" class="form-control" step="0.01" 
-                                       value="{{ atencion.talla|default:'' }}" onchange="calcularIMC()">
+                                       value="{% if atencion %}{{ atencion.talla|default:'' }}{% endif %}" onchange="calcularIMC()">
                                 <span class="input-group-text">cm</span>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">IMC</label>
                             <input type="text" name="imc" id="imc" class="form-control" 
-                                   value="{{ atencion.imc|default:'' }}" readonly>
+                                   value="{% if atencion %}{{ atencion.imc|default:'' }}{% endif %}" readonly>
                         </div>
                     </div>
                 </div>
@@ -184,19 +203,19 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Órganos Sentidos</label>
-                            <textarea name="organos_sentidos" class="form-control" rows="2">{{ atencion.organos_sentidos|default:'' }}</textarea>
+                            <textarea name="organos_sentidos" class="form-control" rows="2">{% if atencion %}{{ atencion.organos_sentidos|default:'' }}{% endif %}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Sistema Respiratorio</label>
-                            <textarea name="respiratorio" class="form-control" rows="2">{{ atencion.respiratorio|default:'' }}</textarea>
+                            <textarea name="respiratorio" class="form-control" rows="2">{% if atencion %}{{ atencion.respiratorio|default:'' }}{% endif %}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Sistema Cardiovascular</label>
-                            <textarea name="cardiovascular" class="form-control" rows="2">{{ atencion.cardiovascular|default:'' }}</textarea>
+                            <textarea name="cardiovascular" class="form-control" rows="2">{% if atencion %}{{ atencion.cardiovascular|default:'' }}{% endif %}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Sistema Digestivo</label>
-                            <textarea name="digestivo" class="form-control" rows="2">{{ atencion.digestivo|default:'' }}</textarea>
+                            <textarea name="digestivo" class="form-control" rows="2">{% if atencion %}{{ atencion.digestivo|default:'' }}{% endif %}</textarea>
                         </div>
                     </div>
                 </div>
@@ -233,16 +252,16 @@
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Código CIE-10</label>
                             <input type="text" name="cie10_codigo" id="cie10_codigo" class="form-control" 
-                                   value="{{ atencion.cie10_codigo|default:'' }}">
+                                   value="{% if atencion %}{{ atencion.cie10_codigo|default:'' }}{% endif %}">
                         </div>
                         <div class="col-md-8">
                             <label class="form-label fw-bold">Descripción CIE-10</label>
                             <input type="text" name="cie10_descripcion" id="cie10_descripcion" class="form-control" 
-                                   value="{{ atencion.cie10_descripcion|default:'' }}">
+                                   value="{% if atencion %}{{ atencion.cie10_descripcion|default:'' }}{% endif %}">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Observaciones del Diagnóstico</label>
-                            <textarea name="diagnostico_observaciones" class="form-control" rows="3">{{ atencion.diagnostico_observaciones|default:'' }}</textarea>
+                            <textarea name="diagnostico_observaciones" class="form-control" rows="3">{% if atencion %}{{ atencion.diagnostico_observaciones|default:'' }}{% endif %}</textarea>
                         </div>
                     </div>
                 </div>
@@ -260,15 +279,15 @@
                 <div class="accordion-body">
                     <div class="mb-3">
                         <label class="form-label fw-bold">Plan de Tratamiento</label>
-                        <textarea name="plan_tratamiento" class="form-control" rows="4">{{ atencion.plan_tratamiento|default:'' }}</textarea>
+                        <textarea name="plan_tratamiento" class="form-control" rows="4">{% if atencion %}{{ atencion.plan_tratamiento|default:'' }}{% endif %}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tratamiento No Farmacológico</label>
-                        <textarea name="tratamiento_no_farmacologico" class="form-control" rows="3">{{ atencion.tratamiento_no_farmacologico|default:'' }}</textarea>
+                        <textarea name="tratamiento_no_farmacologico" class="form-control" rows="3">{% if atencion %}{{ atencion.tratamiento_no_farmacologico|default:'' }}{% endif %}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Evolución</label>
-                        <textarea name="evolucion" class="form-control" rows="3">{{ atencion.evolucion|default:'' }}</textarea>
+                        <textarea name="evolucion" class="form-control" rows="3">{% if atencion %}{{ atencion.evolucion|default:'' }}{% endif %}</textarea>
                     </div>
                 </div>
             </div>
@@ -287,6 +306,7 @@
         </div>
     </div>
 </form>
+
 <style>
     .campo-obligatorio {
         display: inline-block;
@@ -299,7 +319,6 @@
         font-weight: normal;
         vertical-align: middle;
     }
-
     .campo-obligatorio:hover {
         background-color: #c82333;
     }
@@ -307,7 +326,6 @@
         border: 2px solid #dc3545 !important;
         background-color: #fff5f5;
     }
-
     .mensaje-error {
         color: #dc3545;
         font-size: 0.85rem;
@@ -317,58 +335,124 @@
         border-color: #dc3545 !important;
         background-color: #fff5f5;
     }
-
     .invalid-feedback {
         display: block;
         font-size: 0.85rem;
     }
-
+    .bg-success-subtle {
+        background-color: #d1e7dd !important;
+        transition: background-color 0.5s ease;
+    }
 </style>
+
 <script>
 let timeoutBusquedaHistoria = null;
 let timeoutBusquedaCie10 = null;
+let signosPreviosCache = null;
 
-// Enfocar el primer campo
-document.addEventListener('DOMContentLoaded', function() {
-    const buscarInput = document.getElementById('buscarHistoriaInput');
-    if (buscarInput && !buscarInput.value) {
-        buscarInput.focus();
-    }
+// INICIALIZAR FORMULARIO - SIEMPRE SE EJECUTA
+function inicializarFormulario() {
+    console.log('📝 Inicializando formulario completo...');
     
-    // Establecer fecha actual si está vacía
+    // Limpiar cache
+    signosPreviosCache = null;
+    $('#alertaSignosPrevios').hide();
+    
+    // Fecha actual si está vacía
     const fechaInput = document.getElementById('fecha_atencion');
     if (fechaInput && !fechaInput.value) {
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         fechaInput.value = now.toISOString().slice(0, 16);
     }
+
+$('#modalFormulario').on('hidden.bs.modal', function () {
+    $('#buscarHistoriaInput').val('');
+    $('#resultadosBusquedaHistoria').hide();
+    $('#historia_id').val('');
+    $('#historiaSeleccionada').hide();
 });
 
-// Búsqueda de historias
-$('#buscarHistoriaInput').on('input', function() {
-    clearTimeout(timeoutBusquedaHistoria);
-    const query = $(this).val().trim();
-    
-    if (query.length < 2) {
-        $('#resultadosBusquedaHistoria').hide();
-        return;
+let timeoutBusquedaHistoria = null;
+let timeoutBusquedaCie10 = null;
+
+document.addEventListener('input', function (e) {
+
+    // 🔍 BUSCAR HISTORIAS
+    if (e.target && e.target.id === 'buscarHistoriaInput') {
+        clearTimeout(timeoutBusquedaHistoria);
+        const query = e.target.value.trim();
+
+        if (query.length < 2) {
+            $('#resultadosBusquedaHistoria').hide();
+            return;
+        }
+
+        timeoutBusquedaHistoria = setTimeout(() => {
+            buscarHistorias(query);
+        }, 300);
     }
-    
-    timeoutBusquedaHistoria = setTimeout(() => buscarHistorias(query), 300);
+
+    // 🔍 BUSCAR CIE-10
+    if (e.target && e.target.id === 'buscarCie10Input') {
+        clearTimeout(timeoutBusquedaCie10);
+        const query = e.target.value.trim();
+
+        if (query.length < 2) {
+            $('#resultadosBusquedaCie10').hide();
+            return;
+        }
+
+        timeoutBusquedaCie10 = setTimeout(() => {
+            buscarCIE10(query);
+        }, 300);
+    }
+
 });
 
-// Búsqueda de CIE-10
-$('#buscarCie10Input').on('input', function() {
-    clearTimeout(timeoutBusquedaCie10);
-    const query = $(this).val().trim();
-    
-    if (query.length < 2) {
-        $('#resultadosBusquedaCie10').hide();
-        return;
+
+
+    const inputCie10 = document.getElementById('buscarCie10Input');
+    if (inputCie10) {
+        // Clonar el elemento para remover todos los event listeners
+        const nuevoInput = inputCie10.cloneNode(true);
+        inputCie10.parentNode.replaceChild(nuevoInput, inputCie10);
+        
+        // Agregar nuevo event listener
+        nuevoInput.addEventListener('input', function() {
+            clearTimeout(timeoutBusquedaCie10);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                $('#resultadosBusquedaCie10').hide();
+                return;
+            }
+            
+            timeoutBusquedaCie10 = setTimeout(() => buscarCIE10(query), 300);
+        });
+        console.log('✅ Búsqueda CIE-10 reinicializada');
     }
-    
-    timeoutBusquedaCie10 = setTimeout(() => buscarCIE10(query), 300);
-});
+
+    // Si hay historia, buscar signos
+    const historiaId = document.getElementById('historia_id').value;
+    if (historiaId) {
+        console.log('🔄 Historia seleccionada, buscando signos...');
+        buscarSignosPrevios(historiaId);
+    }
+
+    // Focus en búsqueda si no hay paciente
+    const buscarInput = document.getElementById('buscarHistoriaInput');
+    if (buscarInput && !buscarInput.value) {
+        setTimeout(() => buscarInput.focus(), 300);
+    }
+}
+
+// Llamar inicialización cuando el DOM esté listo Y cada vez que se carga el formulario
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarFormulario);
+} else {
+    inicializarFormulario();
+}
 
 function buscarHistorias(query) {
     $.ajax({
@@ -393,10 +477,7 @@ function buscarHistorias(query) {
                     
                     item.on('click', function(e) {
                         e.preventDefault();
-                        const id = $(this).data('id');
-                        const expediente = $(this).data('expediente');
-                        const paciente = $(this).data('paciente');
-                        seleccionarHistoria(id, expediente, paciente);
+                        seleccionarHistoria($(this).data('id'), $(this).data('expediente'), $(this).data('paciente'));
                     });
                     
                     div.append(item);
@@ -405,6 +486,9 @@ function buscarHistorias(query) {
             } else {
                 div.html('<div class="list-group-item text-muted">No se encontraron resultados</div>').show();
             }
+        },
+        error: function() {
+            console.error('Error en búsqueda de historias');
         }
     });
 }
@@ -443,16 +527,112 @@ function buscarCIE10(query) {
             } else {
                 div.html('<div class="list-group-item text-muted">No se encontraron resultados</div>').show();
             }
+        },
+        error: function() {
+            console.error('Error en búsqueda CIE-10');
         }
     });
 }
 
 function seleccionarHistoria(id, expediente, paciente) {
+    console.log('👤 Seleccionando historia:', id);
+    
+    // Limpiar cache anterior
+    signosPreviosCache = null;
+    $('#alertaSignosPrevios').hide();
+    
+    // Guardar selección
     $('#historia_id').val(id);
     $('#buscarHistoriaInput').val(`${expediente} - ${paciente}`);
     $('#nombrePacienteSeleccionado').text(`${expediente} - ${paciente}`);
     $('#historiaSeleccionada').show();
     $('#resultadosBusquedaHistoria').hide();
+    
+    // Buscar signos vitales
+    buscarSignosPrevios(id);
+}
+
+function buscarSignosPrevios(historiaId) {
+    console.log('🔍 Buscando signos previos...');
+    
+    $.ajax({
+        url: '{% url "obtener_ultimos_signos" %}',
+        type: 'GET',
+        data: { historia_id: historiaId },
+        success: function(response) {
+            if (response.success && response.signos) {
+                console.log('✅ Signos encontrados');
+                signosPreviosCache = response.signos;
+                
+                // Mostrar alerta
+                $('#fechaUltimosSignos').text(response.signos.fecha_registro);
+                $('#alertaSignosPrevios').show();
+                
+                // Abrir sección
+                const seccionSignos = document.getElementById('seccion3');
+                if (seccionSignos && !seccionSignos.classList.contains('show')) {
+                    const botonSignos = document.querySelector('[data-bs-target="#seccion3"]');
+                    if (botonSignos) botonSignos.click();
+                }
+                
+                // Preguntar
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Signos Vitales Disponibles',
+                    html: `<p><strong>Fecha:</strong> ${response.signos.fecha_registro}</p><p>¿Desea cargar estos signos vitales?</p>`,
+                    showDenyButton: true,
+                    confirmButtonText: '<i class="fas fa-download me-1"></i> Cargar',
+                    denyButtonText: '<i class="fas fa-edit me-1"></i> Nuevos',
+                    confirmButtonColor: '#0d6efd',
+                    denyButtonColor: '#6c757d'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        cargarSignosPrevios();
+                        Swal.fire({ icon: 'success', title: 'Datos Cargados', timer: 1500, showConfirmButton: false });
+                    } else if (result.isDenied) {
+                        cerrarAlertaSignos();
+                    }
+                });
+            } else {
+                console.log('⚠️ Sin signos previos');
+                $('#alertaSignosPrevios').hide();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ Error en AJAX:', error);
+            $('#alertaSignosPrevios').hide();
+            signosPreviosCache = null;
+        }
+    });
+}
+
+function cargarSignosPrevios() {
+    if (!signosPreviosCache) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No hay signos vitales previos disponibles', timer: 1500, showConfirmButton: false });
+        return;
+    }
+    
+    // Cargar datos
+    $('#presion_sistolica').val(signosPreviosCache.presion_sistolica || '');
+    $('#presion_diastolica').val(signosPreviosCache.presion_diastolica || '');
+    $('#temperatura').val(signosPreviosCache.temperatura || '');
+    $('#frecuencia_respiratoria').val(signosPreviosCache.frecuencia_respiratoria || '');
+    $('#frecuencia_cardiaca').val(signosPreviosCache.frecuencia_cardiaca || '');
+    $('#saturacion_oxigeno').val(signosPreviosCache.saturacion_oxigeno || '');
+    $('#peso').val(signosPreviosCache.peso || '');
+    $('#talla').val(signosPreviosCache.talla || '');
+    $('#imc').val(signosPreviosCache.imc || '');
+    
+    // Resaltar campos
+    $('.form-control', '#seccion3').addClass('bg-success-subtle');
+    setTimeout(() => $('.form-control', '#seccion3').removeClass('bg-success-subtle'), 2000);
+    
+    $('#alertaSignosPrevios').fadeOut();
+}
+
+function cerrarAlertaSignos() {
+    $('#alertaSignosPrevios').fadeOut();
+    signosPreviosCache = null;
 }
 
 function abrirNuevaHistoria() {
@@ -472,7 +652,6 @@ function abrirNuevaHistoria() {
     });
 }
 
-
 function calcularIMC() {
     const peso = parseFloat($('#peso').val());
     const talla = parseFloat($('#talla').val());
@@ -484,31 +663,7 @@ function calcularIMC() {
         $('#imc').val('');
     }
 }
-function marcarInvalido(idCampo, mensaje) {
-    const campo = document.getElementById(idCampo);
-    if (!campo) return;
 
-    campo.classList.add('is-invalid');
-
-    let feedback = campo.parentNode.querySelector('.invalid-feedback');
-    if (!feedback) {
-        feedback = document.createElement('div');
-        feedback.className = 'invalid-feedback';
-        campo.parentNode.appendChild(feedback);
-    }
-
-    feedback.textContent = mensaje;
-    campo.focus();
-}
-
-function limpiarInvalido(idCampo) {
-    const campo = document.getElementById(idCampo);
-    if (!campo) return;
-
-    campo.classList.remove('is-invalid');
-    const feedback = campo.parentNode.querySelector('.invalid-feedback');
-    if (feedback) feedback.remove();
-}
 function guardarFormulario() {
     const form = document.getElementById('formAtencion');
     const formData = new FormData(form);
@@ -518,102 +673,46 @@ function guardarFormulario() {
     const fechaAtencion = formData.get('fecha_atencion');
     const tipoAtencion = formData.get('tipo_atencion');
     const motivoConsulta = formData.get('motivo_consulta');
-    const cie10Codigo = formData.get('cie10_codigo');
-    const cie10Descripcion = formData.get('cie10_descripcion');
     
-    // Validar historia clínica seleccionada
     if (!historiaId) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Paciente no seleccionado',
-            text: 'Debe seleccionar una historia clínica del paciente',
-            confirmButtonText: 'Aceptar'
-        }).then(() => {
-            document.getElementById('buscarHistoriaInput').focus();
-        });
+        Swal.fire({ icon: 'warning', title: 'Paciente no seleccionado', text: 'Debe seleccionar una historia clínica del paciente' })
+            .then(() => document.getElementById('buscarHistoriaInput').focus());
         return;
     }
     
-    // Validar fecha de atención
     if (!fechaAtencion) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Campo obligatorio',
-            text: 'La fecha y hora de atención son obligatorias',
-            confirmButtonText: 'Aceptar'
-        }).then(() => {
-            document.getElementById('fecha_atencion').focus();
-        });
+        Swal.fire({ icon: 'warning', title: 'Campo obligatorio', text: 'La fecha y hora de atención son obligatorias' })
+            .then(() => document.getElementById('fecha_atencion').focus());
         return;
     }
     
-    // Validar tipo de atención
     if (!tipoAtencion) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Campo obligatorio',
-            text: 'Debe seleccionar el tipo de atención',
-            confirmButtonText: 'Aceptar'
-        }).then(() => {
-            document.querySelector('select[name="tipo_atencion"]').focus();
-        });
+        Swal.fire({ icon: 'warning', title: 'Campo obligatorio', text: 'Debe seleccionar el tipo de atención' })
+            .then(() => document.querySelector('select[name="tipo_atencion"]').focus());
         return;
     }
     
-    // Validar motivo de consulta
     if (!motivoConsulta || motivoConsulta.trim() === '') {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Campo obligatorio',
-            text: 'El motivo de consulta es obligatorio',
-            confirmButtonText: 'Aceptar'
-        }).then(() => {
-            document.querySelector('textarea[name="motivo_consulta"]').focus();
-        });
+        Swal.fire({ icon: 'warning', title: 'Campo obligatorio', text: 'El motivo de consulta es obligatorio' })
+            .then(() => document.querySelector('textarea[name="motivo_consulta"]').focus());
         return;
     }
     
-    // Validar diagnóstico CIE-10
-    if ((!cie10Codigo || cie10Codigo.trim() === '') && (!cie10Descripcion || cie10Descripcion.trim() === '')) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Diagnóstico incompleto',
-            text: 'Debe ingresar el código y la descripción CIE-10 del diagnóstico',
-            confirmButtonText: 'Aceptar'
-        }).then(() => {
-            document.getElementById('buscarCie10Input').focus();
-        });
-        return;
-    }
-    
-    // Deshabilitar botón y mostrar loading
+    // Deshabilitar botón
     const btnGuardar = document.querySelector('.btn-guardar');
     const originalText = btnGuardar.innerHTML;
     btnGuardar.disabled = true;
     btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
     
-    // Mostrar SweetAlert de carga
-    Swal.fire({
-        title: 'Guardando atención médica...',
-        text: 'Por favor espere un momento',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
-    });
+    Swal.fire({ title: 'Guardando atención médica...', text: 'Por favor espere', allowOutsideClick: false, allowEscapeKey: false, didOpen: () => Swal.showLoading() });
     
     // Enviar datos
     fetch('{% url "guardar_atencion" %}', {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': getCSRFToken()
-        }
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCSRFToken() }
     })
     .then(response => {
-        // Primero, verificar si la respuesta es JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             throw new TypeError('La respuesta no es JSON');
@@ -621,57 +720,31 @@ function guardarFormulario() {
         return response.json();
     })
     .then(data => {
-        // Cerrar SweetAlert de carga
         Swal.close();
-        
         if (data.success) {
-            // Éxito
-            Swal.fire({
-                icon: 'success',
-                title: 'Guardado correctamente',
-                text: data.message,
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => {
-                // Cerrar modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormulario'));
-                if (modal) {
-                    modal.hide();
-                }
-                
-                // Recargar datos en la tabla principal
-                if (typeof cargarDatos === 'function') {
-                    cargarDatos();
-                }
-            });
+            Swal.fire({ icon: 'success', title: 'Guardado correctamente', text: data.message, timer: 1500, showConfirmButton: false })
+                .then(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormulario'));
+                    if (modal) modal.hide();
+                    if (typeof cargarDatos === 'function') cargarDatos();
+                });
         } else {
-            // Error del servidor
-            Swal.fire({
-                icon: 'error',
-                title: 'Error al guardar',
-                text: data.error || 'Ocurrió un error desconocido',
-                confirmButtonText: 'Aceptar'
-            });
+            Swal.fire({ icon: 'error', title: 'Error al guardar', text: data.error || 'Ocurrió un error desconocido' });
         }
     })
     .catch(error => {
-        // Cerrar SweetAlert de carga
         Swal.close();
-        
-        // Error de conexión o parseo
-        console.error('Error en guardarFormulario:', error);
-        
-        Swal.fire({
-            icon: 'error',
-            title: 'Error de conexión',
-            text: 'No se pudo conectar con el servidor. Verifique su conexión a internet.',
-            confirmButtonText: 'Aceptar'
-        });
+        console.error('Error:', error);
+        Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor' });
     })
     .finally(() => {
-        // Restaurar botón
         btnGuardar.disabled = false;
         btnGuardar.innerHTML = originalText;
     });
+}
+
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
 }
 </script>
