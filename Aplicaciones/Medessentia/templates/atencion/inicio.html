@@ -500,33 +500,65 @@
     }
 
     function eliminarAtencion(id) {
-        if (!confirm('¿Está seguro de que desea eliminar este registro?\nEsta acción no se puede deshacer.')) {
-            return;
-        }
-        
-        const formData = new FormData();
-        formData.append('id', id);
-        formData.append('csrfmiddlewaretoken', getCSRFToken());
-        
-        fetch('{% url "eliminar_atencion" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+        Swal.fire({
+            title: '¿Confirmar eliminación?',
+            text: "Esta acción eliminará permanentemente la atención médica y no se podrá deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Procesando...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Enviar petición
+                $.ajax({
+                    url: '{% url "eliminar_atencion" %}',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        csrfmiddlewaretoken: getCSRFToken()
+                    },
+                    success: function(response) {
+                        Swal.close();
+                        
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Eliminado!',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                            cargarDatos(); // Recargar tabla
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.error || 'No se pudo eliminar'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.close();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error al eliminar el registro'
+                        });
+                    }
+                });
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                cargarDatos();
-                alert('✓ ' + data.message);
-            } else {
-                alert('✗ Error: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('✗ Error de conexión al servidor');
         });
     }
 
