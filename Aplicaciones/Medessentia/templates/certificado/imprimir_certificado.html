@@ -5,10 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificado Médico - {{ certificado.get_codigo_certificado }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @page {
             size: letter;
-            margin: 1.5cm 2cm;
+            margin: 1cm 1.5cm;
         }
 
         * {
@@ -19,8 +20,8 @@
 
         body {
             font-family: 'Times New Roman', serif;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-size: 10pt;
+            line-height: 1.3;
             color: #000;
             background: white;
         }
@@ -28,29 +29,30 @@
         .container {
             max-width: 21cm;
             margin: 0 auto;
-            padding: 20px;
+            padding: 12px;
             background: white;
         }
 
-        /* Encabezado con logo */
+        /* Encabezado */
         .header {
             text-align: center;
             border-bottom: 2px solid #000;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .logo-container {
+            padding-bottom: 8px;
             margin-bottom: 10px;
         }
 
+        .logo-container {
+            margin-bottom: 6px;
+        }
+
         .logo-img {
-            width: 100px;
-            height: 100px;
+            width: 85px;
+            height: 85px;
             margin: 0 auto;
             border-radius: 50%;
             overflow: hidden;
-            border: 2px solid #2563eb;
+            border: 2px solid #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .logo-img img {
@@ -60,41 +62,50 @@
         }
 
         .header h1 {
-            font-size: 20pt;
-            margin: 10px 0 5px 0;
+            font-size: 17pt;
+            margin: 5px 0 2px 0;
             color: #000;
             font-weight: bold;
+            letter-spacing: 1.5px;
         }
 
         .header-info {
-            font-size: 10pt;
-            color: #333;
-            margin: 3px 0;
+            font-size: 8.5pt;
+            color: #000;
+            margin: 1px 0;
+            line-height: 1.2;
         }
 
         .header-codigo {
-            font-size: 9pt;
-            color: #666;
-            margin-top: 8px;
+            font-size: 8pt;
+            color: #333;
+            margin-top: 5px;
+            padding-top: 4px;
+            border-top: 1px solid #000;
         }
 
         /* Título del certificado */
         .titulo-certificado {
             text-align: center;
-            margin: 20px 0;
+            margin: 8px 0 6px 0;
+            padding: 5px;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            background: #f5f5f5;
         }
 
         .titulo-certificado h2 {
-            font-size: 16pt;
+            font-size: 13pt;
             font-weight: bold;
-            text-decoration: underline;
             text-transform: uppercase;
+            color: #000;
+            letter-spacing: 1px;
         }
 
         /* Información del paciente */
         .info-paciente {
-            margin: 15px 0;
-            border: 1px solid #000;
+            margin: 6px 0;
+            border: 1.5px solid #000;
         }
 
         .info-paciente table {
@@ -103,137 +114,209 @@
         }
 
         .info-paciente td {
-            padding: 8px 12px;
-            border: 1px solid #000;
+            padding: 4px 8px;
+            border-bottom: 1px solid #ccc;
+            font-size: 9.5pt;
+        }
+
+        .info-paciente tr:last-child td {
+            border-bottom: none;
         }
 
         .info-paciente .label {
             font-weight: bold;
-            width: 35%;
+            width: 28%;
             background: #f5f5f5;
+            color: #000;
         }
 
         /* Certificación formal */
         .certifico {
             text-align: justify;
-            margin: 15px 0;
-            line-height: 1.6;
-            text-indent: 50px;
+            margin: 7px 0;
+            line-height: 1.4;
+            text-indent: 35px;
+            font-size: 9.5pt;
         }
 
-        /* Caja de reposo */
+        /* Caja de reposo - COMPACTA */
         .reposo-formal {
             border: 2px solid #000;
-            padding: 15px;
-            margin: 20px 0;
+            padding: 6px;
+            margin: 8px 0;
             text-align: center;
             background: #f9f9f9;
         }
 
         .reposo-formal h3 {
-            font-size: 13pt;
-            margin-bottom: 12px;
-            text-decoration: underline;
+            font-size: 10pt;
+            margin-bottom: 4px;
+            color: #000;
+            font-weight: bold;
         }
 
         .reposo-tabla {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 4px;
             border-collapse: collapse;
         }
 
         .reposo-tabla td {
-            padding: 10px;
+            padding: 4px;
             text-align: center;
             border: 1px solid #000;
+            background: white;
+            font-size: 9pt;
         }
 
         .reposo-tabla .valor-grande {
-            font-size: 20pt;
+            font-size: 16pt;
             font-weight: bold;
+            color: #000;
+            display: block;
+            margin: 2px 0;
+        }
+
+        .reposo-recomendacion {
+            margin-top: 4px;
+            font-size: 8.5pt;
+            font-style: italic;
+            color: #333;
         }
 
         /* Secciones de texto */
         .seccion-texto {
-            margin: 12px 0;
+            margin: 6px 0;
+            padding: 5px 7px;
+            background: #fafafa;
+            border-left: 3px solid #000;
         }
 
         .seccion-texto h4 {
-            font-size: 11pt;
+            font-size: 9.5pt;
             font-weight: bold;
-            margin-bottom: 6px;
-            text-decoration: underline;
+            margin-bottom: 2px;
+            color: #000;
         }
 
         .seccion-texto p {
             text-align: justify;
-            line-height: 1.5;
+            line-height: 1.3;
+            font-size: 9.5pt;
+            color: #000;
         }
 
-        /* Firma */
+        /* Firma - ESPACIO AMPLIO */
         .firma-section {
-            margin-top: 40px;
+            margin-top: 50px;
             text-align: center;
+            page-break-inside: avoid;
+            min-height: 120px;
+        }
+
+        .firma-espacio-digital {
+            min-height: 70px;
+            border: 1px dashed #999;
+            margin: 0 auto 8px auto;
+            width: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+        }
+
+        .firma-espacio-digital span {
+            font-size: 8pt;
+            color: #999;
+            font-style: italic;
         }
 
         .firma-linea {
             border-top: 2px solid #000;
-            width: 280px;
-            margin: 50px auto 8px auto;
+            width: 300px;
+            margin: 0 auto 6px auto;
+        }
+
+        .firma-info {
+            margin-bottom: 4px;
         }
 
         .firma-nombre {
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 10pt;
+            color: #000;
         }
 
         .firma-cargo {
-            font-size: 10pt;
-            margin-top: 3px;
+            font-size: 9pt;
+            margin-top: 2px;
+            color: #000;
         }
 
         /* Footer */
         .footer {
             text-align: center;
-            font-size: 8pt;
+            font-size: 7pt;
             color: #666;
             border-top: 1px solid #ccc;
-            padding-top: 10px;
-            margin-top: 15px;
+            padding-top: 5px;
+            margin-top: 8px;
+            page-break-inside: avoid;
         }
 
-        /* Botones */
+        /* Botones modernos - estilo CIE-10 */
         .print-buttons {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 1000;
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .btn i {
             font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .btn-primary {
-            background: #2563eb;
+            background: #0d6efd;
             color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0b5ed7;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(13,110,253,0.3);
         }
 
         .btn-secondary {
-            background: #6b7280;
+            background: #6c757d;
             color: white;
         }
 
-        .btn:hover {
-            opacity: 0.9;
+        .btn-secondary:hover {
+            background: #5c636a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(108,117,125,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
         }
 
         /* Marca de agua anulado */
@@ -244,10 +327,18 @@
             transform: translate(-50%, -50%) rotate(-45deg);
             font-size: 72pt;
             font-weight: bold;
-            color: rgba(220, 38, 38, 0.1);
+            color: rgba(220, 38, 38, 0.08);
             text-transform: uppercase;
             pointer-events: none;
             z-index: -1;
+            letter-spacing: 10px;
+        }
+
+        /* Evitar saltos de página */
+        .info-paciente,
+        .reposo-formal,
+        .firma-section {
+            page-break-inside: avoid;
         }
 
         /* Impresión */
@@ -260,20 +351,62 @@
                 padding: 0;
             }
 
+            body {
+                font-size: 9.5pt;
+            }
+
             @page {
-                margin: 1.5cm 2cm;
+                margin: 1cm 1.5cm;
+            }
+
+            .header,
+            .info-paciente,
+            .reposo-formal,
+            .firma-section,
+            .footer {
+                page-break-inside: avoid;
+            }
+
+            .firma-espacio-digital {
+                border: none;
+                background: transparent;
+            }
+
+            .firma-espacio-digital span {
+                display: none;
+            }
+        }
+
+        /* Responsivo */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 8px;
+            }
+
+            .print-buttons {
+                position: static;
+                margin-bottom: 12px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .btn {
+                font-size: 12px;
+                padding: 7px 14px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Botones -->
+    <!-- Botones modernos -->
     <div class="print-buttons no-print">
         <button class="btn btn-primary" onclick="window.print()">
-            🖨️ Imprimir
+            <i class="fas fa-print"></i>
+            <span>Imprimir</span>
         </button>
         <button class="btn btn-secondary" onclick="window.close()">
-            ✖️ Cerrar
+            <i class="fas fa-times"></i>
+            <span>Cerrar</span>
         </button>
     </div>
 
@@ -292,7 +425,7 @@
             <h1>MEDESSENTIA</h1>
             <div class="header-info">Consultorio Médico</div>
             <div class="header-info">Abdón Calderón y Mariscal Sucre - Cantón Saquisilí</div>
-            <div class="header-info">Teléfono: 0991043977| Email: medessentiaconsultoriomedico@gmail.com</div>
+            <div class="header-info">Tel: 0991043977 | Email: medessentiaconsultoriomedico@gmail.com</div>
             <div class="header-codigo">
                 <strong>Certificado N°:</strong> {{ certificado.get_codigo_certificado }}
                 | <strong>Estado:</strong> {{ certificado.get_estado_display }}
@@ -318,19 +451,19 @@
             </table>
         </div>
 
-      
+        <!-- Certificación -->
         <div class="certifico">
             Quien suscribe, <strong>Dr(a). {{ certificado.get_doctor_nombre }}</strong>, Médico General, 
             <strong>CERTIFICA</strong> que el/la paciente antes mencionado(a) ha sido evaluado(a) por el siguiente motivo:
         </div>
 
-       
+        <!-- Motivo -->
         <div class="seccion-texto">
             <h4>MOTIVO:</h4>
             <p>{{ certificado.motivo }}</p>
         </div>
 
-     
+        <!-- Diagnóstico -->
         {% if certificado.diagnostico %}
         <div class="seccion-texto">
             <h4>DIAGNÓSTICO:</h4>
@@ -338,33 +471,33 @@
         </div>
         {% endif %}
 
-        
+        <!-- Reposo médico - COMPACTO -->
         {% if certificado.tipo_certificado == 'REPOSO' and certificado.dias_reposo %}
         <div class="reposo-formal">
             <h3>REPOSO MÉDICO INDICADO</h3>
             <table class="reposo-tabla">
                 <tr>
                     <td style="width: 33%;">
-                        <strong>DÍAS</strong><br>
+                        <strong>DÍAS</strong>
                         <span class="valor-grande">{{ certificado.dias_reposo }}</span>
                     </td>
                     <td style="width: 33%;">
-                        <strong>DESDE</strong><br>
-                        <span style="font-size: 13pt; font-weight: bold;">{{ certificado.fecha_inicio_reposo|date:"d/m/Y" }}</span>
+                        <strong>DESDE</strong>
+                        <span class="valor-grande" style="font-size: 11pt;">{{ certificado.fecha_inicio_reposo|date:"d/m/Y" }}</span>
                     </td>
                     <td style="width: 34%;">
-                        <strong>HASTA</strong><br>
-                        <span style="font-size: 13pt; font-weight: bold;">{{ certificado.fecha_fin_reposo|date:"d/m/Y" }}</span>
+                        <strong>HASTA</strong>
+                        <span class="valor-grande" style="font-size: 11pt;">{{ certificado.fecha_fin_reposo|date:"d/m/Y" }}</span>
                     </td>
                 </tr>
             </table>
-            <p style="margin-top: 10px; font-size: 10pt;">
+            <p class="reposo-recomendacion">
                 <strong>Se recomienda reposo absoluto durante el período indicado</strong>
             </p>
         </div>
         {% endif %}
 
-        
+        <!-- Indicaciones -->
         {% if certificado.indicaciones %}
         <div class="seccion-texto">
             <h4>INDICACIONES MÉDICAS:</h4>
@@ -372,7 +505,7 @@
         </div>
         {% endif %}
 
-       
+        <!-- Observaciones -->
         {% if certificado.observaciones %}
         <div class="seccion-texto">
             <h4>OBSERVACIONES:</h4>
@@ -380,21 +513,26 @@
         </div>
         {% endif %}
 
-       
-        <div class="certifico" style="margin-top: 20px;">
+        <!-- Declaración final -->
+        <div class="certifico" style="margin-top: 12px;">
             Se extiende el presente certificado a solicitud del interesado para los fines que estime conveniente.
         </div>
 
-        
+        <!-- Firma con espacio amplio -->
         <div class="firma-section">
+            <div class="firma-espacio-digital">
+                <span>Espacio reservado para firma electrónica</span>
+            </div>
             <div class="firma-linea"></div>
-            <div class="firma-nombre">Dr(a). {{ certificado.get_doctor_nombre }}</div>
-            <div class="firma-cargo">Médico General</div>
+            <div class="firma-info">
+                <div class="firma-nombre">Dr(a). {{ certificado.get_doctor_nombre }}</div>
+                <div class="firma-cargo">Médico General</div>
+            </div>
         </div>
 
-       
+        <!-- Footer -->
         <div class="footer">
-            <p>Documento generado por el Sistema MEDESSENTIA  {{ "now"|date:"d/m/Y H:i" }}</p>
+            <p>Documento generado por el Sistema MEDESSENTIA el {{ "now"|date:"d/m/Y" }} a las {{ "now"|date:"H:i" }}</p>
         </div>
     </div>
 </body>

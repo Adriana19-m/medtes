@@ -2,148 +2,218 @@
     {% csrf_token %}
     <input type="hidden" name="id_historia" value="{{ historia.id_historia|default:'' }}">
     
-    <!-- Acordeón Principal -->
-    <div class="accordion" id="accordionHistoria">
-        
-        <!-- 1. IDENTIFICACIÓN -->
-        <div class="accordion-item mb-2">
-            <h2 class="accordion-header">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#seccion1">
-                    <i class="fas fa-user me-2"></i>1. IDENTIFICACIÓN DEL PACIENTE
-                </button>
-            </h2>
-            <div id="seccion1" class="accordion-collapse collapse show" data-bs-parent="#accordionHistoria">
-                <div class="accordion-body">
-                    <!-- Búsqueda de paciente -->
-                    <div class="card border-primary mb-3">
-                        <div class="card-header bg-primary text-white">
-                            <i class="fas fa-search me-2"></i>Buscar o Crear Paciente
-                        </div>
-                        <div class="card-body">
-                            <input type="hidden" name="paciente_id" id="paciente_id" value="{{ historia.id_paciente.id|default:'' }}">
-                            
-                            <div class="row g-3">
-                                <div class="col-md-8">
-                                    <label class="form-label fw-bold">Buscar Paciente <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="buscarPacienteInput" 
-                                           placeholder="Escriba nombre, apellido o cédula del paciente..." 
-                                           value="{% if historia %}{{ historia.id_paciente.first_name }} {{ historia.id_paciente.last_name }}{% endif %}">
-                                    <div id="resultadosBusquedaPaciente" class="list-group mt-2" style="display:none; max-height:200px; overflow-y:auto; position:absolute; z-index:1000; width:calc(66.666% - 1rem);"></div>
-                                </div>
-                                <div class="col-md-4 d-flex align-items-end">
-                                    <button type="button" class="btn btn-success w-100" id="btnNuevoPaciente" onclick="abrirRegistroRapido()">
-                                        <i class="fas fa-user-plus me-2"></i>Nuevo Paciente
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div id="pacienteSeleccionado" class="alert alert-success mt-3" style="display:{% if historia %}block{% else %}none{% endif %}">
-                                <i class="fas fa-check-circle me-2"></i>
-                                <strong>Paciente seleccionado:</strong> 
-                                <span id="nombrePacienteSeleccionado">
-                                    {% if historia %}{{ historia.id_paciente.first_name }} {{ historia.id_paciente.last_name }}{% endif %}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+   <!-- 1. IDENTIFICACIÓN DEL PACIENTE -->
+<div class="accordion-item mb-2">
+  <h2 class="accordion-header">
+    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+            data-bs-target="#seccion1">
+      <i class="fas fa-user me-2"></i>1. IDENTIFICACIÓN DEL PACIENTE
+    </button>
+  </h2>
 
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Doctor Responsable</label>
-                            <input type="text" class="form-control" value="{{ usuario_actual.first_name }} {{ usuario_actual.last_name }}" readonly>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">N° Expediente <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="text" name="expediente_no" id="expediente_no" class="form-control" 
-                                       value="{{ historia.expediente_no|default:'' }}" required maxlength="50">
-                                <button type="button" class="btn btn-outline-primary" onclick="generarExpediente()" title="Generar">
-                                    <i class="fas fa-sync"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label">Nombres Completos</label>
-                            <input type="text" name="nombres_completos" id="nombres_completos" class="form-control" 
-                                   value="{{ historia.nombres_completos|default:'' }}" maxlength="150">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Cédula</label>
-                            <input type="text" name="cedula" id="cedula" class="form-control" 
-                                   value="{{ historia.cedula|default:'' }}" maxlength="20">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Fecha de Nacimiento</label>
-                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" class="form-control" 
-                                   value="{% if historia.fecha_nacimiento %}{{ historia.fecha_nacimiento|date:'Y-m-d' }}{% endif %}" onchange="calcularEdad()">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Edad</label>
-                            <input type="number" name="edad" id="edad" class="form-control" 
-                                   value="{% if historia %}{{ historia.get_edad_actual|default:'' }}{% endif %}" readonly>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Sexo <span class="text-danger">*</span></label>
-                            <select name="sexo_biologico" id="sexo_biologico" class="form-select" onchange="actualizarCamposPorSexo()" required>
-                                <option value="">Seleccione...</option>
-                                <option value="MASCULINO" {% if historia.sexo_biologico == 'MASCULINO' %}selected{% endif %}>Masculino</option>
-                                <option value="FEMENINO" {% if historia.sexo_biologico == 'FEMENINO' %}selected{% endif %}>Femenino</option>
-                                <option value="INTERSEXUAL" {% if historia.sexo_biologico == 'INTERSEXUAL' %}selected{% endif %}>Intersexual</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Estado Civil</label>
-                            <select name="estado_civil" class="form-select">
-                                <option value="">Seleccione...</option>
-                                <option value="SOLTERO" {% if historia.estado_civil == 'SOLTERO' %}selected{% endif %}>Soltero/a</option>
-                                <option value="CASADO" {% if historia.estado_civil == 'CASADO' %}selected{% endif %}>Casado/a</option>
-                                <option value="DIVORCIADO" {% if historia.estado_civil == 'DIVORCIADO' %}selected{% endif %}>Divorciado/a</option>
-                                <option value="VIUDO" {% if historia.estado_civil == 'VIUDO' %}selected{% endif %}>Viudo/a</option>
-                            </select>
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label">Dirección</label>
-                            <input type="text" name="direccion" class="form-control" value="{{ historia.direccion|default:'' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Teléfono</label>
-                            <input type="tel" name="telefono" class="form-control" value="{{ historia.telefono|default:'' }}" maxlength="20">
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control" value="{{ historia.email|default:'' }}" maxlength="100">
-                        </div>
-                        <div class="col-md-7">
-                            <label class="form-label">Contacto de Emergencia</label>
-                            <input type="text" name="contacto_emergencia" class="form-control" value="{{ historia.contacto_emergencia|default:'' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Nivel de Instrucción</label>
-                            <select name="nivel_instruccion" class="form-select">
-                                <option value="">Seleccione...</option>
-                                <option value="NINGUNO" {% if historia.nivel_instruccion == 'NINGUNO' %}selected{% endif %}>Ninguno</option>
-                                <option value="PRIMARIA" {% if historia.nivel_instruccion == 'PRIMARIA' %}selected{% endif %}>Primaria</option>
-                                <option value="SECUNDARIA" {% if historia.nivel_instruccion == 'SECUNDARIA' %}selected{% endif %}>Secundaria</option>
-                                <option value="SUPERIOR" {% if historia.nivel_instruccion == 'SUPERIOR' %}selected{% endif %}>Superior</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Ocupación</label>
-                            <input type="text" name="ocupacion" class="form-control" value="{{ historia.ocupacion|default:'' }}" maxlength="100">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Tipo de Seguro</label>
-                            <select name="tipo_seguro" class="form-select">
-                                <option value="NINGUNO" {% if not historia or historia.tipo_seguro == 'NINGUNO' %}selected{% endif %}>Ninguno</option>
-                                <option value="MSP" {% if historia.tipo_seguro == 'MSP' %}selected{% endif %}>MSP</option>
-                                <option value="IESS" {% if historia.tipo_seguro == 'IESS' %}selected{% endif %}>IESS</option>
-                                <option value="PRIVADO" {% if historia.tipo_seguro == 'PRIVADO' %}selected{% endif %}>Privado</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <div id="seccion1" class="accordion-collapse collapse show"
+       data-bs-parent="#accordionHistoria">
+    <div class="accordion-body">
+
+      <!-- BUSCAR PACIENTE -->
+      <div class="card border-primary mb-4">
+        <div class="card-header bg-primary text-white">
+          <i class="fas fa-search me-2"></i>Buscar o Crear Paciente
         </div>
+        <div class="card-body">
+
+          <input type="hidden" name="paciente_id" id="paciente_id"
+                 value="{{ historia.id_paciente.id|default:'' }}">
+
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label fw-bold">
+                Buscar Paciente <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control" id="buscarPacienteInput"
+                     placeholder="Nombre, apellido o cédula..."
+                     value="{% if historia %}{{ historia.id_paciente.first_name }} {{ historia.id_paciente.last_name }}{% endif %}">
+              <div id="resultadosBusquedaPaciente"
+                   class="list-group mt-2"
+                   style="display:none; max-height:200px; overflow-y:auto;">
+              </div>
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+              <button type="button" class="btn btn-success w-100"
+                      onclick="abrirRegistroRapido()">
+                <i class="fas fa-user-plus me-2"></i>Nuevo Paciente
+              </button>
+            </div>
+          </div>
+
+          <div id="pacienteSeleccionado"
+               class="alert alert-success mt-3"
+               style="display:{% if historia %}block{% else %}none{% endif %}">
+            <strong>Paciente seleccionado:</strong>
+            <span id="nombrePacienteSeleccionado">
+              {% if historia %}
+                {{ historia.id_paciente.first_name }}
+                {{ historia.id_paciente.last_name }}
+              {% endif %}
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DATOS GENERALES -->
+      <p class="fw-bold mb-2">Datos Generales</p>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Doctor Responsable</label>
+          <input type="text" class="form-control"
+                 value="{{ usuario_actual.first_name }} {{ usuario_actual.last_name }}"
+                 readonly>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">
+            N° Expediente <span class="text-danger">*</span>
+          </label>
+          <div class="input-group">
+            <input type="text" name="expediente_no" id="expediente_no"
+                   class="form-control"
+                   value="{{ historia.expediente_no|default:'' }}" required>
+            <button type="button" class="btn btn-outline-primary"
+                    onclick="generarExpediente()">
+              <i class="fas fa-sync"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Cédula</label>
+          <input type="text" name="cedula" class="form-control"
+                 value="{{ historia.cedula|default:'' }}">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Nombres Completos</label>
+          <input type="text" name="nombres_completos"
+                 class="form-control"
+                 value="{{ historia.nombres_completos|default:'' }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Fecha Nacimiento</label>
+          <input type="date" name="fecha_nacimiento"
+                 class="form-control"
+                 value="{% if historia.fecha_nacimiento %}{{ historia.fecha_nacimiento|date:'Y-m-d' }}{% endif %}"
+                 onchange="calcularEdad()">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Edad</label>
+          <input type="number" name="edad" class="form-control"
+                 value="{% if historia %}{{ historia.get_edad_actual }}{% endif %}"
+                 readonly>
+        </div>
+      </div>
+
+      <!-- DATOS PERSONALES -->
+      <p class="fw-bold mt-4 mb-2">Datos Personales</p>
+
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Sexo Biológico *</label>
+          <select name="sexo_biologico" class="form-select" required>
+            <option value="">Seleccione...</option>
+            <option value="MASCULINO" {% if historia.sexo_biologico == 'MASCULINO' %}selected{% endif %}>Masculino</option>
+            <option value="FEMENINO" {% if historia.sexo_biologico == 'FEMENINO' %}selected{% endif %}>Femenino</option>
+            <option value="INTERSEXUAL" {% if historia.sexo_biologico == 'INTERSEXUAL' %}selected{% endif %}>Intersexual</option>
+          </select>
+        </div>
+
+<div class="col-md-3">
+  <label class="form-label">Identidad de Género</label>
+  <select name="genero" id="genero" class="form-select">
+    <option value="">Seleccione...</option>
+    <option value="MASCULINO" {% if historia.genero == 'MASCULINO' %}selected{% endif %}>Masculino</option>
+    <option value="FEMENINO" {% if historia.genero == 'FEMENINO' %}selected{% endif %}>Femenino</option>
+    <option value="NO_BINARIO" {% if historia.genero == 'NO_BINARIO' %}selected{% endif %}>No binario</option>
+    <option value="NO_ESPECIFICA" {% if historia.genero == 'NO_ESPECIFICA' %}selected{% endif %}>Prefiere no decir</option>
+  </select>
+</div>
+
+
+        <div class="col-md-3">
+          <label class="form-label">Estado Civil</label>
+          <select name="estado_civil" class="form-select">
+            <option value="">Seleccione...</option>
+            <option value="SOLTERO" {% if historia.estado_civil == 'SOLTERO' %}selected{% endif %}>Soltero</option>
+            <option value="CASADO" {% if historia.estado_civil == 'CASADO' %}selected{% endif %}>Casado</option>
+            <option value="DIVORCIADO" {% if historia.estado_civil == 'DIVORCIADO' %}selected{% endif %}>Divorciado</option>
+            <option value="VIUDO" {% if historia.estado_civil == 'VIUDO' %}selected{% endif %}>Viudo</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Nivel de Instrucción</label>
+          <select name="nivel_instruccion" class="form-select">
+            <option value="">Seleccione...</option>
+            <option value="PRIMARIA">Primaria</option>
+            <option value="SECUNDARIA">Secundaria</option>
+            <option value="SUPERIOR">Superior</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CONTACTO -->
+      <p class="fw-bold mt-4 mb-2">Contacto</p>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Dirección</label>
+          <input type="text" name="direccion" class="form-control"
+                 value="{{ historia.direccion|default:'' }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Teléfono</label>
+          <input type="tel" name="telefono" class="form-control"
+                 value="{{ historia.telefono|default:'' }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control"
+                 value="{{ historia.email|default:'' }}">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Contacto de Emergencia</label>
+          <input type="text" name="contacto_emergencia"
+                 class="form-control"
+                 value="{{ historia.contacto_emergencia|default:'' }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Ocupación</label>
+          <input type="text" name="ocupacion" class="form-control"
+                 value="{{ historia.ocupacion|default:'' }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Tipo de Seguro</label>
+          <select name="tipo_seguro" class="form-select">
+            <option value="NINGUNO">Ninguno</option>
+            <option value="MSP">MSP</option>
+            <option value="IESS">IESS</option>
+            <option value="PRIVADO">Privado</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
         <!-- 2. ANTECEDENTES -->
         <div class="accordion-item mb-2">
@@ -736,6 +806,34 @@ function guardarHistoria() {
     .finally(() => {
         btnGuardar.prop('disabled', false).html(originalHTML);
     });
+}
+function seleccionarPaciente(id, nombre, cedula, telefono) {
+    $('#paciente_id').val(id);
+    $('#buscarPacienteInput').val(nombre);
+    $('#nombrePacienteSeleccionado').text(nombre);
+    $('#pacienteSeleccionado').show();
+    $('#resultadosBusquedaPaciente').hide();
+    $('#btnNuevoPaciente').show();
+
+    $('#nombres_completos').val(nombre);
+    $('#cedula').val(cedula);
+    $('input[name="telefono"]').val(telefono);
+
+    bloquearDatosPaciente();
+}
+function bloquearDatosPaciente() {
+    $('#nombres_completos').prop('readonly', true);
+    $('#cedula').prop('readonly', true);
+    $('input[name="telefono"]').prop('readonly', true);
+        // 🔒 BLOQUEAR EXPEDIENTE
+    $('#expediente_no').prop('readonly', true);
+}
+function desbloquearDatosPaciente() {
+    $('#nombres_completos').prop('readonly', false).val('');
+    $('#cedula').prop('readonly', false).val('');
+    $('input[name="telefono"]').prop('readonly', false).val('');
+
+    // NO desbloqueamos expediente
 }
 
 </script>

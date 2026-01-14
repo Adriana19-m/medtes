@@ -132,9 +132,9 @@
     <!-- Botones -->
     <div class="border-top pt-3">
         <div class="d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-secondary" id="btnCancelarReceta">
-                <i class="fas fa-times me-1"></i> Cancelar
-            </button>
+<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+    <i class="fas fa-times me-1"></i> Cancelar
+</button>
             <button type="submit" class="btn btn-primary btn-guardar">
                 <i class="fas fa-save me-1"></i> Guardar Receta
             </button>
@@ -146,18 +146,145 @@
         border-color: #dc3545;
     }
 </style>
-
 <script>
-// Este script se ejecuta cuando el formulario es cargado dinámicamente
-document.addEventListener('DOMContentLoaded', function() {
-    const formReceta = document.getElementById('formReceta');
-    if (formReceta) {
-        // Enfocar el primer campo editable
-        const motivo = formReceta.querySelector('[name="motivo"]');
-        if (motivo) {
-            motivo.focus();
-            motivo.select();
+    (function () {
+
+    function initRecetaForm() {
+
+        const btnAgregar = document.getElementById('btnAgregarMedicamento');
+        const contenedor = document.getElementById('seccionMedicamentos');
+
+        if (!btnAgregar || !contenedor) {
+            console.warn('Receta: formulario no encontrado');
+            return;
         }
+
+        // Evitar doble inicialización
+        if (btnAgregar.dataset.init === 'true') return;
+        btnAgregar.dataset.init = 'true';
+
+        let contador = contenedor.querySelectorAll('.medicamento-item').length;
+
+        // ===============================
+        // AGREGAR MEDICAMENTO
+        // ===============================
+        btnAgregar.addEventListener('click', function () {
+
+            const html = `
+            <div class="card mb-2 medicamento-item">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <strong>
+                        <i class="fas fa-pills me-1"></i>Medicamento ${contador + 1}
+                    </strong>
+                    <button type="button" class="btn btn-sm btn-danger eliminar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label fw-bold">Medicamento *</label>
+                            <input class="form-control"
+                                   name="detalles[${contador}][medicamento]"
+                                   placeholder="Nombre del medicamento"
+                                   required>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <label class="form-label fw-bold">Concentración</label>
+                            <input class="form-control"
+                                   name="detalles[${contador}][concentracion]"
+                                   placeholder="Ej: 500mg">
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <label class="form-label fw-bold">Presentación</label>
+                            <input class="form-control"
+                                   name="detalles[${contador}][presentacion]"
+                                   placeholder="Ej: Tabletas">
+                        </div>
+
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label fw-bold">Dosis *</label>
+                            <input class="form-control"
+                                   name="detalles[${contador}][dosis]"
+                                   placeholder="Ej: 1 tableta"
+                                   required>
+                        </div>
+
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label fw-bold">Frecuencia *</label>
+                            <input class="form-control"
+                                   name="detalles[${contador}][frecuencia]"
+                                   placeholder="Ej: Cada 8 horas"
+                                   required>
+                        </div>
+
+                        <div class="col-md-2 mb-2">
+                            <label class="form-label fw-bold">Días *</label>
+                            <input type="number" min="1" class="form-control"
+                                   name="detalles[${contador}][duracion_dias]"
+                                   required>
+                        </div>
+
+                        <div class="col-md-2 mb-2">
+                            <label class="form-label fw-bold">Cantidad *</label>
+                            <input type="number" min="1" class="form-control"
+                                   name="detalles[${contador}][cantidad_total]"
+                                   required>
+                        </div>
+
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label fw-bold">Vía de Administración *</label>
+                            <select class="form-select"
+                                    name="detalles[${contador}][via_administracion]"
+                                    required>
+                                <option value="">Seleccione...</option>
+                                <option value="ORAL">ORAL</option>
+                                <option value="INYECTABLE">INYECTABLE</option>
+                                <option value="TOPICA">TÓPICA</option>
+                                <option value="INHALATORIA">INHALATORIA</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label fw-bold">Indicaciones</label>
+                            <textarea class="form-control"
+                                      name="detalles[${contador}][indicaciones]"
+                                      rows="2"></textarea>
+                        </div>
+
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label fw-bold">Advertencias</label>
+                            <textarea class="form-control"
+                                      name="detalles[${contador}][advertencias]"
+                                      rows="2"></textarea>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            `;
+
+            contenedor.insertAdjacentHTML('beforeend', html);
+            contador++;
+        });
+
+        // ===============================
+        // ELIMINAR MEDICAMENTO (delegado)
+        // ===============================
+        contenedor.addEventListener('click', function (e) {
+            const btnEliminar = e.target.closest('.eliminar');
+            if (btnEliminar) {
+                btnEliminar.closest('.medicamento-item').remove();
+            }
+        });
     }
-});
+
+    // 🔥 HACER GLOBAL
+    window.initRecetaForm = initRecetaForm;
+})();
 </script>
+
