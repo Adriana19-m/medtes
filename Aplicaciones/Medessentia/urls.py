@@ -156,9 +156,9 @@ urlpatterns = [
     path('ajax/atencion/buscar-cie10/', views.buscar_cie10_atencion, name='buscar_cie10_atencion'),
     path('atencion/obtener-ultimos-signos/', views.obtener_ultimos_signos, name='obtener_ultimos_signos'),
 
-      # Vista principal
+     # Recetas Médicas
+     # Vista principal
     path('recetas/', views.inicio_receta, name='inicio_receta'),
-    # Historias clínicas
     path('historias/listar/', views.obtener_historias, name='historias_listar'),
     path('historias/listar/', views.obtener_historias, name='historias_listar'),
     path('recetas/listar/', views.listado_recetas, name='recetas_listar'),

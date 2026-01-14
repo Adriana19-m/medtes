@@ -114,7 +114,36 @@ def login_view(request):
             )
 
     return render(request, 'login.html')
+def validar_celular_ecuatoriano(celular):
+    from django.core.exceptions import ValidationError
 
+    
+    if not celular:
+        raise ValidationError("El número de celular es obligatorio.")
+
+    
+    if len(celular) != 10 or not celular.isdigit():
+        raise ValidationError("El número de celular debe tener 10 dígitos numéricos.")
+
+    
+    if not celular.startswith("09"):
+        raise ValidationError("El número de celular debe iniciar con 09.")
+
+    
+    if celular == celular[0] * 10:
+        raise ValidationError("El número de celular no es válido.")
+
+    
+    secuencias_invalidas = [
+        "0123456789",
+        "1234567890",
+        "0987654321"
+    ]
+
+    if celular in secuencias_invalidas:
+        raise ValidationError("El número de celular no es válido.")
+
+    return True
 def validar_cedula_ecuatoriana(cedula):
     from django.core.exceptions import ValidationError
     
@@ -2566,6 +2595,7 @@ def eliminar_historia(request):
 
 # AJAX: Buscar pacientes - *** CORREGIDO ***
 
+# AJAX: Buscar pacientes - *** CORREGIDO ***
 @login_required
 def buscar_pacientes(request):
     try:
@@ -2632,6 +2662,7 @@ def buscar_pacientes(request):
         print(traceback.format_exc())
         return JsonResponse({'data': []}, status=500)
 # AJAX: Crear paciente rápido - CORREGIDO
+# AJAX: Crear paciente rápido - CORREGIDO
 @login_required
 def crear_paciente_rapido(request):
     try:
@@ -2652,6 +2683,16 @@ def crear_paciente_rapido(request):
         if cedula:
             try:
                 validar_cedula_ecuatoriana(cedula)
+            except ValidationError as e:
+                return JsonResponse({
+                    'success': False,
+                    'error': str(e)
+                })
+
+        # ✅ VALIDAR CELULAR ECUATORIANO (NUEVO)
+        if telefono:
+            try:
+                validar_celular_ecuatoriano(telefono)
             except ValidationError as e:
                 return JsonResponse({
                     'success': False,
@@ -2715,7 +2756,6 @@ def crear_paciente_rapido(request):
             'success': False,
             'error': 'Error interno del servidor'
         }, status=500)
-
 
 # AJAX: Generar expediente
 import re

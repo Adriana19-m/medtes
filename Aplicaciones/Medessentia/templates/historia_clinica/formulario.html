@@ -90,20 +90,20 @@
 
         <div class="col-md-4">
           <label class="form-label">Cédula</label>
-          <input type="text" name="cedula" class="form-control"
+          <input type="text" name="cedula" id="cedula" class="form-control"
                  value="{{ historia.cedula|default:'' }}">
         </div>
 
         <div class="col-md-6">
           <label class="form-label">Nombres Completos</label>
-          <input type="text" name="nombres_completos"
+          <input type="text" name="nombres_completos" id="nombres_completos"
                  class="form-control"
                  value="{{ historia.nombres_completos|default:'' }}">
         </div>
 
         <div class="col-md-3">
           <label class="form-label">Fecha Nacimiento</label>
-          <input type="date" name="fecha_nacimiento"
+          <input type="date" name="fecha_nacimiento" id="fecha_nacimiento"
                  class="form-control"
                  value="{% if historia.fecha_nacimiento %}{{ historia.fecha_nacimiento|date:'Y-m-d' }}{% endif %}"
                  onchange="calcularEdad()">
@@ -111,7 +111,7 @@
 
         <div class="col-md-3">
           <label class="form-label">Edad</label>
-          <input type="number" name="edad" class="form-control"
+          <input type="number" name="edad" id="edad"class="form-control"
                  value="{% if historia %}{{ historia.get_edad_actual }}{% endif %}"
                  readonly>
         </div>
@@ -123,7 +123,7 @@
       <div class="row g-3">
         <div class="col-md-3">
           <label class="form-label">Sexo Biológico *</label>
-          <select name="sexo_biologico" class="form-select" required>
+          <select name="sexo_biologico" id="sexo_biologico" class="form-select" required>
             <option value="">Seleccione...</option>
             <option value="MASCULINO" {% if historia.sexo_biologico == 'MASCULINO' %}selected{% endif %}>Masculino</option>
             <option value="FEMENINO" {% if historia.sexo_biologico == 'FEMENINO' %}selected{% endif %}>Femenino</option>
@@ -745,6 +745,7 @@ function guardarHistoria() {
         cedula: $('#cedula').val() || null,
         fecha_nacimiento: $('#fecha_nacimiento').val() || null,
         sexo_biologico: $('#sexo_biologico').val(),
+        genero: $('#genero').val(), 
         estado_civil: $('select[name="estado_civil"]').val() || null,
         direccion: $('input[name="direccion"]').val() || null,
         telefono: $('input[name="telefono"]').val() || null,
