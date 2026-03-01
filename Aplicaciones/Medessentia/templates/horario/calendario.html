@@ -173,6 +173,12 @@
                 padding: 6px 10px !important;
             }
         }
+        
+        /* Estilos para eventos de cita */
+        .fc-event-cita {
+            background-color: #f39c12 !important;
+            border-color: #e67e22 !important;
+        }
     </style>
 </head>
 <body>
@@ -180,7 +186,7 @@
         <div class="card">
             <div class="card-header bg-primary text-white">
                 <div class="d-flex justify-content-between align-items-center flex-wrap">
-                    <h4 class="mb-0 mb-md-2 mb-lg-0"><i class="fas fa-calendar-alt me-2"></i>Calendario de Horarios</h4>
+                    <h4 class="mb-0 mb-md-2 mb-lg-0"><i class="fas fa-calendar-alt me-2"></i>Horarios y Citas</h4>
                     <div class="d-flex">
                         <a href="{% url 'horario_index' %}" class="btn btn-light btn-sm me-2">
                             <i class="fas fa-arrow-left me-1"></i> Volver
@@ -197,7 +203,7 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal para agregar disponibilidad -->
     <div class="modal fade" id="modalDisponibilidad" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -275,6 +281,37 @@
         </div>
     </div>
 
+    <!-- Modal para ver detalles de la cita -->
+    <div class="modal fade" id="modalDetalleCita" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-check me-2"></i>Detalles de la Cita
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>Paciente:</strong> <span id="detalle_paciente"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Fecha y hora:</strong> <span id="detalle_fecha"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Estado:</strong> <span id="detalle_estado" class="badge"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Motivo:</strong> <p id="detalle_motivo" class="mt-2"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -285,6 +322,7 @@
     <script>
     let calendar = null;
     let modalDisponibilidad = null;
+    let modalDetalleCita = null;
     let eventosCargados = [];
 
     // Función para detectar si es dispositivo móvil
@@ -292,7 +330,7 @@
         return window.innerWidth <= 768;
     }
 
-    // Función para obtener el nombre del día en español - CORREGIDA para coincidir con opciones del select
+    // Función para obtener el nombre del día en español
     function obtenerNombreDia(fecha) {
         const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
         return dias[fecha.getDay()];
@@ -330,7 +368,6 @@
                 $('#fecha_fin').val(fechaInicio);
             }
             
-            // Actualizar automáticamente el día de la semana cuando cambia la fecha
             if (fechaInicio) {
                 const fecha = new Date(fechaInicio + 'T00:00:00');
                 const nombreDia = obtenerNombreDia(fecha);
@@ -342,7 +379,6 @@
             if ($(this).val()) {
                 const fecha = new Date($(this).val() + 'T00:00:00');
                 const nombreDia = obtenerNombreDia(fecha);
-                // Solo actualizar si el select está vacío
                 if (!$('#dia_semana_select').val()) {
                     $('#dia_semana_select').val(nombreDia);
                 }
@@ -353,17 +389,14 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log("Iniciando módulo Calendario de Horarios...");
 
-        // Inicializar modal
         modalDisponibilidad = new bootstrap.Modal(document.getElementById('modalDisponibilidad'));
+        modalDetalleCita = new bootstrap.Modal(document.getElementById('modalDetalleCita'));
         
-        // Inicializar datepickers
         inicializarDatepickers();
 
-        // Determinar vista inicial basada en el tamaño de pantalla
         const vistaInicial = esDispositivoMovil() ? 'timeGridDay' : 'timeGridWeek';
         const botonesVista = esDispositivoMovil() ? 'timeGridDay,listWeek' : 'timeGridWeek,timeGridDay,listWeek';
 
-        // Inicializar calendario con configuración responsive
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
             initialView: vistaInicial,
             locale: 'es',
@@ -387,11 +420,9 @@
             dayMaxEvents: esDispositivoMovil() ? 3 : true,
             weekends: true,
             editable: false,
-            eventColor: '#0d6efd',
             height: 'auto',
             contentHeight: 'auto',
             
-            // Configuraciones responsive
             dayMaxEventRows: esDispositivoMovil() ? 2 : false,
             eventTimeFormat: {
                 hour: '2-digit',
@@ -399,7 +430,6 @@
                 meridiem: false
             },
             
-            // Deshabilitar fechas pasadas
             validRange: {
                 start: new Date()
             },
@@ -460,45 +490,49 @@
                     return;
                 }
 
-                // Obtener fecha y hora exacta del clic
                 const fechaHoraClic = new Date(info.dateStr);
-                
-                // Formatear fecha (YYYY-MM-DD)
                 const fechaFormato = fechaHoraClic.toISOString().split('T')[0];
-                
-                // Formatear hora inicio (HH:MM)
                 const horaInicio = formatearHora(fechaHoraClic);
-                
-                // Calcular hora fin (1 hora después por defecto)
                 const horaFinDate = new Date(fechaHoraClic.getTime() + 60 * 60 * 1000);
                 const horaFin = formatearHora(horaFinDate);
                 
-                // Resetear formulario
                 $('#formDisponibilidad')[0].reset();
-                
-                // Establecer valores automáticamente
                 $('#fecha_inicio').val(fechaFormato);
                 $('#fecha_fin').val(fechaFormato);
                 $('#hora_inicio').val(horaInicio);
                 $('#hora_fin').val(horaFin);
                 
-                // Establecer automáticamente el día de la semana - CORREGIDO
                 const nombreDia = obtenerNombreDia(fechaHoraClic);
                 console.log("Día de la semana detectado:", nombreDia);
                 
-                // Asegurarse de que el select muestre el valor correcto
                 $('#dia_semana_select').val(nombreDia).trigger('change');
-                
-                // Mostrar información en consola para debug
-                console.log('Fecha clic:', fechaFormato);
-                console.log('Hora inicio:', horaInicio);
-                console.log('Hora fin:', horaFin);
-                console.log('Día de la semana seleccionado:', $('#dia_semana_select').val());
                 
                 modalDisponibilidad.show();
             },
             
-            // Deshabilitar clic en fechas pasadas visualmente
+            eventClick: function(info) {
+                const props = info.event.extendedProps;
+                if (props.tipo === 'cita') {
+                    $('#detalle_paciente').text(props.paciente || '');
+                    $('#detalle_fecha').text(info.event.start.toLocaleString('es-ES'));
+                    $('#detalle_estado').text(props.estado || '').removeClass().addClass('badge');
+                    if (props.estado === 'PENDIENTE') $('#detalle_estado').addClass('bg-warning').text('Pendiente');
+                    else if (props.estado === 'CONFIRMADA') $('#detalle_estado').addClass('bg-success').text('Confirmada');
+                    else if (props.estado === 'ATENDIDA') $('#detalle_estado').addClass('bg-secondary').text('Atendida');
+                    else $('#detalle_estado').addClass('bg-info').text(props.estado);
+                    $('#detalle_motivo').text(props.motivo || 'Sin motivo');
+                    
+                    modalDetalleCita.show();
+                } else if (props.tipo === 'disponible') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Horario disponible',
+                        text: 'Este es un horario de disponibilidad. Puede modificarlo desde el listado.',
+                        confirmButtonColor: '#0d6efd'
+                    });
+                }
+            },
+            
             dayCellDidMount: function(info) {
                 const cellDate = new Date(info.date);
                 const hoy = new Date();
@@ -511,28 +545,28 @@
                     info.el.style.opacity = '0.5';
                 }
                 
-                // Ajustar tamaño de fuente en móviles
                 if (esDispositivoMovil()) {
                     info.el.style.fontSize = '0.8rem';
                 }
             },
             
-            // Ajustar eventos para móviles
             eventDidMount: function(info) {
                 if (esDispositivoMovil()) {
                     info.el.style.fontSize = '0.7rem';
                     info.el.style.padding = '1px 3px';
+                }
+                
+                if (info.event.extendedProps.tipo === 'cita') {
+                    info.el.classList.add('fc-event-cita');
                 }
             }
         });
 
         calendar.render();
 
-        // Redimensionar calendario cuando cambie el tamaño de la ventana
         window.addEventListener('resize', function() {
             calendar.updateSize();
             
-            // Cambiar vista si es necesario
             if (esDispositivoMovil() && calendar.view.type !== 'timeGridDay' && calendar.view.type !== 'listWeek') {
                 calendar.changeView('timeGridDay');
             } else if (!esDispositivoMovil() && calendar.view.type === 'timeGridDay') {
@@ -540,7 +574,6 @@
             }
         });
 
-        // Guardar disponibilidad
         $('#guardarDisponibilidad').on('click', function() {
             const form = document.getElementById('formDisponibilidad');
             

@@ -74,9 +74,10 @@
         id="fecha_inicio"
         name="fecha_inicio"
         class="form-control"
-        value="{% if horario %}{{ horario.fecha_inicio }}{% else %}{{ today|default:'' }}{% endif %}"
+        value="{% if horario %}{{ horario.fecha_inicio }}{% else %}{{ hoy }}{% endif %}"
+        min="{{ hoy }}"
       >
-      <div class="form-text">Fecha de inicio del horario</div>
+      <div class="form-text">La fecha debe ser igual o posterior a hoy.</div>
     </div>
     <div class="col-md-6 mb-3">
       <label for="fecha_fin" class="form-label fw-bold">Fecha fin *</label>
@@ -85,9 +86,10 @@
         id="fecha_fin"
         name="fecha_fin"
         class="form-control"
-        value="{% if horario %}{{ horario.fecha_fin }}{% else %}{{ today|default:'' }}{% endif %}"
+        value="{% if horario %}{{ horario.fecha_fin }}{% else %}{{ hoy }}{% endif %}"
+        min="{{ hoy }}"
       >
-      <div class="form-text">Fecha de fin del horario</div>
+      <div class="form-text">La fecha debe ser igual o posterior a hoy.</div>
     </div>
   </div>
 
@@ -153,26 +155,34 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('horario_form');
-    const formData = new FormData(form);
+    const hoy = new Date().toISOString().split('T')[0];
 
+    // Establecer fechas mínimas y valores por defecto
+    const fechaInicio = document.getElementById('fecha_inicio');
+    const fechaFin = document.getElementById('fecha_fin');
+
+    if (!fechaInicio.value) fechaInicio.value = hoy;
+    if (!fechaFin.value) fechaFin.value = hoy;
+
+    // Sincronizar fecha mínima de fin con inicio
+    fechaInicio.addEventListener('change', function() {
+        fechaFin.min = this.value;
+        if (fechaFin.value < this.value) {
+            fechaFin.value = this.value;
+        }
+    });
 
     function mostrarError(input, mensaje) {
-        // Agregar clase is-invalid
         input.classList.add('is-invalid');
-        
-        // Remover feedback existente si existe
         const feedbackExistente = input.parentElement.querySelector('.invalid-feedback');
         if (feedbackExistente) {
             feedbackExistente.remove();
         }
-        
-        // Agregar nuevo mensaje de error
         const feedback = document.createElement('div');
         feedback.className = 'invalid-feedback';
         feedback.innerHTML = `<i class="fas fa-exclamation-circle"></i>${mensaje}`;
         input.parentElement.appendChild(feedback);
         
-        // Hacer scroll al primer error
         if (document.querySelector('.is-invalid') === input) {
             input.scrollIntoView({ behavior: 'smooth', block: 'center' });
             input.focus();
@@ -180,36 +190,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function limpiarErrores() {
-        // Remover todas las clases is-invalid
         form.querySelectorAll('.is-invalid').forEach(input => {
             input.classList.remove('is-invalid');
         });
-        
-        // Remover todos los mensajes de error
         form.querySelectorAll('.invalid-feedback').forEach(feedback => {
             feedback.remove();
         });
     }
 
-    // Limpiar errores cuando el usuario empiece a escribir
+    // Limpiar errores al interactuar
     form.querySelectorAll('input, select').forEach(input => {
         input.addEventListener('input', function() {
             if (this.classList.contains('is-invalid')) {
                 this.classList.remove('is-invalid');
                 const feedback = this.parentElement.querySelector('.invalid-feedback');
-                if (feedback) {
-                    feedback.remove();
-                }
+                if (feedback) feedback.remove();
             }
         });
-        
         input.addEventListener('change', function() {
             if (this.classList.contains('is-invalid')) {
                 this.classList.remove('is-invalid');
                 const feedback = this.parentElement.querySelector('.invalid-feedback');
-                if (feedback) {
-                    feedback.remove();
-                }
+                if (feedback) feedback.remove();
             }
         });
     });
@@ -225,12 +227,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const horaFin = document.getElementById('hora_fin');
         const fechaInicio = document.getElementById('fecha_inicio');
         const fechaFin = document.getElementById('fecha_fin');
-// Validar doctor si es admin
+
+        // Validar doctor si es admin
         const idDoctorSelect = document.getElementById('id_doctor');
         if (idDoctorSelect && !idDoctorSelect.value) {
             mostrarError(idDoctorSelect, 'Debe seleccionar un doctor');
             isValid = false;
         }
+
         // Validaciones
         if (!dia.value) { 
             mostrarError(dia, 'Debe seleccionar un día de la semana'); 
@@ -269,8 +273,18 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
+        // Validación extra: fechas no pueden ser anteriores a hoy
+        if (fechaInicio.value && fechaInicio.value < hoy) {
+            mostrarError(fechaInicio, 'No puede seleccionar una fecha anterior a hoy');
+            isValid = false;
+        }
+        if (fechaFin.value && fechaFin.value < hoy) {
+            mostrarError(fechaFin, 'No puede seleccionar una fecha anterior a hoy');
+            isValid = false;
+        }
+
         if (isValid) {
-            guardarFormulario(); 
+            guardarFormulario(); // Esta función debe estar definida en el index.html
         }
     });
 });

@@ -116,6 +116,9 @@ urlpatterns = [
     path("cita/<int:id_cita>/atender/", views.marcar_cita_atendida, name="marcar_cita_atendida"),
     path("cita/<int:id_cita>/eliminar/", views.eliminar_cita, name="eliminar_cita"),
     path('cita/<int:id_cita>/cancelar/', views.cancelar_cita, name='cancelar_cita'),
+    path('admin-citas/', views.admin_elegir_doctor, name='admin_elegir_doctor'),
+    path('admin-citas/doctor/<int:id_doctor>/', views.agenda_admin, name='agenda_admin'),
+    path('ajax/buscar-pacientes-todos/', views.buscar_pacientes_todos, name='buscar_pacientes_todos'),
 
     # Horario doctor
     path('horario/index/', views.horario_index, name='horario_index'),

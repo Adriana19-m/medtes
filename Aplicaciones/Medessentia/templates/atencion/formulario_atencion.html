@@ -168,7 +168,7 @@
                         <div class="col-md-3">
                             <label class="form-label">Peso</label>
                             <div class="input-group">
-                                <input type="number" name="peso" id="peso" class="form-control" step="0.01" 
+                                <input type="text" name="peso" id="peso" class="form-control" step="0.01" 
                                        value="{% if atencion %}{{ atencion.peso|default:'' }}{% endif %}" onchange="calcularIMC()">
                                 <span class="input-group-text">kg</span>
                             </div>
@@ -176,9 +176,9 @@
                         <div class="col-md-3">
                             <label class="form-label">Talla</label>
                             <div class="input-group">
-                                <input type="number" name="talla" id="talla" class="form-control" step="0.01" 
+                                <input type="text" name="talla" id="talla" class="form-control" step="0.01" 
                                        value="{% if atencion %}{{ atencion.talla|default:'' }}{% endif %}" onchange="calcularIMC()">
-                                <span class="input-group-text">cm</span>
+                                <span class="input-group-text">cm / m</span>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -350,6 +350,59 @@ let timeoutBusquedaHistoria = null;
 let timeoutBusquedaCie10 = null;
 let signosPreviosCache = null;
 
+// ========== FUNCIÓN PARA NORMALIZAR NÚMEROS (reemplazar coma por punto) ==========
+function normalizarNumero(valor) {
+    if (!valor) return valor;
+    return valor.toString().replace(',', '.');
+}
+
+// ========== CALCULAR IMC CON VALIDACIONES ==========
+function calcularIMC() {
+    let peso = $('#peso').val();
+    let talla = $('#talla').val();
+    
+    peso = normalizarNumero(peso);
+    talla = normalizarNumero(talla);
+    
+    $('#peso').val(peso);
+    $('#talla').val(talla);
+    
+    const pesoNum = parseFloat(peso);
+    const tallaNum = parseFloat(talla);
+    
+    if (!isNaN(pesoNum) && !isNaN(tallaNum) && tallaNum > 0) {
+
+        if (pesoNum < 0.5 || pesoNum > 300) {
+            $('#imc').val('Peso fuera de rango');
+            return;
+        }
+
+        let tallaEnMetros;
+
+        if (tallaNum >= 20 && tallaNum <= 250) {
+            tallaEnMetros = tallaNum / 100;
+        } 
+        else if (tallaNum >= 0.20 && tallaNum <= 2.50) {
+            tallaEnMetros = tallaNum;
+        } 
+        else {
+            $('#imc').val('Talla fuera de rango (0.20–2.50 m o 20–250 cm)');
+            return;
+        }
+
+        const imc = pesoNum / Math.pow(tallaEnMetros, 2);
+
+        if (imc < 5 || imc > 100) {
+            $('#imc').val('IMC fuera de rango');
+            return;
+        }
+
+        $('#imc').val(imc.toFixed(2));
+    } else {
+        $('#imc').val('');
+    }
+}
+
 // INICIALIZAR FORMULARIO - SIEMPRE SE EJECUTA
 function inicializarFormulario() {
     console.log('📝 Inicializando formulario completo...');
@@ -366,68 +419,59 @@ function inicializarFormulario() {
         fechaInput.value = now.toISOString().slice(0, 16);
     }
 
-$('#modalFormulario').on('hidden.bs.modal', function () {
-    $('#buscarHistoriaInput').val('');
-    $('#resultadosBusquedaHistoria').hide();
-    $('#historia_id').val('');
-    $('#historiaSeleccionada').hide();
-});
+    $('#modalFormulario').on('hidden.bs.modal', function () {
+        $('#buscarHistoriaInput').val('');
+        $('#resultadosBusquedaHistoria').hide();
+        $('#historia_id').val('');
+        $('#historiaSeleccionada').hide();
+    });
 
-let timeoutBusquedaHistoria = null;
-let timeoutBusquedaCie10 = null;
+    let timeoutBusquedaHistoria = null;
+    let timeoutBusquedaCie10 = null;
 
-document.addEventListener('input', function (e) {
+    document.addEventListener('input', function (e) {
+        // 🔍 BUSCAR HISTORIAS
+        if (e.target && e.target.id === 'buscarHistoriaInput') {
+            clearTimeout(timeoutBusquedaHistoria);
+            const query = e.target.value.trim();
 
-    // 🔍 BUSCAR HISTORIAS
-    if (e.target && e.target.id === 'buscarHistoriaInput') {
-        clearTimeout(timeoutBusquedaHistoria);
-        const query = e.target.value.trim();
+            if (query.length < 2) {
+                $('#resultadosBusquedaHistoria').hide();
+                return;
+            }
 
-        if (query.length < 2) {
-            $('#resultadosBusquedaHistoria').hide();
-            return;
+            timeoutBusquedaHistoria = setTimeout(() => {
+                buscarHistorias(query);
+            }, 300);
         }
 
-        timeoutBusquedaHistoria = setTimeout(() => {
-            buscarHistorias(query);
-        }, 300);
-    }
-
-    // 🔍 BUSCAR CIE-10
-    if (e.target && e.target.id === 'buscarCie10Input') {
-        clearTimeout(timeoutBusquedaCie10);
-        const query = e.target.value.trim();
-
-        if (query.length < 2) {
-            $('#resultadosBusquedaCie10').hide();
-            return;
-        }
-
-        timeoutBusquedaCie10 = setTimeout(() => {
-            buscarCIE10(query);
-        }, 300);
-    }
-
-});
-
-
-
-    const inputCie10 = document.getElementById('buscarCie10Input');
-    if (inputCie10) {
-        // Clonar el elemento para remover todos los event listeners
-        const nuevoInput = inputCie10.cloneNode(true);
-        inputCie10.parentNode.replaceChild(nuevoInput, inputCie10);
-        
-        // Agregar nuevo event listener
-        nuevoInput.addEventListener('input', function() {
+        // 🔍 BUSCAR CIE-10
+        if (e.target && e.target.id === 'buscarCie10Input') {
             clearTimeout(timeoutBusquedaCie10);
-            const query = this.value.trim();
-            
+            const query = e.target.value.trim();
+
             if (query.length < 2) {
                 $('#resultadosBusquedaCie10').hide();
                 return;
             }
-            
+
+            timeoutBusquedaCie10 = setTimeout(() => {
+                buscarCIE10(query);
+            }, 300);
+        }
+    });
+
+    const inputCie10 = document.getElementById('buscarCie10Input');
+    if (inputCie10) {
+        const nuevoInput = inputCie10.cloneNode(true);
+        inputCie10.parentNode.replaceChild(nuevoInput, inputCie10);
+        nuevoInput.addEventListener('input', function() {
+            clearTimeout(timeoutBusquedaCie10);
+            const query = this.value.trim();
+            if (query.length < 2) {
+                $('#resultadosBusquedaCie10').hide();
+                return;
+            }
             timeoutBusquedaCie10 = setTimeout(() => buscarCIE10(query), 300);
         });
         console.log('✅ Búsqueda CIE-10 reinicializada');
@@ -652,19 +696,21 @@ function abrirNuevaHistoria() {
     });
 }
 
-function calcularIMC() {
-    const peso = parseFloat($('#peso').val());
-    const talla = parseFloat($('#talla').val());
-    
-    if (peso && talla && talla > 0) {
-        const imc = peso / Math.pow(talla / 100, 2);
-        $('#imc').val(imc.toFixed(2));
-    } else {
-        $('#imc').val('');
-    }
-}
-
+// ========== GUARDAR FORMULARIO CON NORMALIZACIÓN ==========
 function guardarFormulario() {
+    // Normalizar campos numéricos antes de enviar
+    const camposNumericos = [
+        'presion_sistolica', 'presion_diastolica', 'temperatura',
+        'frecuencia_respiratoria', 'frecuencia_cardiaca', 'saturacion_oxigeno',
+        'peso', 'talla', 'imc'
+    ];
+    camposNumericos.forEach(id => {
+        const input = document.getElementById(id);
+        if (input && input.value) {
+            input.value = normalizarNumero(input.value);
+        }
+    });
+
     const form = document.getElementById('formAtencion');
     const formData = new FormData(form);
     

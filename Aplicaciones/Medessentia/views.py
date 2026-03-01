@@ -1247,6 +1247,22 @@ def require(method, request):
     return None
 
 # ========== 4) Cita ==========
+@login_required
+@user_passes_test(es_admin)
+def admin_elegir_doctor(request):
+    """Lista de doctores para que el administrador seleccione y agende una cita."""
+    doctors = User.objects.filter(groups__name='Doctor', is_active=True)
+    if not doctors.exists():
+        messages.warning(request, "No hay doctores activos en el sistema.")
+        return redirect('panel_admin')
+    return render(request, 'cita/admin_elegir_doctor.html', {'doctors': doctors})
+
+@login_required
+@user_passes_test(es_admin)
+def agenda_admin(request, id_doctor):
+    """Calendario de disponibilidad del doctor para que el administrador seleccione paciente y horario."""
+    doctor = get_object_or_404(User, pk=id_doctor, groups__name='Doctor')
+    return render(request, 'cita/agenda_admin.html', {'doctor': doctor})
 # =====================================================
 # 1) PANEL DE CITAS PARA DOCTOR
 # =====================================================
@@ -1255,7 +1271,7 @@ def require(method, request):
 def cita_index(request):
     """Muestra todas las citas asignadas al doctor logueado."""
     citas = Cita.objects.filter(id_doctor=request.user).select_related(
-        'id_paciente', 'id_horario'
+        'id_paciente__perfil', 'id_horario'
     ).order_by('-fecha_hora')
 
     return render(request, 'cita/index.html', {'citas': citas})
@@ -1302,22 +1318,17 @@ def agenda_paciente(request, id_doctor):
 def horarios_disponibles(request, id_doctor):
     try:
         tz_ecuador = pytz.timezone('America/Guayaquil')
-
         start = request.GET.get("start")
         end = request.GET.get("end")
 
         if not start or not end:
             return JsonResponse([], safe=False)
 
-        # Convertir a datetime naive primero
         start_naive = datetime.fromisoformat(start[:19])
         end_naive = datetime.fromisoformat(end[:19])
-        
-        # Luego hacer aware con la zona horaria correcta
         start_dt = timezone.make_aware(start_naive, tz_ecuador)
         end_dt = timezone.make_aware(end_naive, tz_ecuador)
 
-        # Obtener los horarios del doctor
         horarios = HorarioDoctor.objects.filter(
             id_doctor=id_doctor,
             tipo_horario="TRABAJO",
@@ -1327,70 +1338,63 @@ def horarios_disponibles(request, id_doctor):
 
         events = []
         duracion_slot = timedelta(minutes=30)
-
-        weekday_map = {
-            0: 'Lunes', 1: 'Martes', 2: 'Miercoles',
-            3: 'Jueves', 4: 'Viernes', 5: 'Sabado', 6: 'Domingo'
-        }
+        weekday_map = {0:'Lunes',1:'Martes',2:'Miercoles',3:'Jueves',4:'Viernes',5:'Sabado',6:'Domingo'}
 
         cur_date = start_dt.date()
         while cur_date <= end_dt.date():
-            
             dia_semana_nombre = weekday_map[cur_date.weekday()]
-            
             for h in horarios.filter(
                 dia_semana=dia_semana_nombre,
                 fecha_inicio__lte=cur_date,
                 fecha_fin__gte=cur_date
             ):
-                # Crear datetime naive para Ecuador
                 start_time_naive = datetime.combine(cur_date, h.hora_inicio)
                 end_time_naive = datetime.combine(cur_date, h.hora_fin)
-                
-                # Convertir a aware para Ecuador
                 start_time = timezone.make_aware(start_time_naive, tz_ecuador)
                 end_time = timezone.make_aware(end_time_naive, tz_ecuador)
-                
-                # Obtener citas ocupadas - Filtrar por fecha y hora exacta
+
+                # Obtener citas que ocupan este horario (incluyendo CANCELADA)
                 citas_ocupadas = Cita.objects.filter(
-                    id_doctor_id=id_doctor,  # Asegurarnos de que es del mismo doctor
-                    id_horario=h,  # Mismo horario
-                    estado__in=["PENDIENTE", "CONFIRMADA", "ATENDIDA"],
-                    fecha_hora__date=cur_date  # Misma fecha
+                    id_doctor_id=id_doctor,
+                    id_horario=h,
+                    estado__in=["PENDIENTE", "CONFIRMADA", "ATENDIDA", "CANCELADA"],
+                    fecha_hora__date=cur_date
                 )
-                
-                # Crear una lista de horas ocupadas en formato datetime aware
                 ocupados = []
                 for cita in citas_ocupadas:
-                    # Si la cita tiene fecha_hora naive, convertirla a aware
                     if cita.fecha_hora.tzinfo is None:
-                        # Combinar con la fecha actual y hacer aware
                         cita_datetime = datetime.combine(cur_date, cita.fecha_hora.time())
                         cita_aware = timezone.make_aware(cita_datetime, tz_ecuador)
                     else:
-                        # Si ya es aware, convertir a zona horaria de Ecuador
                         cita_aware = cita.fecha_hora.astimezone(tz_ecuador)
                     ocupados.append(cita_aware.replace(second=0, microsecond=0))
 
                 current = start_time
                 while current + duracion_slot <= end_time:
                     slot_datetime = current.replace(second=0, microsecond=0)
-                    
-                    # Verificar si este slot está ocupado
-                    slot_ocupado = False
-                    for cita_ocupada in ocupados:
-                        # Comparar el mismo slot (misma fecha y hora)
-                        if cita_ocupada == slot_datetime:
-                            slot_ocupado = True
-                            break
-                    
-                    if not slot_ocupado:
-                        # Convertir a string ISO para FullCalendar
-                        start_iso = slot_datetime.astimezone(pytz.UTC).isoformat()
-                        end_iso = (slot_datetime + duracion_slot).astimezone(pytz.UTC).isoformat()
-                        
+                    slot_ocupado = slot_datetime in ocupados
+
+                    start_iso = slot_datetime.astimezone(pytz.UTC).isoformat()
+                    end_iso = (slot_datetime + duracion_slot).astimezone(pytz.UTC).isoformat()
+
+                    if slot_ocupado:
                         events.append({
-                            "id": f"{h.id_horario}-{slot_datetime.strftime('%Y%m%d%H%M')}",
+                            "id": f"ocupado-{h.id_horario}-{slot_datetime.strftime('%Y%m%d%H%M')}",
+                            "title": "Ocupado",
+                            "start": start_iso,
+                            "end": end_iso,
+                            "backgroundColor": "#dc3545",
+                            "borderColor": "#dc3545",
+                            "allDay": False,
+                            "extendedProps": {
+                                "id_horario": h.id_horario,
+                                "ocupado": True,
+                                "fecha": cur_date.isoformat(),
+                            }
+                        })
+                    else:
+                        events.append({
+                            "id": f"disponible-{h.id_horario}-{slot_datetime.strftime('%Y%m%d%H%M')}",
                             "title": "Disponible",
                             "start": start_iso,
                             "end": end_iso,
@@ -1405,7 +1409,6 @@ def horarios_disponibles(request, id_doctor):
                                 "fecha": cur_date.isoformat(),
                             }
                         })
-                    # else: // Si está ocupado, no lo agregamos a events
 
                     current += duracion_slot
 
@@ -1416,7 +1419,6 @@ def horarios_disponibles(request, id_doctor):
     except Exception as e:
         traceback.print_exc()
         return JsonResponse({"error": f"Error interno: {str(e)}"}, status=500)
-
 
 @login_required
 @require_POST
@@ -1516,7 +1518,19 @@ from .models import HorarioDoctor, Cita
 @login_required
 @require_http_methods(["POST"])
 def agendar_cita_ajax(request, id_doctor):
-    user = request.user
+    # Si es admin, puede enviar paciente_id
+    paciente_id = request.POST.get("paciente_id")
+    if es_admin(request.user) and paciente_id:
+        try:
+            paciente = User.objects.get(id=int(paciente_id), groups__name='Paciente')
+        except (User.DoesNotExist, ValueError):
+            return JsonResponse({"status": "error", "message": "Paciente no válido"}, status=400)
+    else:
+        paciente = request.user
+        if not request.user.groups.filter(name='Paciente').exists():
+            return JsonResponse({"status": "error", "message": "No tienes permisos para agendar citas"}, status=403)
+    
+    # El resto de la función igual, usando 'paciente' en lugar de 'request.user'
     horario_id = request.POST.get("horario_id")
     motivo = request.POST.get("motivo", "").strip()
     hora_cita = request.POST.get("hora_cita")
@@ -1530,58 +1544,34 @@ def agendar_cita_ajax(request, id_doctor):
     try:
         horario = HorarioDoctor.objects.get(id_horario=int(horario_id), id_doctor=id_doctor)
     except HorarioDoctor.DoesNotExist:
-        return JsonResponse({
-            "status": "error",
-            "message": f"Horario {horario_id} no encontrado para el doctor."
-        }, status=404)
+        return JsonResponse({"status": "error", "message": "Horario no encontrado"}, status=404)
 
     try:
-        # VERIFICAR SI EL PACIENTE YA TIENE UNA CITA PENDIENTE/CONFIRMADA
-        citas_activas = Cita.objects.filter(
-            id_paciente=user,
-            estado__in=["PENDIENTE", "CONFIRMADA"]
-        ).count()
-        
-        if citas_activas >= 1:
+        # Verificar si el paciente ya tiene cita activa
+        if Cita.objects.filter(id_paciente=paciente, estado__in=["PENDIENTE", "CONFIRMADA"]).exists():
             return JsonResponse({
                 "status": "error",
-                "message": "Ya tienes una cita pendiente o confirmada. No puedes agendar otra hasta que se atienda o cancele la existente."
+                "message": "El paciente ya tiene una cita pendiente o confirmada."
             }, status=409)
-        
-        # VERIFICAR SI EL HORARIO YA PASÓ (NUEVA VALIDACIÓN)
+
+        # Validar hora
         h, m = map(int, hora_cita.split(":"))
         hora_inicio_obj = time(h, m)
-        
-        # Crear datetime combinando la fecha del horario con la hora seleccionada
-        fecha_hora_cita = datetime.combine(horario.fecha_inicio, hora_inicio_obj)
-        
-        # Usar la misma zona horaria que en horarios_disponibles
         tz_ecuador = pytz.timezone('America/Guayaquil')
-        
-        # Hacer la fecha/hora aware con la zona horaria de Ecuador
-        fecha_hora_cita = timezone.make_aware(fecha_hora_cita, tz_ecuador)
-        
-        # Obtener el tiempo actual en la misma zona horaria
+        fecha_hora_cita = timezone.make_aware(datetime.combine(horario.fecha_inicio, hora_inicio_obj), tz_ecuador)
         ahora = timezone.now().astimezone(tz_ecuador)
-        
-        # Verificar si la cita es en el pasado
+
         if fecha_hora_cita < ahora:
             return JsonResponse({
                 "status": "error",
-                "message": "No se puede agendar en un horario que ya pasó. Por favor, seleccione un horario futuro."
-            }, status=410)  # 410 Gone - recurso ya no disponible
-        
-        # Continuar con el proceso de agendamiento...
-        hora_fin_obj = (datetime.combine(datetime.today(), hora_inicio_obj) + timedelta(minutes=30)).time()
+                "message": "No se puede agendar en un horario que ya pasó."
+            }, status=410)
 
-        # Verificar si el horario ya está ocupado por otro paciente
-        # Usar la misma zona horaria para la búsqueda
-        fecha_hora_cita_for_query = fecha_hora_cita.replace(tzinfo=None)  # Convertir a naive para búsqueda
-        
+        # Verificar ocupado
         cita_existente = Cita.objects.filter(
             id_horario=horario,
-            estado__in=["PENDIENTE", "CONFIRMADA"],
-            fecha_hora=fecha_hora_cita_for_query
+            estado__in=["PENDIENTE", "CONFIRMADA", "ATENDIDA", "CANCELADA"],
+            fecha_hora=fecha_hora_cita.replace(tzinfo=None)
         ).exists()
 
         if cita_existente:
@@ -1590,28 +1580,25 @@ def agendar_cita_ajax(request, id_doctor):
                 "message": f"La franja {hora_cita} ya está ocupada."
             }, status=409)
 
-        # Crear la cita - usar naive datetime como antes
-        fecha_hora_naive = datetime.combine(horario.fecha_inicio, hora_inicio_obj)
-        
+        # Crear la cita
         cita = Cita.objects.create(
-            id_paciente=user,
+            id_paciente=paciente,
             id_doctor_id=id_doctor,
             id_horario=horario,
-            fecha_hora=fecha_hora_naive,  # Guardar como naive
+            fecha_hora=fecha_hora_cita.replace(tzinfo=None),
             motivo=motivo,
-            registrado_por=user,
+            registrado_por=request.user,
         )
 
         return JsonResponse({
             "status": "success",
-            "message": f"Cita agendada correctamente para el {horario.fecha_inicio.strftime('%d/%m/%Y')} a las {hora_inicio_obj.strftime('%H:%M')}.",
+            "message": f"Cita agendada correctamente para {paciente.get_full_name()} el {horario.fecha_inicio.strftime('%d/%m/%Y')} a las {hora_inicio_obj.strftime('%H:%M')}.",
             "id_cita": cita.id_cita,
         })
 
     except Exception as e:
         traceback.print_exc()
         return JsonResponse({"status": "error", "message": f"Error interno: {str(e)}"}, status=500)
-
 # ========== 12) Horario doctor ==========
 @login_required
 def horario_index(request):
@@ -1851,7 +1838,7 @@ def horario_calendario(request):
 
 @login_required
 def horario_eventos(request):
-    """Devuelve eventos de disponibilidad para el doctor en el rango solicitado."""
+    """Devuelve eventos de disponibilidad y citas para el doctor en el rango solicitado."""
     doctor_id = request.GET.get('doctor_id')
     start = request.GET.get('start')
     end = request.GET.get('end')
@@ -1859,35 +1846,45 @@ def horario_eventos(request):
     if not start or not end:
         return JsonResponse([], safe=False)
 
+    # Convertir fechas a datetime aware
+    tz_ecuador = pytz.timezone('America/Guayaquil')
     try:
         start_dt = parse_datetime(start)
         end_dt = parse_datetime(end)
         if start_dt is None:
-            
             start_dt = datetime.fromisoformat(start)
             end_dt = datetime.fromisoformat(end)
     except Exception:
-        
-        start_dt = timezone.make_aware(datetime.strptime(start[:19], "%Y-%m-%dT%H:%M:%S"), timezone.get_default_timezone())
-        end_dt = timezone.make_aware(datetime.strptime(end[:19], "%Y-%m-%dT%H:%M:%S"), timezone.get_default_timezone())
+        start_dt = timezone.make_aware(datetime.strptime(start[:19], "%Y-%m-%dT%H:%M:%S"), tz_ecuador)
+        end_dt = timezone.make_aware(datetime.strptime(end[:19], "%Y-%m-%dT%H:%M:%S"), tz_ecuador)
 
- 
     start_date = start_dt.date()
     end_date = end_dt.date()
-
-    
     hoy = date.today()
 
-    qs = HorarioDoctor.objects.filter(fecha_fin__gte=hoy)
+    eventos = []
+
+    # ========== 1. Eventos de disponibilidad (HorarioDoctor) ==========
+    qs_horarios = HorarioDoctor.objects.filter(
+        tipo_horario='TRABAJO',
+        fecha_fin__gte=hoy
+    )
     if doctor_id:
-        qs = qs.filter(id_doctor_id=doctor_id)
+        qs_horarios = qs_horarios.filter(id_doctor_id=doctor_id)
+    else:
+        # Si no se pasa doctor_id, usar el doctor logueado
+        if request.user.groups.filter(name='Doctor').exists():
+            qs_horarios = qs_horarios.filter(id_doctor=request.user)
+        # Si es admin, podría mostrar todos o requerir doctor_id
+        elif not request.user.is_superuser:
+            return JsonResponse([], safe=False)
 
     weekday_to_db = {
-        0: 'Lunes', 1: 'Martes', 2: 'Miercoles', 3: 'Jueves', 4: 'Viernes', 5: 'Sabado', 6: 'Domingo'
+        0: 'Lunes', 1: 'Martes', 2: 'Miercoles', 3: 'Jueves',
+        4: 'Viernes', 5: 'Sabado', 6: 'Domingo'
     }
 
-    eventos = []
-    for h in qs:
+    for h in qs_horarios:
         periodo_inicio = max(h.fecha_inicio, start_date)
         periodo_fin = min(h.fecha_fin, end_date)
         if periodo_inicio > periodo_fin:
@@ -1896,20 +1893,19 @@ def horario_eventos(request):
         cur = periodo_inicio
         while cur <= periodo_fin:
             if weekday_to_db[cur.weekday()] == h.dia_semana:
-                
                 start_dt_event = datetime.combine(cur, h.hora_inicio)
                 end_dt_event = datetime.combine(cur, h.hora_fin)
 
                 if timezone.is_naive(start_dt_event):
-                    start_dt_event = timezone.make_aware(start_dt_event, timezone.get_default_timezone())
-                    end_dt_event = timezone.make_aware(end_dt_event, timezone.get_default_timezone())
+                    start_dt_event = timezone.make_aware(start_dt_event, tz_ecuador)
+                    end_dt_event = timezone.make_aware(end_dt_event, tz_ecuador)
 
                 eventos.append({
                     'id': f'hor_{h.id_horario}_{cur.isoformat()}',
                     'title': 'Disponible',
                     'start': start_dt_event.isoformat(),
                     'end': end_dt_event.isoformat(),
-                    'color': '#2ecc71',
+                    'color': '#2ecc71',  # verde
                     'extendedProps': {
                         'id_horario': h.id_horario,
                         'doctor_id': h.id_doctor.id,
@@ -1918,8 +1914,63 @@ def horario_eventos(request):
                 })
             cur += timedelta(days=1)
 
-    return JsonResponse(eventos, safe=False)
+    # ========== 2. Eventos de citas (Cita) ==========
+    citas_qs = Cita.objects.select_related('id_paciente', 'id_doctor')
+    if doctor_id:
+        citas_qs = citas_qs.filter(id_doctor_id=doctor_id)
+    else:
+        if request.user.groups.filter(name='Doctor').exists():
+            citas_qs = citas_qs.filter(id_doctor=request.user)
+        elif not request.user.is_superuser:
+            return JsonResponse(eventos, safe=False)
 
+    # Filtrar por rango de fechas
+    citas_qs = citas_qs.filter(
+        fecha_hora__date__gte=start_date,
+        fecha_hora__date__lte=end_date
+    ).order_by('fecha_hora')
+
+    for cita in citas_qs:
+        # Crear evento para cada cita
+        start_cita = cita.fecha_hora
+        end_cita = cita.fecha_hora + timedelta(minutes=30)  # duración de la cita
+
+        # Hacer aware si es naive
+        if timezone.is_naive(start_cita):
+            start_cita = timezone.make_aware(start_cita, tz_ecuador)
+        if timezone.is_naive(end_cita):
+            end_cita = timezone.make_aware(end_cita, tz_ecuador)
+
+        # Color según estado
+        color_map = {
+            'PENDIENTE': '#f39c12',    # naranja
+            'CONFIRMADA': '#3498db',   # azul
+            'ATENDIDA': '#27ae60',      # verde oscuro
+            'CANCELADA': '#e74c3c',     # rojo
+        }
+        color = color_map.get(cita.estado, '#95a5a6')
+
+        paciente_nombre = f"{cita.id_paciente.first_name} {cita.id_paciente.last_name}".strip()
+        if not paciente_nombre:
+            paciente_nombre = cita.id_paciente.username
+
+        eventos.append({
+            'id': f'cita_{cita.id_cita}',
+            'title': f'Cita: {paciente_nombre}',
+            'start': start_cita.isoformat(),
+            'end': end_cita.isoformat(),
+            'color': color,
+            'extendedProps': {
+                'tipo': 'cita',
+                'id_cita': cita.id_cita,
+                'paciente': paciente_nombre,
+                'estado': cita.estado,
+                'motivo': cita.motivo or 'Sin motivo',
+                'doctor_id': cita.id_doctor_id,
+            }
+        })
+
+    return JsonResponse(eventos, safe=False)
 @login_required
 def horario_formulario(request):
     _id = request.GET.get("id")
@@ -2461,34 +2512,24 @@ def guardar_historia(request):
                 historia = HistoriaClinica()
                 historia.creado_por = request.user
             
-            # *** CORRECCIÓN AQUÍ: Obtener el objeto User, no solo el ID ***
             paciente_id = data.get('paciente_id')
             if paciente_id:
                 try:
                     paciente = User.objects.get(id=int(paciente_id))
-                    historia.id_paciente = paciente  # Asignar objeto User, no ID
+                    historia.id_paciente = paciente
                 except (ValueError, User.DoesNotExist) as e:
-                    return JsonResponse({
-                        'success': False, 
-                        'error': f'Paciente no válido: {str(e)}'
-                    }, status=400)
+                    return JsonResponse({'success': False, 'error': f'Paciente no válido: {str(e)}'}, status=400)
             else:
-                return JsonResponse({
-                    'success': False, 
-                    'error': 'ID de paciente requerido'
-                }, status=400)
+                return JsonResponse({'success': False, 'error': 'ID de paciente requerido'}, status=400)
             
-            # Resto de los campos...
             historia.expediente_no = data.get('expediente_no')
             historia.nombres_completos = data.get('nombres_completos')
             historia.cedula = data.get('cedula')
             
-            # Fecha nacimiento
             fecha_nac = data.get('fecha_nacimiento')
             if fecha_nac:
                 historia.fecha_nacimiento = datetime.strptime(fecha_nac, '%Y-%m-%d').date()
             
-            # Demográficos
             historia.sexo_biologico = data.get('sexo_biologico')
             historia.genero = data.get('genero')
             historia.estado_civil = data.get('estado_civil')
@@ -2496,7 +2537,9 @@ def guardar_historia(request):
             # Contacto
             historia.direccion = data.get('direccion')
             historia.telefono = data.get('telefono')
-            historia.email = data.get('email')
+            # Convertir email vacío a None
+            email_val = data.get('email')
+            historia.email = email_val if email_val else None
             historia.contacto_emergencia = data.get('contacto_emergencia')
             
             # Social
@@ -2512,6 +2555,9 @@ def guardar_historia(request):
             historia.vacunacion = data.get('vacunacion')
             
             historia.save()
+            
+            # Log para depuración (puedes eliminarlo después)
+            print(f"Email guardado: {historia.email}")
             
             return JsonResponse({
                 'success': True,
@@ -2662,6 +2708,59 @@ def buscar_pacientes(request):
         print(traceback.format_exc())
         return JsonResponse({'data': []}, status=500)
 # AJAX: Crear paciente rápido - CORREGIDO
+from django.db.models import Q
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from .models import PerfilUsuario  # Asegúrate de importar tu modelo de perfil
+
+# En Aplicaciones/Medessentia/views.py
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.db.models import Q
+from django.contrib.auth.models import User
+
+@login_required
+def buscar_pacientes_todos(request):
+    print(f"🔍 BÚSQUEDA RECIBIDA: {request.GET.get('q')}")  # LOG 1
+    
+    try:
+        query = request.GET.get('q', '').strip()
+        print(f"QUERY PROCESADA: '{query}' (longitud: {len(query)})")  # LOG 2
+        
+        if len(query) < 2:
+            print("❌ Query muy corta")
+            return JsonResponse({'data': []})
+        
+        # BÚSQUEDA SIMPLE - SIN FILTROS EXTRA
+        usuarios = User.objects.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(username__icontains=query) |
+            Q(email__icontains=query)
+        ).filter(is_active=True).distinct()[:10]
+        
+        print(f"📊 USUARIOS ENCONTRADOS: {usuarios.count()}")  # LOG 3
+        print(f"USUARIOS: {[u.username for u in usuarios]}")  # LOG 4
+        
+        data = []
+        for u in usuarios:
+            data.append({
+                'id': u.id,
+                'nombre_completo': f"{u.first_name} {u.last_name}".strip() or u.username,
+                'cedula': '',
+                'telefono': '',
+            })
+        
+        print(f"✅ DATA FINAL: {len(data)} items")  # LOG 5
+        return JsonResponse({'data': data})
+    
+    except Exception as e:
+        print(f"💥 ERROR COMPLETO: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'data': [], 'error': str(e)}, status=500)
+
+
 # AJAX: Crear paciente rápido - CORREGIDO
 @login_required
 def crear_paciente_rapido(request):
@@ -2679,15 +2778,32 @@ def crear_paciente_rapido(request):
                 'error': 'Nombres y apellidos son obligatorios'
             })
 
-        # ✅ VALIDAR CÉDULA ECUATORIANA (SI SE ENVÍA)
-        if cedula:
+        # ✅ VALIDAR CÉDULA ECUATORIANA (OBLIGATORIA PARA USERNAME Y CONTRASEÑA)
+        if not cedula:
+            return JsonResponse({
+                'success': False,
+                'error': 'La cédula es obligatoria para crear el usuario'
+            })
+
+        try:
+            validar_cedula_ecuatoriana(cedula)
+        except ValidationError as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
+        # ✅ VALIDAR CELULAR ECUATORIANO
+        if telefono:
             try:
-                validar_cedula_ecuatoriana(cedula)
+                validar_celular_ecuatoriano(telefono)
             except ValidationError as e:
                 return JsonResponse({
                     'success': False,
                     'error': str(e)
                 })
+        else:
+            telefono = '0000000000'
 
         # ✅ VALIDAR CELULAR ECUATORIANO (NUEVO)
         if telefono:
@@ -2705,28 +2821,19 @@ def crear_paciente_rapido(request):
                 cedula_usuario=cedula
             ).select_related('user').first()
 
-            if perfil_existente:
-                user = perfil_existente.user
-                return JsonResponse({
-                    'success': True,
-                    'paciente': {
-                        'id': user.id,
-                        'nombre_completo': f"{user.first_name} {user.last_name}",
-                        'cedula': cedula,
-                        'telefono': perfil_existente.telefono_usuario,
-                    },
-                    'message': 'Paciente ya existente'
-                })
+        if PerfilUsuario.objects.filter(cedula_usuario=cedula).exists():
+            return JsonResponse({
+                'success': False,
+                'error': f'La cédula {cedula} ya está registrada en otro perfil'
+            })
 
-        # 🆕 CREAR PACIENTE
+        # 🆕 CREAR PACIENTE CON USERNAME = CÉDULA Y CONTRASEÑA = CÉDULA
         with transaction.atomic():
-            username = f"paciente_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
             user = User.objects.create_user(
-                username=username,
+                username=cedula,
+                password=cedula,  # ← La cédula como contraseña
                 first_name=nombres,
                 last_name=apellidos,
-                password=User.objects.make_random_password(),
                 is_active=True
             )
 
@@ -2735,8 +2842,8 @@ def crear_paciente_rapido(request):
 
             PerfilUsuario.objects.create(
                 user=user,
-                cedula_usuario=cedula if cedula else f"TEMP-{user.id}",
-                telefono_usuario=telefono or '0000000000',
+                cedula_usuario=cedula,
+                telefono_usuario=telefono,
                 direccion_usuario=''
             )
 
@@ -2745,13 +2852,16 @@ def crear_paciente_rapido(request):
             'paciente': {
                 'id': user.id,
                 'nombre_completo': f"{nombres} {apellidos}",
-                'cedula': cedula or 'Sin cédula',
-                'telefono': telefono or 'Sin teléfono',
+                'cedula': cedula,
+                'telefono': telefono,
+                'email': user.email,
             },
             'message': 'Paciente creado correctamente'
         })
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JsonResponse({
             'success': False,
             'error': 'Error interno del servidor'
@@ -3078,7 +3188,16 @@ def obtener_formulario_atencion(request):
         import traceback
         print(traceback.format_exc())
         return JsonResponse({'error': 'Error al cargar formulario'}, status=500)
-
+def parse_float(valor):
+    """Convierte a float aceptando coma como separador decimal."""
+    if valor is None:
+        return None
+    if isinstance(valor, str):
+        valor = valor.strip().replace(',', '.')
+    try:
+        return float(valor)
+    except (ValueError, TypeError):
+        return None
 @login_required
 def guardar_atencion(request):
     try:
@@ -3134,42 +3253,62 @@ def guardar_atencion(request):
             atencion.motivo_consulta = data.get('motivo_consulta', '')
             atencion.enfermedad_actual = data.get('enfermedad_actual', '')
             
-            # Signos vitales - convertir vacíos a None
-            atencion.presion_sistolica = data.get('presion_sistolica') or None
-            atencion.presion_diastolica = data.get('presion_diastolica') or None
+            # Signos vitales - usar parse_float y luego convertir a int si corresponde
+            atencion.presion_sistolica = parse_float(data.get('presion_sistolica'))
+            atencion.presion_diastolica = parse_float(data.get('presion_diastolica'))
             
-            temp = data.get('temperatura')
-            atencion.temperatura = float(temp) if temp and temp.strip() else None
+            temp = parse_float(data.get('temperatura'))
+            atencion.temperatura = temp
 
-            fr = data.get('frecuencia_respiratoria')
-            atencion.frecuencia_respiratoria = int(fr) if fr and fr.strip() else None
+            fr = parse_float(data.get('frecuencia_respiratoria'))
+            atencion.frecuencia_respiratoria = int(fr) if fr is not None else None
 
-            fc = data.get('frecuencia_cardiaca')
-            atencion.frecuencia_cardiaca = int(fc) if fc and fc.strip() else None
+            fc = parse_float(data.get('frecuencia_cardiaca'))
+            atencion.frecuencia_cardiaca = int(fc) if fc is not None else None
 
-            so2 = data.get('saturacion_oxigeno')
-            atencion.saturacion_oxigeno = int(so2) if so2 and so2.strip() else None
+            so2 = parse_float(data.get('saturacion_oxigeno'))
+            atencion.saturacion_oxigeno = int(so2) if so2 is not None else None
 
-            peso = data.get('peso')
-            atencion.peso = float(peso) if peso and peso.strip() else None
+            peso = parse_float(data.get('peso'))
+            talla = parse_float(data.get('talla'))
 
-            talla = data.get('talla')
-            atencion.talla = float(talla) if talla and talla.strip() else None
+            atencion.peso = peso
+            atencion.talla = talla
 
-            # Calcular IMC
-            if peso and talla and peso.strip() and talla.strip():
-                try:
-                    peso_float = float(peso)
-                    talla_float = float(talla)
-                    
-                    if peso_float > 0 and talla_float > 0:
-                        talla_metros = talla_float / 100
-                        imc_val = peso_float / (talla_metros ** 2)
-                        atencion.imc = round(imc_val, 2)
-                    else:
-                        atencion.imc = None
-                except (ValueError, TypeError):
-                    atencion.imc = None
+            # Validar rangos básicos antes de calcular IMC
+            errores_rango = []
+            if peso is not None and (peso < 0.5 or peso > 300):
+                errores_rango.append(f"Peso fuera de rango (0.5-300 kg): {peso}")
+            talla_metros = None
+            if talla is not None:
+                if 20 <= talla <= 250:
+                    # Está en centímetros
+                    talla_metros = talla / 100
+                elif 0.20 <= talla <= 2.50:
+                    # Está en metros
+                    talla_metros = talla
+                else:
+                    errores_rango.append(
+                        f"Talla fuera de rango (0.20–2.50 m o 20–250 cm): {talla}"
+                    )
+            
+            if errores_rango:
+                return JsonResponse({
+                    'success': False,
+                    'error': '; '.join(errores_rango)
+                }, status=400)
+
+            # Calcular IMC con valores ya normalizados
+            if peso is not None and talla_metros is not None and peso > 0:
+                imc_val = peso / (talla_metros ** 2)
+                # Validar rango razonable de IMC
+                if 5 <= imc_val <= 100:
+                    atencion.imc = round(imc_val, 2)
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'IMC calculado ({imc_val:.2f}) fuera de rango razonable (5-100). Verifique peso y talla.'
+                    }, status=400)
             else:
                 atencion.imc = None
             
