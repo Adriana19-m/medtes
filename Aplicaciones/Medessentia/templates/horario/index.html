@@ -38,8 +38,16 @@
             </div>
             
             <div class="card-body">
-                <!-- Barra de búsqueda -->
-            
+                <!-- Barra de búsqueda (oculta, pero se puede usar con el botón buscar) -->
+                <div class="row mb-3 d-none">
+                    <div class="col-md-12">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="inputBuscar" placeholder="Buscar por doctor, día...">
+                            <button class="btn btn-outline-primary" onclick="buscar()"><i class="fas fa-search"></i> Buscar</button>
+                            <button class="btn btn-outline-secondary" onclick="limpiarBusqueda()"><i class="fas fa-times"></i> Limpiar</button>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Tabla -->
                 <div class="table-responsive">
@@ -126,7 +134,7 @@
         // Cargar datos iniciales
         cargarHorarios();
 
-        // Buscar con Enter
+        // Buscar con Enter (si se muestra el input)
         $('#inputBuscar').on('keypress', function(e) {
             if (e.which === 13) {
                 buscar();
@@ -191,7 +199,11 @@
             },
             error: function(xhr) {
                 console.error('Error al cargar datos:', xhr);
-                alert('Error al cargar los horarios');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudieron cargar los horarios'
+                });
             }
         });
     }
@@ -222,7 +234,6 @@
         });
     }
 
-
     function limpiarBusqueda() {
         Swal.fire({
             title: '¿Limpiar búsqueda?',
@@ -252,7 +263,6 @@
         const titulo = id ? 'Editar Registro' : 'Nuevo Registro';
         $('#modalTitulo').html('<i class="fas fa-edit me-2"></i>Horario - ' + titulo);
 
-        // Vaciar contenido anterior
         $('#modalContenido').html(`
             <div class="text-center py-4">
                 <div class="spinner-border text-primary"></div>
@@ -262,7 +272,6 @@
 
         modal.show();
 
-        // Cargar formulario
         $('#modalContenido').load(url, function(response, status) {
             if (status === 'error') {
                 $('#modalContenido').html(`
@@ -278,12 +287,12 @@
             $('#horario_form').off('submit');
             $('#horario_form').on('submit', function(e) {
                 e.preventDefault();
-                guardarFormulario(id); // Pasamos id para saber si es edición
+                guardarFormulario();
             });
         });
     }
 
-   function guardarFormulario() {
+    function guardarFormulario() {
         const form = document.getElementById('horario_form');
 
         if (!form.checkValidity()) {
@@ -291,15 +300,40 @@
             return;
         }
 
-        // Crear FormData en lugar de objeto
-        const formData = new FormData(form);
-        
-        // Para debug: mostrar datos del FormData
-        console.log('Datos del FormData:');
-        for (let [key, value] of formData.entries()) {
-            console.log(`${key}: ${value}`);
+        // Validación extra de fechas (aunque ya está en el formulario, por si acaso)
+        const fechaInicio = form.fecha_inicio.value;
+        const fechaFin = form.fecha_fin.value;
+        const hoy = new Date().toISOString().split('T')[0];
+
+        if (fechaInicio < hoy) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Fecha inválida',
+                text: 'La fecha de inicio no puede ser anterior a hoy.'
+            });
+            return;
         }
 
+        if (fechaFin < hoy) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Fecha inválida',
+                text: 'La fecha de fin no puede ser anterior a hoy.'
+            });
+            return;
+        }
+
+        if (fechaFin < fechaInicio) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Fechas incorrectas',
+                text: 'La fecha de fin debe ser mayor o igual a la fecha de inicio.'
+            });
+            return;
+        }
+
+        const formData = new FormData(form);
+        
         $.ajax({
             url: "{% url 'guardar_disponibilidad' %}",
             type: "POST",
@@ -310,7 +344,7 @@
             success: function(resp) {
                 if (resp.success) {
                     modal.hide();
-                    cargarHorarios(); // Recargar toda la tabla
+                    cargarHorarios();
                     
                     Swal.fire({
                         icon: 'success',
@@ -350,9 +384,6 @@
         });
     }
 
-
-    
-
     function editarHorario(id) {
         Swal.fire({
             title: 'Editar horario',
@@ -368,7 +399,6 @@
         });
     }
 
-    
     function eliminarHorario(id) {
         Swal.fire({
             title: 'Eliminar horario',

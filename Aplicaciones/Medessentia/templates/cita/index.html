@@ -19,7 +19,6 @@
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
         }
-        /* Colores para días específicos */
         .cita-hoy {
             background-color: rgba(40, 167, 69, 0.08) !important;
             border-left: 4px solid #28a745 !important;
@@ -40,12 +39,10 @@
         .badge-semana {
             background-color: #17a2b8 !important;
         }
-        /* Indicador de orden */
         .sort-indicator {
             font-size: 0.8rem;
             margin-left: 5px;
         }
-        /* Botón de cancelar con color especial */
         .btn-cancelar {
             color: #dc3545;
             border-color: #dc3545;
@@ -62,31 +59,20 @@
             <div class="card-header bg-primary text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Mis Citas</h4>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-light text-dark" id="ordenBadge">
-                            <i class="fas fa-sort-amount-down me-1"></i> Más recientes primero
-                        </span>
-                    </div>
+                    <span class="badge bg-light text-dark" id="ordenBadge">
+                        <i class="fas fa-sort-amount-down me-1"></i> Más recientes primero
+                    </span>
                 </div>
             </div>
-            
             <div class="card-body">
                 <!-- Controles de filtro -->
-                <div class="row mb-3 justify-content-center"> 
-                    <div class="col-md-6 text-center"> 
+                <div class="row mb-3 justify-content-center">
+                    <div class="col-md-6 text-center">
                         <div class="btn-group">
-                            <button class="btn btn-outline-success btn-sm" onclick="filtrarHoy()" id="btnHoy">
-                                <i class="fas fa-calendar-day me-1"></i> Hoy
-                            </button>
-                            <button class="btn btn-outline-warning btn-sm" onclick="filtrarAyer()" id="btnAyer">
-                                <i class="fas fa-history me-1"></i> Ayer
-                            </button>
-                            <button class="btn btn-outline-info btn-sm" onclick="filtrarSemana()" id="btnSemana">
-                                <i class="fas fa-calendar-week me-1"></i> Esta semana
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="mostrarTodas()" id="btnTodas">
-                                <i class="fas fa-calendar-alt me-1"></i> Todas
-                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="filtrarHoy()" id="btnHoy"><i class="fas fa-calendar-day me-1"></i> Hoy</button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="filtrarAyer()" id="btnAyer"><i class="fas fa-history me-1"></i> Ayer</button>
+                            <button class="btn btn-outline-info btn-sm" onclick="filtrarSemana()" id="btnSemana"><i class="fas fa-calendar-week me-1"></i> Esta semana</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="mostrarTodas()" id="btnTodas"><i class="fas fa-calendar-alt me-1"></i> Todas</button>
                         </div>
                     </div>
                 </div>
@@ -110,29 +96,22 @@
                     <div class="col-md-12">
                         <div class="input-group">
                             <input type="text" class="form-control" id="inputBuscar" placeholder="Buscar por paciente, motivo...">
-                            <button class="btn btn-outline-primary" type="button" onclick="buscar()">
-                                <i class="fas fa-search"></i> Buscar
-                            </button>
-                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
-                                <i class="fas fa-times"></i> Limpiar
-                            </button>
+                            <button class="btn btn-outline-primary" onclick="buscar()"><i class="fas fa-search"></i> Buscar</button>
+                            <button class="btn btn-outline-secondary" onclick="limpiarBusqueda()"><i class="fas fa-times"></i> Limpiar</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Tabla -->
                 <div class="table-responsive">
-                    <table id="tablaCitas" class="table table-hover table-bordered" style="width:100%">
+                    <table id="tablaCitas" class="table table-hover table-bordered">
                         <thead class="table-dark">
                             <tr>
-                                <th width="200">Paciente</th>
-                                <th width="150" class="sortable">
-                                    Fecha y Hora 
-                                    <i class="fas fa-sort-down sort-indicator"></i>
-                                </th>
+                                <th>Paciente</th>
+                                <th>Fecha y Hora <i class="fas fa-sort-down sort-indicator"></i></th>
                                 <th>Motivo</th>
-                                <th width="120" class="text-center">Estado</th>
-                                <th width="220" class="text-center">Acciones</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -140,35 +119,27 @@
                             {% with fecha_cita=c.fecha_hora %}
                             {% now "Y-m-d" as hoy %}
                             {% with fecha_cita_str=fecha_cita|date:"Y-m-d" %}
-                            <tr class="{% if fecha_cita_str == hoy %}cita-hoy
-                                       {% elif fecha_cita_str == hoy|add:'-1 day' %}cita-ayer
-                                       {% else %}cita-semana{% endif %}"
+                            <tr class="{% if fecha_cita_str == hoy %}cita-hoy{% elif fecha_cita_str == hoy|add:'-1 day' %}cita-ayer{% else %}cita-semana{% endif %}"
                                 data-fecha="{{ fecha_cita_str }}"
                                 data-hora="{{ fecha_cita|time:'H:i' }}"
                                 data-timestamp="{{ fecha_cita|date:'U' }}"
                                 data-estado="{{ c.estado }}"
-                                data-id="{{ c.id_cita }}">
-                                <td class="fw-semibold">
+                                data-id="{{ c.id_cita }}"
+                                data-telefono="{{ c.id_paciente.perfil.telefono_usuario|default:'' }}"
+                                data-nombre="{{ c.id_paciente.first_name }}">
+                                <td>
                                     <div class="d-flex align-items-center">
                                         <div class="me-2">
-                                            {% if fecha_cita_str == hoy %}
-                                                <span class="badge badge-hoy me-1">Hoy</span>
-                                            {% elif fecha_cita_str == hoy|add:'-1 day' %}
-                                                <span class="badge badge-ayer me-1">Ayer</span>
-                                            {% elif fecha_cita|date:"W" == now|date:"W" %}
-                                                <span class="badge badge-semana me-1">Esta semana</span>
-                                            {% endif %}
+                                            {% if fecha_cita_str == hoy %}<span class="badge badge-hoy me-1">Hoy</span>{% endif %}
+                                            {% if fecha_cita_str == hoy|add:'-1 day' %}<span class="badge badge-ayer me-1">Ayer</span>{% endif %}
+                                            {% if fecha_cita|date:"W" == now|date:"W" %}<span class="badge badge-semana me-1">Esta semana</span>{% endif %}
                                         </div>
                                         {{ c.id_paciente.first_name }} {{ c.id_paciente.last_name }}
                                     </div>
                                 </td>
                                 <td data-order="{{ fecha_cita|date:'U' }}">
-                                    <div class="d-flex flex-column">
-                                        <span class="fw-bold">{{ fecha_cita|date:"d/m/Y" }}</span>
-                                        <span class="text-muted small">
-                                            <i class="fas fa-clock me-1"></i>{{ fecha_cita|time:"H:i" }}
-                                        </span>
-                                    </div>
+                                    <span class="fw-bold">{{ fecha_cita|date:"d/m/Y" }}</span><br>
+                                    <span class="text-muted small"><i class="fas fa-clock me-1"></i>{{ fecha_cita|time:"H:i" }}</span>
                                 </td>
                                 <td>{{ c.motivo|default:"—" }}</td>
                                 <td class="text-center">
@@ -182,34 +153,20 @@
                                 </td>
                                 <td class="table-actions text-center">
                                     {% if c.estado == "PENDIENTE" %}
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-success btn-action" 
-                                                    onclick="marcarAtendida({{ c.id_cita }})" 
-                                                    title="Marcar como atendida">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <!-- BOTÓN PARA CANCELAR CITA - AÑADIDO -->
-                                            <button class="btn btn-outline-warning btn-action btn-cancelar" 
-                                                    onclick="cancelarCita({{ c.id_cita }})" 
-                                                    title="Cancelar cita">
-                                                <i class="fas fa-ban"></i>
-                                            </button>
-                                            <button class="btn btn-outline-danger btn-action" 
-                                                    onclick="eliminarCita({{ c.id_cita }})" 
-                                                    title="Eliminar">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-success btn-action" onclick="marcarAtendida({{ c.id_cita }})" title="Marcar como atendida"><i class="fas fa-check"></i></button>
+                                        <button class="btn btn-outline-warning btn-action btn-cancelar" onclick="cancelarCita({{ c.id_cita }})" title="Cancelar cita"><i class="fas fa-ban"></i></button>
+                                        <button class="btn btn-outline-danger btn-action" onclick="eliminarCita({{ c.id_cita }})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                                        {% if c.id_paciente.perfil.telefono_usuario and c.id_paciente.perfil.telefono_usuario != "0000000000" %}
                                             <a class="btn btn-outline-success btn-action"
-                                               href="https://wa.me/593{{ c.id_paciente.telefono_usuario }}?text=Te saludamos desde Medessentia."
-                                               target="_blank"
-                                               title="WhatsApp">
-                                                <i class="fab fa-whatsapp"></i>
-                                            </a>
-                                        </div>
+                                               href="https://wa.me/593{{ c.id_paciente.perfil.telefono_usuario }}?text={% filter urlencode %}Hola {{ c.id_paciente.first_name }}, te recordamos tu cita en Medessentia el {{ c.fecha_hora|date:'d/m/Y' }} a las {{ c.fecha_hora|time:'H:i' }}. ¡Te esperamos!{% endfilter %}"
+                                               target="_blank" title="Enviar recordatorio por WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                                        {% else %}
+                                            <span class="btn btn-outline-secondary btn-action disabled" title="Teléfono no registrado"><i class="fab fa-whatsapp"></i></span>
+                                        {% endif %}
+                                    </div>
                                     {% else %}
-                                        <button class="btn btn-outline-secondary btn-sm" disabled>
-                                            <i class="fas fa-lock"></i> Acciones bloqueadas
-                                        </button>
+                                    <button class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-lock"></i> Acciones bloqueadas</button>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -219,45 +176,21 @@
                         </tbody>
                     </table>
                 </div>
-                
-                <!-- Resumen y estadísticas -->
+
+                <!-- Resumen -->
                 <div class="mt-3 p-3 bg-light rounded">
                     <div class="row">
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-chart-bar me-2 text-primary"></i>
-                                <div>
-                                    <small class="text-muted d-block">Total de citas</small>
-                                    <span class="fw-bold fs-5" id="totalCitas">{{ citas|length }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-clock me-2 text-warning"></i>
-                                <div>
-                                    <small class="text-muted d-block">Última actualización</small>
-                                    <span class="fw-bold" id="ultimaActualizacion">{% now "d/m/Y H:i" %}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-filter me-2 text-info"></i>
-                                <div>
-                                    <small class="text-muted d-block">Filtro activo</small>
-                                    <span class="fw-bold" id="filtroActivo">Todas las citas</span>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="col-md-4"><i class="fas fa-chart-bar me-2 text-primary"></i> Total: <span id="totalCitas">{{ citas|length }}</span></div>
+                        <div class="col-md-4"><i class="fas fa-clock me-2 text-warning"></i> Actualización: <span id="ultimaActualizacion">{% now "d/m/Y H:i" %}</span></div>
+                        <div class="col-md-4"><i class="fas fa-filter me-2 text-info"></i> Filtro: <span id="filtroActivo">Todas las citas</span></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal para confirmar cancelación -->
-    <div class="modal fade" id="modalCancelarCita" tabindex="-1" aria-hidden="true">
+    <!-- Modal cancelación -->
+    <div class="modal fade" id="modalCancelarCita" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-warning text-dark">
@@ -266,19 +199,15 @@
                 </div>
                 <div class="modal-body">
                     <p>¿Estás seguro de que deseas cancelar esta cita?</p>
-                    <div class="alert alert-warning">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Nota:</strong> Esta acción cambiará el estado de la cita a "CANCELADA" y notificará al paciente si es necesario.
-                    </div>
+                    <div class="alert alert-warning"><i class="fas fa-info-circle me-2"></i>Se cambiará el estado a "CANCELADA".</div>
                     <div class="mb-3">
-                        <label for="motivoCancelacion" class="form-label">Motivo de cancelación (opcional)</label>
-                        <textarea class="form-control" id="motivoCancelacion" rows="3" placeholder="Ej: El paciente no se presentó, cambio de fecha..."></textarea>
+                        <label for="motivoCancelacion" class="form-label">Motivo (opcional)</label>
+                        <textarea class="form-control" id="motivoCancelacion" rows="2" placeholder="Ej: El paciente no se presentó..."></textarea>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="notificarPaciente">
-                        <label class="form-check-label" for="notificarPaciente">
-                            Notificar al paciente por WhatsApp
-                        </label>
+                        <input class="form-check-input" type="checkbox" id="notificarPaciente" checked>
+                        <label class="form-check-label" for="notificarPaciente">Notificar al paciente por WhatsApp</label>
+                        <small class="text-muted d-block">Se abrirá una ventana con el mensaje. Si el navegador la bloquea, verás un enlace alternativo.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -297,445 +226,57 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-    let tabla = null;
-    let filtroActivo = 'todas';
-    let citaParaCancelar = null;
-    let modalCancelar = null;
+    let tabla, modalCancelar, citaParaCancelar;
+    const csrftoken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 
-    // Función para obtener el CSRF token
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    const csrftoken = getCookie('csrftoken');
+    // ========== CONFIGURACIÓN ==========
+    const horasAuto = 8; // Cambia aquí las horas para auto‑atender (8 - 12)
+    const segundosAuto = horasAuto * 3600;
+    // ===================================
 
-    // Inicializar cuando el documento esté listo
     $(document).ready(function() {
-        console.log("Iniciando módulo Mis Citas...");
-        
-        // Inicializar modal
         modalCancelar = new bootstrap.Modal(document.getElementById('modalCancelarCita'));
-        
-        // Inicializar DataTable con orden descendente por fecha
         tabla = $('#tablaCitas').DataTable({
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json',
-                decimal: ",",
-                thousands: "."
-            },
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
             pageLength: 25,
-            order: [[1, 'desc']], // Ordenar por fecha descendente (columna 1)
-            columnDefs: [
-                {
-                    targets: 1, // Columna de fecha
-                    type: 'date', // Especificar que es de tipo fecha
-                    render: function(data, type, row) {
-                        if (type === 'sort') {
-                            return data; // Usar el timestamp para ordenar
-                        }
-                        return data; // Mostrar el valor original
-                    }
-                },
-                {
-                    targets: [0, 2, 3, 4], // Otras columnas
-                    orderable: false // No ordenables
-                }
-            ],
+            order: [[1, 'desc']],
+            columnDefs: [{ targets: 1, type: 'date' }, { targets: [0,2,3,4], orderable: false }],
             initComplete: function() {
-                // Actualizar estadísticas
                 actualizarEstadisticas();
-                
-                // Mostrar mensaje de orden actual
-                $('#ordenBadge').html('<i class="fas fa-sort-amount-down me-1"></i> Más recientes primero');
+                verificarCitasVencidas();  // Auto‑atender citas pasadas 'horasAuto' horas
             }
         });
 
-        // Buscar con Enter
-        $('#inputBuscar').on('keypress', function(e) {
-            if (e.which === 13) {
-                buscar();
-            }
-        });
-
-        // Configurar evento para confirmar cancelación
-        $('#confirmarCancelacion').click(function() {
-            if (citaParaCancelar) {
-                procesarCancelacion(citaParaCancelar);
-            }
-        });
+        $('#confirmarCancelacion').click(() => citaParaCancelar && procesarCancelacion(citaParaCancelar));
+        $('#inputBuscar').on('keypress', e => e.which === 13 && buscar());
     });
 
-    function buscar() {
-        const valor = $('#inputBuscar').val();
+    // ========== AUTO‑ATENDER CITAS VENCIDAS (después de 'horasAuto' horas) ==========
+    function verificarCitasVencidas() {
+        const ahora = Math.floor(Date.now() / 1000);
+        let actualizadas = 0;
 
-        if (valor.trim() === '') {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Campo vacío',
-                text: 'Por favor ingresa un valor para buscar',
-                confirmButtonText: 'Aceptar'
-            });
-            return;
-        }
-
-        tabla.search(valor).draw();
-        actualizarEstadisticas();
-
-        Swal.fire({
-            icon: 'success',
-            title: 'Búsqueda realizada',
-            text: 'Resultados filtrados correctamente',
-            timer: 1200,
-            showConfirmButton: false
-        });
-    }
-
-    function limpiarBusqueda() {
-        $('#inputBuscar').val('');
-        tabla.search('').draw();
-        actualizarEstadisticas();
-
-        Swal.fire({
-            icon: 'info',
-            title: 'Búsqueda limpiada',
-            timer: 1000,
-            showConfirmButton: false
-        });
-    }
-
-    function filtrarHoy() {
-        const hoy = new Date();
-        const fechaHoy = hoy.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-        
-        // Limpiar filtros previos
-        tabla.columns().search('').draw();
-        
-        // Aplicar filtro por fecha de hoy
-        $.fn.dataTable.ext.search.push(
-            function(settings, data, dataIndex) {
-                const fila = tabla.row(dataIndex).node();
-                const fechaCita = $(fila).data('fecha');
-                return fechaCita === fechaHoy;
+        tabla.rows().every(function() {
+            const fila = this.node();
+            const estado = $(fila).data('estado');
+            const timestamp = $(fila).data('timestamp');
+            if (estado === 'PENDIENTE' && timestamp + segundosAuto < ahora) {
+                const id = $(fila).data('id');
+                $.post('/cita/' + id + '/atender/', { csrfmiddlewaretoken: csrftoken }, () => {
+                    $(fila).attr('data-estado', 'ATENDIDA')
+                           .find('.badge').removeClass('bg-info text-dark').addClass('bg-success').text('Atendida')
+                           .end().find('.btn-group').html('<button class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-lock"></i> Acciones bloqueadas</button>');
+                    actualizadas++;
+                }).fail(() => console.log('Error al auto‑atender cita', id));
             }
-        );
-        
-        tabla.draw();
-        $.fn.dataTable.ext.search.pop();
-        
-        // Actualizar UI
-        actualizarBotonesFiltro('hoy');
-        filtroActivo = 'hoy';
-        actualizarEstadisticas();
-        
-        Swal.fire({
-            icon: 'info',
-            title: 'Mostrando citas de hoy',
-            timer: 1500,
-            showConfirmButton: false
         });
-    }
-
-    function filtrarAyer() {
-        const hoy = new Date();
-        const ayer = new Date(hoy);
-        ayer.setDate(hoy.getDate() - 1);
-        const fechaAyer = ayer.toISOString().split('T')[0];
-        
-        tabla.columns().search('').draw();
-        
-        $.fn.dataTable.ext.search.push(
-            function(settings, data, dataIndex) {
-                const fila = tabla.row(dataIndex).node();
-                const fechaCita = $(fila).data('fecha');
-                return fechaCita === fechaAyer;
-            }
-        );
-        
-        tabla.draw();
-        $.fn.dataTable.ext.search.pop();
-        
-        actualizarBotonesFiltro('ayer');
-        filtroActivo = 'ayer';
-        actualizarEstadisticas();
-        
-        Swal.fire({
-            icon: 'info',
-            title: 'Mostrando citas de ayer',
-            timer: 1500,
-            showConfirmButton: false
-        });
-    }
-
-    function filtrarSemana() {
-        const hoy = new Date();
-        const inicioSemana = new Date(hoy);
-        inicioSemana.setDate(hoy.getDate() - hoy.getDay()); // Domingo de esta semana
-        inicioSemana.setHours(0, 0, 0, 0);
-        
-        tabla.columns().search('').draw();
-        
-        $.fn.dataTable.ext.search.push(
-            function(settings, data, dataIndex) {
-                const fila = tabla.row(dataIndex).node();
-                const fechaStr = $(fila).data('fecha');
-                const fechaCita = new Date(fechaStr);
-                return fechaCita >= inicioSemana;
-            }
-        );
-        
-        tabla.draw();
-        $.fn.dataTable.ext.search.pop();
-        
-        actualizarBotonesFiltro('semana');
-        filtroActivo = 'semana';
-        actualizarEstadisticas();
-        
-        Swal.fire({
-            icon: 'info',
-            title: 'Mostrando citas de esta semana',
-            timer: 1500,
-            showConfirmButton: false
-        });
-    }
-
-    function mostrarTodas() {
-        // Limpiar todos los filtros
-        tabla.columns().search('').draw();
-        tabla.search('').draw();
-        
-        actualizarBotonesFiltro('todas');
-        filtroActivo = 'todas';
-        actualizarEstadisticas();
-        
-        Swal.fire({
-            icon: 'success',
-            title: 'Mostrando todas las citas',
-            timer: 1500,
-            showConfirmButton: false
-        });
-    }
-
-    function actualizarBotonesFiltro(filtroActivo) {
-        // Resetear todos los botones
-        $('#btnHoy').removeClass('active').addClass('btn-outline-success');
-        $('#btnAyer').removeClass('active').addClass('btn-outline-warning');
-        $('#btnSemana').removeClass('active').addClass('btn-outline-info');
-        $('#btnTodas').removeClass('active').addClass('btn-outline-secondary');
-        
-        // Activar el botón correspondiente
-        switch(filtroActivo) {
-            case 'hoy':
-                $('#btnHoy').addClass('active').removeClass('btn-outline-success');
-                $('#filtroActivo').text('Citas de hoy');
-                break;
-            case 'ayer':
-                $('#btnAyer').addClass('active').removeClass('btn-outline-warning');
-                $('#filtroActivo').text('Citas de ayer');
-                break;
-            case 'semana':
-                $('#btnSemana').addClass('active').removeClass('btn-outline-info');
-                $('#filtroActivo').text('Citas de esta semana');
-                break;
-            case 'todas':
-                $('#btnTodas').addClass('active').removeClass('btn-outline-secondary');
-                $('#filtroActivo').text('Todas las citas');
-                break;
+        if (actualizadas) {
+            Swal.fire({ icon: 'info', title: 'Citas actualizadas', text: `${actualizadas} cita(s) marcadas como atendidas automáticamente.`, timer: 3000, toast: true, position: 'top-end' });
+            actualizarEstadisticas();
         }
     }
 
-    function actualizarEstadisticas() {
-        const total = tabla.rows().count();
-        const visibles = tabla.rows({ search: 'applied' }).count();
-        
-        // Contar por estado
-        let pendientes = 0, atendidas = 0, canceladas = 0;
-        
-        tabla.rows({ search: 'applied' }).every(function() {
-            const estado = $(this.node()).find('.badge').text().trim();
-            switch(estado) {
-                case 'Pendiente': pendientes++; break;
-                case 'Atendida': atendidas++; break;
-                case 'Cancelada': canceladas++; break;
-            }
-        });
-        
-        // Actualizar UI
-        $('#totalCitas').text(visibles);
-        $('#ordenBadge').html(`<i class="fas fa-sort-amount-down me-1"></i> ${visibles} citas`);
-        
-        // Actualizar último timestamp
-        const ahora = new Date();
-        $('#ultimaActualizacion').text(ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES'));
-    }
-
-    // ========== FUNCIÓN PARA CANCELAR CITA ==========
-    function cancelarCita(id) {
-        citaParaCancelar = id;
-        
-        // Mostrar modal de confirmación
-        $('#motivoCancelacion').val('');
-        $('#notificarPaciente').prop('checked', true);
-        modalCancelar.show();
-    }
-
-    function procesarCancelacion(id) {
-        const motivo = $('#motivoCancelacion').val();
-        const notificar = $('#notificarPaciente').is(':checked');
-        
-        // Cerrar modal
-        modalCancelar.hide();
-        
-        Swal.fire({
-            title: 'Cancelando cita...',
-            text: 'Por favor espera',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        // Enviar solicitud al servidor
-        fetch('/cita/' + id + '/cancelar/', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                motivo: motivo,
-                notificar: notificar
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Cita cancelada',
-                    html: `
-                        <div class="text-center">
-                            <i class="fas fa-ban fa-3x text-warning mb-3"></i>
-                            <p>${data.message}</p>
-                            ${data.notificacion ? 
-                                '<div class="alert alert-success mt-2"><i class="fas fa-check-circle"></i> ' + data.notificacion + '</div>' : 
-                                ''
-                            }
-                        </div>
-                    `,
-                    confirmButtonText: 'Aceptar'
-                }).then(() => {
-                    // Actualizar la fila específica sin recargar toda la página
-                    const fila = $(`tr[data-id="${id}"]`);
-                    
-                    // Actualizar estado en la tabla
-                    fila.attr('data-estado', 'CANCELADA');
-                    fila.find('.badge').removeClass('bg-info text-dark').addClass('bg-danger').text('Cancelada');
-                    
-                    // Deshabilitar acciones
-                    fila.find('.btn-group').html(`
-                        <button class="btn btn-outline-secondary btn-sm" disabled>
-                            <i class="fas fa-lock"></i> Acciones bloqueadas
-                        </button>
-                    `);
-                    
-                    // Actualizar estadísticas
-                    actualizarEstadisticas();
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'No se pudo cancelar la cita'
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error de conexión',
-                text: 'No se pudo conectar con el servidor'
-            });
-        });
-    }
-
-    // Alternativa: Cancelar cita con SweetAlert2 simple (sin modal)
-    function cancelarCitaSimple(id) {
-        Swal.fire({
-            title: '¿Cancelar esta cita?',
-            text: 'La cita será marcada como cancelada',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ffc107',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sí, cancelar',
-            cancelButtonText: 'No, mantener',
-            input: 'text',
-            inputLabel: 'Motivo de cancelación (opcional)',
-            inputPlaceholder: 'Ej: Paciente no disponible...'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Cancelando cita...',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-                
-                fetch('/cita/' + id + '/cancelar/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrftoken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        motivo: result.value || ''
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Cita cancelada',
-                            text: data.message,
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: data.message
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo cancelar la cita'
-                    });
-                });
-            }
-        });
-    }
-
-    // Marcar como atendida
+    // ========== MARCAR COMO ATENDIDA (MANUAL) ==========
     function marcarAtendida(id) {
         Swal.fire({
             title: '¿Marcar cita como atendida?',
@@ -748,45 +289,33 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
+                Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
                 fetch('/cita/' + id + '/atender/', {
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrftoken,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' }
                 })
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Éxito',
-                            text: data.message,
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            location.reload();
-                        });
+                        // Actualizar la fila visualmente
+                        const fila = $(`tr[data-id="${id}"]`);
+                        fila.attr('data-estado', 'ATENDIDA')
+                            .find('.badge').removeClass('bg-info text-dark').addClass('bg-success').text('Atendida')
+                            .end().find('.btn-group').html('<button class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-lock"></i> Acciones bloqueadas</button>');
+                        actualizarEstadisticas();
+
+                        Swal.fire({ icon: 'success', title: 'Éxito', text: data.message, timer: 1500, showConfirmButton: false });
                     } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: data.message
-                        });
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo marcar como atendida' });
                     }
                 })
-                .catch(() => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo actualizar la cita'
-                    });
-                });
+                .catch(() => Swal.fire({ icon: 'error', title: 'Error de conexión' }));
             }
         });
     }
 
-    // Eliminar cita
+    // ========== ELIMINAR CITA ==========
     function eliminarCita(id) {
         Swal.fire({
             title: '¿Eliminar cita?',
@@ -799,44 +328,195 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
+                Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
                 fetch('/cita/' + id + '/eliminar/', {
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrftoken,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' }
                 })
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Eliminada',
-                            text: data.message,
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            location.reload();
-                        });
+                        // Eliminar la fila de la tabla
+                        tabla.row($(`tr[data-id="${id}"]`)).remove().draw();
+                        actualizarEstadisticas();
+
+                        Swal.fire({ icon: 'success', title: 'Eliminada', text: data.message, timer: 1500, showConfirmButton: false });
                     } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: data.message
-                        });
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo eliminar la cita' });
                     }
                 })
-                .catch(() => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo eliminar la cita'
-                    });
-                });
+                .catch(() => Swal.fire({ icon: 'error', title: 'Error de conexión' }));
             }
         });
     }
 
+    // ========== CANCELAR CITA (con modal) ==========
+    function cancelarCita(id) {
+        citaParaCancelar = id;
+        $('#motivoCancelacion').val('');
+        $('#notificarPaciente').prop('checked', true);
+        modalCancelar.show();
+    }
+
+    function procesarCancelacion(id) {
+        const motivo = $('#motivoCancelacion').val();
+        const notificar = $('#notificarPaciente').is(':checked');
+        modalCancelar.hide();
+
+        const fila = $(`tr[data-id="${id}"]`);
+        const telefono = fila.data('telefono');
+        const fecha = fila.data('fecha');
+        const hora = fila.data('hora');
+        const nombre = fila.data('nombre');
+
+        // WhatsApp
+        if (notificar) {
+            if (!telefono || telefono === "0000000000") {
+                Swal.fire({ icon: 'warning', title: 'Teléfono no válido', text: 'El paciente no tiene un número registrado válido. No se enviará WhatsApp.', confirmButtonText: 'Continuar' });
+            } else {
+                const fechaFormateada = fecha.split('-').reverse().join('/');
+                const mensaje = `Hola ${nombre}, lamentamos informarle que su cita en Medessentia del ${fechaFormateada} a las ${hora} ha sido cancelada. Motivo: ${motivo || 'No especificado'}.`;
+                const url = `https://wa.me/593${telefono}?text=${encodeURIComponent(mensaje)}`;
+                const ventana = window.open(url, '_blank');
+                if (!ventana) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Permite ventanas emergentes',
+                        html: `<p>El navegador bloqueó la apertura de WhatsApp.</p><a href="${url}" target="_blank" class="btn btn-success btn-sm">Abrir WhatsApp manualmente</a>`,
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            }
+        }
+
+        Swal.fire({ title: 'Cancelando cita...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        fetch('/cita/' + id + '/cancelar/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ motivo, notificar })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success', title: 'Cita cancelada',
+                    html: `<p>${data.message}</p>${data.notificacion ? '<div class="alert alert-success mt-2"><i class="fas fa-check-circle"></i> '+data.notificacion+'</div>' : ''}`,
+                    confirmButtonText: 'Aceptar'
+                }).then(() => {
+                    fila.attr('data-estado', 'CANCELADA')
+                        .find('.badge').removeClass('bg-info text-dark').addClass('bg-danger').text('Cancelada')
+                        .end().find('.btn-group').html('<button class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-lock"></i> Acciones bloqueadas</button>');
+                    actualizarEstadisticas();
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo cancelar' });
+            }
+        })
+        .catch(() => Swal.fire({ icon: 'error', title: 'Error de conexión' }));
+    }
+
+    // ========== BÚSQUEDA Y FILTROS ==========
+    function buscar() {
+        const val = $('#inputBuscar').val().trim();
+        if (!val) return Swal.fire({ icon: 'warning', title: 'Campo vacío' });
+        tabla.search(val).draw();
+        actualizarEstadisticas();
+        Swal.fire({ icon: 'success', title: 'Búsqueda realizada', timer: 1200, showConfirmButton: false });
+    }
+
+    function limpiarBusqueda() {
+        $('#inputBuscar').val('');
+        tabla.search('').draw();
+        actualizarEstadisticas();
+    }
+
+    function filtrarHoy() {
+        const hoy = new Date().toISOString().split('T')[0];
+        aplicarFiltroFecha('hoy', hoy);
+    }
+
+    function filtrarAyer() {
+        const ayer = new Date();
+        ayer.setDate(ayer.getDate() - 1);
+        aplicarFiltroFecha('ayer', ayer.toISOString().split('T')[0]);
+    }
+
+    function filtrarSemana() {
+        const hoy = new Date();
+        const inicioSemana = new Date(hoy);
+        inicioSemana.setDate(hoy.getDate() - hoy.getDay()); // domingo de esta semana
+        inicioSemana.setHours(0,0,0,0);
+        // Usamos filtro personalizado de DataTable
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                const fila = tabla.row(dataIndex).node();
+                const fechaCita = new Date($(fila).data('fecha'));
+                return fechaCita >= inicioSemana;
+            }
+        );
+        tabla.draw();
+        $.fn.dataTable.ext.search.pop();
+        actualizarBotonesFiltro('semana');
+        filtroActivo = 'semana';
+        actualizarEstadisticas();
+        Swal.fire({ icon: 'info', title: 'Mostrando citas de esta semana', timer: 1500, showConfirmButton: false });
+    }
+
+    function mostrarTodas() {
+        // Limpiar filtros de columna y búsqueda
+        tabla.columns().search('').draw();
+        tabla.search('').draw();
+        actualizarBotonesFiltro('todas');
+        filtroActivo = 'todas';
+        actualizarEstadisticas();
+        Swal.fire({ icon: 'success', title: 'Mostrando todas las citas', timer: 1500, showConfirmButton: false });
+    }
+
+    function aplicarFiltroFecha(tipo, fecha) {
+        // Limpia filtros anteriores
+        $.fn.dataTable.ext.search.pop();
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                const fila = tabla.row(dataIndex).node();
+                const fechaCita = $(fila).data('fecha');
+                return fechaCita === fecha;
+            }
+        );
+        tabla.draw();
+        $.fn.dataTable.ext.search.pop();
+        actualizarBotonesFiltro(tipo);
+        filtroActivo = tipo;
+        actualizarEstadisticas();
+        Swal.fire({ icon: 'info', title: `Mostrando citas de ${tipo === 'hoy' ? 'hoy' : 'ayer'}`, timer: 1500, showConfirmButton: false });
+    }
+
+    function actualizarBotonesFiltro(filtro) {
+        $('#btnHoy, #btnAyer, #btnSemana, #btnTodas').removeClass('active').addClass('btn-outline-success btn-outline-warning btn-outline-info btn-outline-secondary'.split(' '));
+        if (filtro === 'hoy') {
+            $('#btnHoy').addClass('active').removeClass('btn-outline-success');
+            $('#filtroActivo').text('Citas de hoy');
+        } else if (filtro === 'ayer') {
+            $('#btnAyer').addClass('active').removeClass('btn-outline-warning');
+            $('#filtroActivo').text('Citas de ayer');
+        } else if (filtro === 'semana') {
+            $('#btnSemana').addClass('active').removeClass('btn-outline-info');
+            $('#filtroActivo').text('Citas de esta semana');
+        } else {
+            $('#btnTodas').addClass('active').removeClass('btn-outline-secondary');
+            $('#filtroActivo').text('Todas las citas');
+        }
+    }
+
+    function actualizarEstadisticas() {
+        const visibles = tabla.rows({ search: 'applied' }).count();
+        $('#totalCitas').text(visibles);
+        $('#ultimaActualizacion').text(new Date().toLocaleString('es-ES'));
+    }
+
+    // (Opcional) Declarar filtroActivo si no existe globalmente
+    let filtroActivo = 'todas';
     </script>
 </body>
 </html>

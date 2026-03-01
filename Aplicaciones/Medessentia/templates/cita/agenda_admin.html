@@ -1,0 +1,336 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Horarios del Doctor | Medessentia{% endblock %}
+{% block page_title %}Agendar cita para paciente{% endblock %}
+
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core/locales/es.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+body { background-color:#f5f9f7; }
+
+#calendar {
+    background:#fff;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.1);
+    min-height:750px;
+}
+
+.fc-event-disponible { background:#2aa574!important; color:white!important; cursor:pointer!important; }
+.fc-event-ocupado { background:#dc3545!important; color:white!important; cursor:not-allowed!important; }
+.fc-event-no-disponible { background:#6c757d!important; color:white!important; cursor:not-allowed!important; }
+
+#resultadosBusqueda {
+    max-height:200px;
+    overflow-y:auto;
+    display:none;
+}
+</style>
+
+<div class="container py-4">
+
+    <!-- BUSCADOR -->
+    <div class="card mb-4" id="busqueda-container">
+        <div class="card-header bg-info text-white">
+            Seleccionar paciente
+        </div>
+        <div class="card-body">
+            <input type="hidden" id="paciente_id">
+            <input type="text" class="form-control" id="buscarPacienteInput"
+                   placeholder="Nombre, apellido, usuario o email...">
+            <div id="resultadosBusqueda" class="list-group mt-2"></div>
+        </div>
+    </div>
+
+    <!-- PACIENTE SELECCIONADO -->
+    <div id="pacienteSeleccionado" class="alert alert-success" style="display:none;">
+        Paciente seleccionado: <strong id="nombrePaciente"></strong>
+        <button class="btn btn-sm btn-outline-danger float-end" id="btnLimpiarPaciente">
+            Cambiar
+        </button>
+    </div>
+
+    <!-- CALENDARIO -->
+    <div id="calendar-container" style="display:none;">
+        <div id="calendar"></div>
+    </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="modalAgendar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formAgendar">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">Confirmar cita</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+            <input type="hidden" id="horario_real_id">
+            <input type="hidden" id="hora_cita_hidden">
+
+            <p><strong>Paciente:</strong> <span id="modal_paciente"></span></p>
+            <p><strong>Fecha:</strong> <span id="modal_fecha"></span></p>
+            <p><strong>Hora:</strong> <span id="modal_hora"></span></p>
+
+            <div class="mb-3">
+                <label>Motivo (opcional)</label>
+                <textarea class="form-control" id="motivo"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+$(document).ready(function(){
+
+    let timeoutBusqueda;
+    let calendar;
+    const doctorId = {{ doctor.id }};
+    const eventosUrl = `/cita/doctor/${doctorId}/horarios/`;
+
+    function getCookie(name){
+        let cookieValue = null;
+        if(document.cookie){
+            document.cookie.split(';').forEach(function(cookie){
+                cookie = cookie.trim();
+                if(cookie.startsWith(name + '=')){
+                    cookieValue = decodeURIComponent(cookie.substring(name.length+1));
+                }
+            });
+        }
+        return cookieValue;
+    }
+
+    /* ================= BUSCAR PACIENTE ================= */
+
+    $('#buscarPacienteInput').on('input', function(){
+
+        clearTimeout(timeoutBusqueda);
+        const query = $(this).val().trim();
+        const resultadosDiv = $('#resultadosBusqueda');
+
+        if(query.length < 2){
+            resultadosDiv.hide().empty();
+            return;
+        }
+
+        resultadosDiv.html('<div class="list-group-item text-center">Buscando...</div>').show();
+
+        timeoutBusqueda = setTimeout(function(){
+
+            $.ajax({
+                url: "{% url 'buscar_pacientes_todos' %}",
+                type: "GET",
+                data: { q: query },
+                success: function(response){
+
+                    resultadosDiv.empty();
+
+                    if(response.data.length > 0){
+
+                        response.data.forEach(function(p){
+
+                            let item = $(`
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    <strong>${p.nombre_completo}</strong>
+                                </a>
+                            `);
+
+                            item.on('click', function(e){
+                                e.preventDefault();
+
+                                $('#paciente_id').val(p.id);
+                                $('#nombrePaciente').text(p.nombre_completo);
+                                $('#modal_paciente').text(p.nombre_completo);
+
+                                $('#pacienteSeleccionado').show();
+                                $('#busqueda-container').hide();
+                                $('#calendar-container').show();
+                                resultadosDiv.hide().empty();
+
+                                calendar.refetchEvents();
+                            });
+
+                            resultadosDiv.append(item);
+                        });
+
+                    } else {
+                        resultadosDiv.html(
+                            '<div class="list-group-item text-muted text-center">No se encontraron pacientes</div>'
+                        );
+                    }
+
+                    resultadosDiv.show();
+                }
+            });
+
+        }, 400);
+    });
+
+    $('#btnLimpiarPaciente').on('click', function(){
+        $('#paciente_id').val('');
+        $('#buscarPacienteInput').val('');
+        $('#pacienteSeleccionado').hide();
+        $('#busqueda-container').show();
+        $('#calendar-container').hide();
+    });
+
+    /* ================= FULLCALENDAR ================= */
+
+    const calendarEl = document.getElementById('calendar');
+
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        locale: 'es',
+        initialView: 'timeGridWeek',
+        headerToolbar:{
+            left:'prev,next today',
+            center:'title',
+            right:'timeGridWeek,timeGridDay'
+        },
+        slotMinTime:'07:00:00',
+        slotMaxTime:'22:00:00',
+
+        events:function(fetchInfo, success, failure){
+            fetch(`${eventosUrl}?start=${fetchInfo.startStr}&end=${fetchInfo.endStr}`)
+                .then(res => res.json())
+                .then(data => success(data))
+                .catch(failure);
+        },
+
+        /* 🔥 BLOQUEAR HORAS PASADAS AUTOMÁTICAMENTE */
+        eventDidMount: function(info){
+
+            const ahora = new Date();
+            const fechaEvento = new Date(info.event.start);
+
+            if(fechaEvento < ahora){
+
+                info.el.classList.remove('fc-event-disponible');
+                info.el.classList.remove('fc-event-ocupado');
+                info.el.classList.add('fc-event-no-disponible');
+
+                info.event.setExtendedProp('disponible', false);
+                info.event.setExtendedProp('hora_pasada', true);
+            }
+        },
+
+        eventClick:function(info){
+
+            const pacienteId = $('#paciente_id').val();
+            if(!pacienteId){
+                Swal.fire('Selecciona un paciente primero');
+                return;
+            }
+
+            const ahora = new Date();
+            const fechaEvento = new Date(info.event.start);
+
+            if(fechaEvento < ahora){
+                Swal.fire('Esta hora ya pasó');
+                return;
+            }
+
+            const props = info.event.extendedProps;
+
+            if(props.ocupado){
+                Swal.fire('Horario ocupado');
+                return;
+            }
+
+            if(!props.disponible){
+                Swal.fire('Horario no disponible');
+                return;
+            }
+
+            const horaFormateada = info.event.start.toLocaleTimeString('es-ES',{
+                hour:'2-digit',
+                minute:'2-digit',
+                hour12:false
+            });
+
+            $('#horario_real_id').val(props.id_horario);
+            $('#modal_fecha').text(info.event.start.toLocaleDateString('es-ES'));
+            $('#modal_hora').text(horaFormateada);
+            $('#hora_cita_hidden').val(horaFormateada);
+
+            new bootstrap.Modal(document.getElementById('modalAgendar')).show();
+        }
+    });
+
+    calendar.render();
+
+    /* ================= AGENDAR ================= */
+
+    $('#formAgendar').on('submit', function(e){
+        e.preventDefault();
+
+        const pacienteId = $('#paciente_id').val();
+        const horarioId = $('#horario_real_id').val();
+        const motivo = $('#motivo').val();
+        const horaCita = $('#hora_cita_hidden').val();
+
+        if(!pacienteId || !horarioId || !horaCita){
+            Swal.fire('Error','Faltan datos para agendar','error');
+            return;
+        }
+
+        $.ajax({
+            url:`/cita/doctor/${doctorId}/agendar/`,
+            type:'POST',
+            dataType:'json',
+            data:{
+                paciente_id:pacienteId,
+                horario_id:horarioId,
+                motivo:motivo,
+                hora_cita:horaCita,
+                csrfmiddlewaretoken:getCookie('csrftoken')
+            },
+            success:function(response){
+
+                if(response.status === "success"){
+
+                    bootstrap.Modal
+                        .getInstance(document.getElementById('modalAgendar'))
+                        .hide();
+
+                    calendar.refetchEvents();
+
+                    Swal.fire({
+                        icon:'success',
+                        title:response.message
+                    });
+
+                    $('#btnLimpiarPaciente').click();
+
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            },
+            error:function(xhr){
+                console.log(xhr.responseText);
+                Swal.fire('Error','Problema al agendar la cita, posiblemente ya tiene una cita','error');
+            }
+        });
+    });
+
+});
+</script>
+
+
+{% endblock %}

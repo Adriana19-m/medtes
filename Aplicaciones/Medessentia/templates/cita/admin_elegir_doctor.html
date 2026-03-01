@@ -1,0 +1,36 @@
+{% extends "dashboards/base_dashboard.html" %}
+{% load static %}
+{% block title %}Seleccionar Doctor | Medessentia{% endblock %}
+{% block page_title %}Agendar cita como administrador{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-user-md me-2"></i>Seleccione un doctor</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for doctor in doctors %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-circle fa-4x text-primary mb-3"></i>
+                            <h5 class="card-title">{{ doctor.get_full_name|default:doctor.username }}</h5>
+                            <p class="card-text text-muted">{{ doctor.email }}</p>
+                            <a href="{% url 'agenda_admin' doctor.id %}" class="btn btn-primary">
+                                <i class="fas fa-calendar-alt me-1"></i> Ver disponibilidad
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-warning">No hay doctores disponibles.</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

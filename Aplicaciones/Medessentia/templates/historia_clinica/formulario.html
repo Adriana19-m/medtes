@@ -615,7 +615,8 @@ function crearPacienteRapido() {
             nombres,
             apellidos,
             cedula,
-            telefono
+            telefono,
+           
         })
     })
     .then(response => response.json())
@@ -626,7 +627,12 @@ function crearPacienteRapido() {
                 result.paciente.id,
                 result.paciente.nombre_completo,
                 result.paciente.cedula,
-                result.paciente.telefono
+                result.paciente.telefono,
+                result.paciente.direccion,
+                result.paciente.sexo,
+                result.paciente.email,
+                result.paciente.direccion,
+                result.paciente.sexo
             );
 
             
