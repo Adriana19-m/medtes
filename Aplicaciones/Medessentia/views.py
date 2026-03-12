@@ -2816,12 +2816,21 @@ def crear_paciente_rapido(request):
         else:
             telefono = '0000000000'
 
-        # 🔍 VERIFICAR SI YA EXISTE UN USUARIO CON ESA CÉDULA COMO USERNAME O EN PERFIL
-        if User.objects.filter(username=cedula).exists():
-            return JsonResponse({
-                'success': False,
-                'error': f'Ya existe un usuario con la cédula {cedula}'
-            })
+        # ✅ VALIDAR CELULAR ECUATORIANO (NUEVO)
+        if telefono:
+            try:
+                validar_celular_ecuatoriano(telefono)
+            except ValidationError as e:
+                return JsonResponse({
+                    'success': False,
+                    'error': str(e)
+                })
+
+        # 🔍 BUSCAR SI YA EXISTE POR CÉDULA
+        if cedula:
+            perfil_existente = PerfilUsuario.objects.filter(
+                cedula_usuario=cedula
+            ).select_related('user').first()
 
         if PerfilUsuario.objects.filter(cedula_usuario=cedula).exists():
             return JsonResponse({
