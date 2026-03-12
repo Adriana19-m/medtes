@@ -103,10 +103,13 @@
 
         <div class="col-md-3">
           <label class="form-label">Fecha Nacimiento</label>
-          <input type="date" name="fecha_nacimiento" id="fecha_nacimiento"
-                 class="form-control"
-                 value="{% if historia.fecha_nacimiento %}{{ historia.fecha_nacimiento|date:'Y-m-d' }}{% endif %}"
-                 onchange="calcularEdad()">
+          <input type="date" 
+            name="fecha_nacimiento" 
+            id="fecha_nacimiento"
+            class="form-control"
+            value="{% if historia.fecha_nacimiento %}{{ historia.fecha_nacimiento|date:'Y-m-d' }}{% endif %}"
+            onchange="calcularEdad()"
+            max="">
         </div>
 
         <div class="col-md-3">
@@ -127,7 +130,6 @@
             <option value="">Seleccione...</option>
             <option value="MASCULINO" {% if historia.sexo_biologico == 'MASCULINO' %}selected{% endif %}>Masculino</option>
             <option value="FEMENINO" {% if historia.sexo_biologico == 'FEMENINO' %}selected{% endif %}>Femenino</option>
-            <option value="INTERSEXUAL" {% if historia.sexo_biologico == 'INTERSEXUAL' %}selected{% endif %}>Intersexual</option>
           </select>
         </div>
 
@@ -158,6 +160,7 @@
           <label class="form-label">Nivel de Instrucción</label>
           <select name="nivel_instruccion" class="form-select">
             <option value="">Seleccione...</option>
+            <option value="PRIMARIA">Ninguna</option>
             <option value="PRIMARIA">Primaria</option>
             <option value="SECUNDARIA">Secundaria</option>
             <option value="SUPERIOR">Superior</option>
@@ -678,18 +681,52 @@ function crearPacienteRapido() {
 
 
 function generarExpediente() {
-    fetch('{% url "generar_expediente" %}')
-        .then(response => response.json())
-        .then(data => {
-            if (data.expediente) {
-                $('#expediente_no').val(data.expediente);
-            }
-        });
-}
+        fetch('{% url "generar_expediente" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.expediente) {
+                    $('#expediente_no').val(data.expediente);
+                }
+            });
+    }
+    function setMaxFechaNacimiento() {
+        const hoy = new Date();
+        const añoActual = hoy.getFullYear();
+        
+        // Fecha máxima: hoy
+        const maxFecha = hoy.toISOString().split('T')[0];
+        
+        // Fecha mínima: hoy - 150 años
+        const minFecha = new Date(añoActual - 150, hoy.getMonth(), hoy.getDate()).toISOString().split('T')[0];
+        
+        document.getElementById('fecha_nacimiento').setAttribute('max', maxFecha);
+        document.getElementById('fecha_nacimiento').setAttribute('min', minFecha);
+    }
 
+    // Ejecutar al cargar la página y cada vez que se muestre el modal del formulario
+    $(document).ready(function() {
+        setMaxFechaNacimiento();
+    });
+
+    // Si tu formulario está en un modal que se abre dinámicamente, también debes llamarla allí:
+    $('#modalFormulario').on('shown.bs.modal', function () {
+        setMaxFechaNacimiento();
+    });
 function calcularEdad() {
     const fechaNac = new Date($('#fecha_nacimiento').val());
     const hoy = new Date();
+    
+    // Validar que no sea futura
+    if (fechaNac > hoy) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Fecha inválida',
+            text: 'La fecha de nacimiento no puede ser posterior a hoy.'
+        });
+        $('#fecha_nacimiento').val('');
+        $('#edad').val('');
+        return;
+    }
     
     if (!fechaNac || isNaN(fechaNac)) {
         $('#edad').val('');
@@ -703,9 +740,7 @@ function calcularEdad() {
         edad--;
     }
     
-    if (edad >= 0) {
-        $('#edad').val(edad);
-    }
+    $('#edad').val(edad >= 0 ? edad : '');
 }
 
 function guardarHistoria() {

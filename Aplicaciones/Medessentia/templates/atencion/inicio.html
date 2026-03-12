@@ -499,68 +499,107 @@
         $('#modalDetalleContenido').html(html);
     }
 
+    //joel cambio eliminar 
     function eliminarAtencion(id) {
-        Swal.fire({
-            title: '¿Confirmar eliminación?',
-            text: "Esta acción eliminará permanentemente la atención médica y no se podrá deshacer.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Mostrar loading
-                Swal.fire({
-                    title: 'Procesando...',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
+    Swal.fire({
+        title: '¿Confirmar eliminación?',
+        text: "Esta acción eliminará permanentemente la atención médica y no se podrá deshacer.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
 
-                // Enviar petición
-                $.ajax({
-                    url: '{% url "eliminar_atencion" %}',
-                    type: 'POST',
-                    data: {
-                        id: id,
-                        csrfmiddlewaretoken: getCSRFToken()
-                    },
-                    success: function(response) {
-                        Swal.close();
-                        
-                        if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Eliminado!',
-                                text: response.message,
-                                timer: 1500,
-                                showConfirmButton: false
-                            });
-                            cargarDatos(); // Recargar tabla
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: response.error || 'No se pudo eliminar'
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        Swal.close();
+        if (result.isConfirmed) {
+
+            Swal.fire({
+                title: 'Procesando...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: '{% url "eliminar_atencion" %}',
+                type: 'POST',
+                data: {
+                    id: id
+                },
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+
+                success: function(response) {
+
+                    Swal.close();
+
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Eliminado!',
+                            text: response.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        cargarDatos();
+
+                    } else {
+
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: 'Error al eliminar el registro'
+                            text: response.error
                         });
+
                     }
-                });
+                },
+
+                error: function() {
+
+                    Swal.close();
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al eliminar el registro'
+                    });
+
+                }
+
+            });
+
+        }
+
+    });
+}
+function getCookie(name) {
+
+    let cookieValue = null;
+
+    if (document.cookie && document.cookie !== '') {
+
+        const cookies = document.cookie.split(';');
+
+        for (let i = 0; i < cookies.length; i++) {
+
+            const cookie = cookies[i].trim();
+
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+
             }
-        });
+        }
     }
+
+    return cookieValue;
+}
 
 function abrirReceta(id_atencion) {
     $('#modalTitulo').html(
