@@ -244,23 +244,23 @@
         });
     }
 
-    function guardarFormulario() {
+   function guardarFormulario() {
+
         const form = document.getElementById('formCie10');
         const formData = new FormData(form);
-        
+
         // Validar formulario
         if (!form.checkValidity()) {
             form.reportValidity();
             return;
         }
-        
-        // Mostrar loading
+
         const btnGuardar = document.querySelector('.btn-guardar');
         const originalHTML = btnGuardar.innerHTML;
+
         btnGuardar.disabled = true;
         btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
-        
-        // Enviar datos
+
         fetch('{% url "cie10_guardar" %}', {
             method: 'POST',
             body: formData,
@@ -270,53 +270,140 @@
         })
         .then(response => response.json())
         .then(data => {
+
             if (data.success) {
+
                 modal.hide();
                 cargarDatos();
-                alert('✓ ' + data.message);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Registro guardado',
+                    text: data.message,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
             } else {
-                alert('✗ Error: ' + data.error);
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.error
+                });
+
             }
+
         })
         .catch(error => {
+
             console.error('Error:', error);
-            alert('✗ Error de conexión al servidor');
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo conectar con el servidor'
+            });
+
         })
         .finally(() => {
+
             btnGuardar.disabled = false;
             btnGuardar.innerHTML = originalHTML;
+
         });
+
+    }
+    function getCSRFToken() {
+        let cookieValue = null;
+        const name = 'csrftoken';
+
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
     }
 
+
     function eliminarRegistro(id) {
-        if (!confirm('¿Está seguro de que desea eliminar este registro?\nEsta acción no se puede deshacer.')) {
-            return;
-        }
-        
-        const formData = new FormData();
-        formData.append('id', id);
-        formData.append('csrfmiddlewaretoken', getCSRFToken());
-        
-        fetch('{% url "cie10_eliminar" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+
+        Swal.fire({
+            title: '¿Eliminar registro?',
+            text: 'Esta acción no se puede deshacer',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+
+            if (result.isConfirmed) {
+
+                fetch('{% url "cie10_eliminar" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+
+                    if (data.success) {
+
+                        // recargar tabla
+                        $('#tablaCie10').DataTable().ajax.reload();
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Eliminado',
+                            text: data.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                    } else {
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.error
+                        });
+
+                    }
+
+                })
+                .catch(error => {
+
+                    console.error('Error:', error);
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error de conexión al servidor'
+                    });
+
+                });
+
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                cargarDatos();
-                alert('✓ ' + data.message);
-            } else {
-                alert('✗ Error: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('✗ Error de conexión al servidor');
+
         });
+
     }
     </script>
 </body>

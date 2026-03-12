@@ -432,63 +432,123 @@
     }
 
     function mostrarDetalles(datos) {
+
         let html = `
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <h6 class="border-bottom pb-2 fw-bold">Información de la Receta</h6>
-                    <p><strong>N° Receta:</strong> ${datos.id_receta}</p>
-                    <p><strong>Paciente:</strong> ${datos.paciente_nombre}</p>
-                    <p><strong>Expediente:</strong> ${datos.expediente_no}</p>
-                    <p><strong>Cédula:</strong> ${datos.cedula}</p>
-                    <p><strong>Fecha:</strong> ${datos.fecha}</p>
-                </div>
-                <div class="col-md-6">
-                    <h6 class="border-bottom pb-2 fw-bold">Datos Médicos</h6>
-                    <p><strong>Motivo:</strong> ${datos.motivo || 'No especificado'}</p>
-                    <p><strong>Estado:</strong> <span class="badge ${datos.estado === 'ACTIVA' ? 'bg-success' : 'bg-danger'}">${datos.estado_display}</span></p>
-                    <p><strong>Doctor:</strong> ${datos.doctor_nombre}</p>
-                </div>
-            </div>
+
+        <div class="container">
+
+        <!-- ENCABEZADO -->
+        <div class="text-center mb-3">
+            <img src="/static/medilab/assets/img/logo.jpg" style="width:80px">
+            <h4 class="mt-2 mb-0"><strong>MEDESSENTIA</strong></h4>
+            <small>Consultorio Médico</small><br>
+            <small>Abdón Calderón y Mariscal Sucre - Cantón Saquisilí</small><br>
+            <small>Tel: 0991043977 | medessentiaconsultoriomedico@gmail.com</small>
+        </div>
+
+        <hr>
+
+        <h5 class="text-center mb-3"><strong>RECETA MÉDICA</strong></h5>
+
+        <div class="row mb-3">
+
+        <div class="col-md-6">
+        <p><strong>N° Receta:</strong> ${datos.id_receta}</p>
+        <p><strong>Paciente:</strong> ${datos.paciente_nombre}</p>
+        <p><strong>Expediente:</strong> ${datos.expediente_no}</p>
+        <p><strong>Cédula:</strong> ${datos.cedula}</p>
+        </div>
+
+        <div class="col-md-6">
+        <p><strong>Fecha:</strong> ${datos.fecha}</p>
+        <p><strong>Doctor:</strong> ${datos.doctor_nombre}</p>
+        <p><strong>Motivo:</strong> ${datos.motivo || 'No especificado'}</p>
+        <p><strong>Estado:</strong> 
+        <span class="badge ${datos.estado === 'ACTIVA' ? 'bg-success':'bg-danger'}">
+        ${datos.estado_display}
+        </span>
+        </p>
+        </div>
+
+        </div>
+
+        <h6 class="border-bottom pb-2"><strong>Medicamentos Recetados</strong></h6>
+        `;
             
-            <h6 class="border-bottom pb-2 fw-bold">Medicamentos Recetados</h6>`;
-        
         if (datos.detalles && datos.detalles.length > 0) {
-            datos.detalles.forEach((detalle, index) => {
-                html += `
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <h6 class="card-title">${index + 1}. ${detalle.medicamento}</h6>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <small><strong>Concentración:</strong> ${detalle.concentracion || 'N/A'}</small><br>
-                                    <small><strong>Presentación:</strong> ${detalle.presentacion || 'N/A'}</small>
-                                </div>
-                                <div class="col-md-4">
-                                    <small><strong>Dosis:</strong> ${detalle.dosis}</small><br>
-                                    <small><strong>Frecuencia:</strong> ${detalle.frecuencia}</small>
-                                </div>
-                                <div class="col-md-4">
-                                    <small><strong>Duración:</strong> ${detalle.duracion_dias} días</small><br>
-                                    <small><strong>Cantidad:</strong> ${detalle.cantidad_total}</small><br>
-                                    <small><strong>Vía:</strong> ${detalle.via_administracion}</small>
-                                </div>
-                            </div>`;
-                
-                if (detalle.indicaciones) html += `<small><strong>Indicaciones:</strong> ${detalle.indicaciones}</small><br>`;
-                if (detalle.advertencias) html += `<small><strong>Advertencias:</strong> ${detalle.advertencias}</small>`;
-                
-                html += `</div></div>`;
-            });
+
+        datos.detalles.forEach((detalle,index)=>{
+
+        html+=`
+
+        <div class="card mb-2">
+
+        <div class="card-body">
+
+        <h6><strong>${index+1}. ${detalle.medicamento}</strong></h6>
+
+        <div class="row">
+
+        <div class="col-md-4">
+        <small><strong>Concentración:</strong> ${detalle.concentracion || 'N/A'}</small><br>
+        <small><strong>Presentación:</strong> ${detalle.presentacion || 'N/A'}</small>
+        </div>
+
+        <div class="col-md-4">
+        <small><strong>Dosis:</strong> ${detalle.dosis}</small><br>
+        <small><strong>Frecuencia:</strong> ${detalle.frecuencia}</small>
+        </div>
+
+        <div class="col-md-4">
+        <small><strong>Duración:</strong> ${detalle.duracion_dias} días</small><br>
+        <small><strong>Cantidad:</strong> ${detalle.cantidad_total}</small><br>
+        <small><strong>Vía:</strong> ${detalle.via_administracion}</small>
+        </div>
+
+        </div>
+        `;
+
+        if(detalle.indicaciones){
+        html+=`<small><strong>Indicaciones:</strong> ${detalle.indicaciones}</small><br>`
         }
-        
-        if (datos.observaciones) {
-            html += `
-                <h6 class="border-bottom pb-2 fw-bold mt-3">Observaciones</h6>
-                <p>${datos.observaciones}</p>`;
+
+        if(detalle.advertencias){
+        html+=`<small><strong>Advertencias:</strong> ${detalle.advertencias}</small>`
         }
-        
+
+        html+=`</div></div>`
+
+        })
+
+        }
+
+        if(datos.observaciones){
+        html+=`
+        <h6 class="border-bottom pb-2 mt-3"><strong>Observaciones</strong></h6>
+        <p>${datos.observaciones}</p>
+        `
+        }
+
+        html+=`
+
+        <div class="text-center mt-5">
+
+        <div style="border-top:2px solid #000;width:250px;margin:auto;margin-top:60px"></div>
+
+        <p class="mt-2"><strong>${datos.doctor_nombre}</strong></p>
+        <p>Médico General</p>
+
+        </div>
+
+        <div class="text-center mt-3">
+        <small>Documento generado por el sistema Medessentia</small>
+        </div>
+
+        </div>
+        `;
+
         document.getElementById('modalDetalleContenido').innerHTML = html;
-    }
+        }
 
     function anularReceta(recetaId) {
         Swal.fire({
@@ -664,14 +724,25 @@
                 </div>`);
             };
         }
-        
-        seccion.addEventListener('click', e => {
-            if (e.target.closest('.eliminar')) {
-                if (confirm('¿Eliminar este medicamento?')) {
-                    e.target.closest('.medicamento-item').remove();
-                }
+  // cambio joel      
+seccion.addEventListener('click', e => {
+    if (e.target.closest('.eliminar')) {
+        const item = e.target.closest('.medicamento-item');
+        Swal.fire({
+            title: '¿Eliminar medicamento?',
+            text: 'Este medicamento será removido de la receta',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#d33'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                item.remove();
             }
         });
+    }
+});
         
         form.addEventListener('submit', function (e) {
             e.preventDefault();

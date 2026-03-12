@@ -698,6 +698,16 @@ function abrirNuevaHistoria() {
 
 // ========== GUARDAR FORMULARIO CON NORMALIZACIÓN ==========
 function guardarFormulario() {
+    //prueba joel
+    // Verificar errores de validación
+if ($('.is-invalid').length > 0) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Datos incorrectos',
+        text: 'Corrija los valores de signos vitales antes de guardar'
+    });
+    return;
+}
     // Normalizar campos numéricos antes de enviar
     const camposNumericos = [
         'presion_sistolica', 'presion_diastolica', 'temperatura',
@@ -793,4 +803,99 @@ function getCSRFToken() {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
     return csrfToken ? csrfToken.value : '';
 }
+// ================= VALIDACIÓN SIGNOS VITALES =================
+
+function validarRango(input, min, max, mensaje) {
+
+    const valor = parseFloat($(input).val());
+    const id = $(input).attr("id");
+
+    $("#" + id + "_error").remove();
+    $(input).removeClass("is-invalid");
+
+    if ($(input).val() === "") return;
+
+    if (isNaN(valor) || valor < min || valor > max) {
+
+        $(input).addClass("is-invalid");
+
+        $(input).after(`
+            <div id="${id}_error" class="invalid-feedback">
+                ${mensaje}
+            </div>
+        `);
+    }
+}
+
+// ===== PRESIÓN SISTÓLICA =====
+$(document).on("input", "#presion_sistolica", function(){
+    validarRango(this, 70, 250, "PAS debe estar entre 70 y 250 mmHg");
+});
+
+// ===== PRESIÓN DIASTÓLICA =====
+$(document).on("input", "#presion_diastolica", function(){
+    validarRango(this, 40, 150, "PAD debe estar entre 40 y 150 mmHg");
+});
+
+// ===== TEMPERATURA =====
+$(document).on("input", "#temperatura", function(){
+    validarRango(this, 30, 45, "Temperatura debe estar entre 30 y 45 °C");
+});
+
+// ===== FRECUENCIA RESPIRATORIA =====
+$(document).on("input", "#frecuencia_respiratoria", function(){
+    validarRango(this, 5, 80, "Frecuencia respiratoria entre 5 y 80 rpm");
+});
+
+// ===== FRECUENCIA CARDIACA =====
+$(document).on("input", "#frecuencia_cardiaca", function(){
+    validarRango(this, 20, 250, "Frecuencia cardíaca entre 20 y 250 lpm");
+});
+
+// ===== SATURACIÓN =====
+$(document).on("input", "#saturacion_oxigeno", function(){
+    validarRango(this, 50, 100, "Saturación debe estar entre 50 y 100%");
+});
+
+// ===== PESO =====
+$(document).on("input", "#peso", function(){
+    validarRango(this, 1, 300, "Peso debe estar entre 1 y 300 kg");
+});
+
+// ===== TALLA =====
+$(document).on("input", "#talla", function(){
+
+    let valor = parseFloat($(this).val());
+
+    $("#talla_error").remove();
+    $(this).removeClass("is-invalid");
+
+    if ($(this).val() === "") return;
+
+    if(valor < 3){
+
+        if(valor < 0.80 || valor > 2.50){
+            $(this).addClass("is-invalid");
+            $(this).after(`
+                <div id="talla_error" class="invalid-feedback">
+                Talla en metros debe estar entre 0.80 y 2.50
+                </div>
+            `);
+        }
+
+    } 
+    else{
+
+        if(valor < 43 || valor > 80){
+            $(this).addClass("is-invalid");
+            $(this).after(`
+                <div id="talla_error" class="invalid-feedback">
+                Talla en cm debe estar entre 43 y 80
+                </div>
+            `);
+        }
+
+    }
+
+});
 </script>

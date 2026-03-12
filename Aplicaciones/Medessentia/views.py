@@ -2528,7 +2528,18 @@ def guardar_historia(request):
             
             fecha_nac = data.get('fecha_nacimiento')
             if fecha_nac:
-                historia.fecha_nacimiento = datetime.strptime(fecha_nac, '%Y-%m-%d').date()
+                    try:
+                        fecha_nac_date = datetime.strptime(fecha_nac, '%Y-%m-%d').date()
+                        if fecha_nac_date > date.today():
+                            return JsonResponse({
+                                'success': False,
+                                'error': 'La fecha de nacimiento no puede ser futura.'
+                            }, status=400)
+                    except ValueError:
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'Formato de fecha inválido.'
+                        }, status=400)
             
             historia.sexo_biologico = data.get('sexo_biologico')
             historia.genero = data.get('genero')
@@ -3413,22 +3424,44 @@ def detalle_atencion(request, id):
         return JsonResponse({'error': str(e)}, status=500)
 
 # AJAX: Eliminar
+# AJAX: Eliminar joel elminar atencion
 @login_required
+@require_POST
 def eliminar_atencion(request):
     try:
-        data = json.loads(request.body)
-        atencion_id = data.get('id')
-        
-        atencion = AtencionMedica.objects.get(id_atencion=atencion_id)
+
+        id_atencion = request.POST.get("id")
+
+        if not id_atencion:
+            return JsonResponse({
+                "success": False,
+                "error": "No se recibió el ID de la atención."
+            })
+
+        atencion = AtencionMedica.objects.filter(id_atencion=id_atencion).first()
+
+        if not atencion:
+            return JsonResponse({
+                "success": False,
+                "error": "La atención no existe."
+            })
+
+        # eliminar
         atencion.delete()
-        
-        return JsonResponse({'success': True, 'message': 'Atención eliminada'})
-        
+
+        return JsonResponse({
+            "success": True,
+            "message": "Atención eliminada correctamente."
+        })
+
     except Exception as e:
-        print(f"ERROR en eliminar_atencion: {str(e)}")
-        import traceback
-        print(traceback.format_exc())
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+        print("ERROR en eliminar_atencion:", e)
+
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        })
 
 # AJAX: Buscar historias clínicas para atención
 @login_required
